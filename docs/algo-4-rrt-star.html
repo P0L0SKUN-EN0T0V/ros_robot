@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RRT* — Подробный разбор</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8em;font-weight:600;margin:2px 4px 2px 0}
+        .tag.blue{background:rgba(108,158,255,.15);color:var(--accent)}
+        .tag.green{background:rgba(74,222,128,.15);color:var(--green)}
+        .tag.orange{background:rgba(251,146,60,.15);color:var(--orange)}
+        .tag.purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.15em}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media(max-width:700px){.grid{grid-template-columns:1fr}}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .katex{font-size:1.1em}
+        .katex-display{margin:12px 0}
+        /* Tree visualization */
+        .tree-viz{position:relative;width:100%;max-width:620px;margin:16px auto;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+        .tree-viz svg{width:100%;height:100%}
+        .tree-viz .edge{stroke:var(--accent);stroke-width:1.5;opacity:.5}
+        .tree-viz .edge.path{stroke:var(--green);stroke-width:3;opacity:1}
+        .tree-viz .edge.rewired{stroke:var(--orange);stroke-width:2;opacity:.7;stroke-dasharray:6,3}
+        .tree-viz .edge.old{stroke:var(--red);stroke-width:1.5;opacity:.25;stroke-dasharray:4,4}
+        .tree-viz .node{fill:var(--accent);opacity:.7}
+        .tree-viz .node.start{fill:var(--accent);opacity:1}
+        .tree-viz .node.goal{fill:var(--accent2);opacity:1}
+        .tree-viz .node.path{fill:var(--green);opacity:1}
+        .tree-viz .node.rewired{fill:var(--orange);opacity:.9}
+        .tree-viz .obstacle{fill:rgba(248,113,113,.25);stroke:rgba(248,113,113,.5);stroke-width:1}
+        .tree-viz .radius{fill:rgba(251,146,60,.06);stroke:rgba(251,146,60,.3);stroke-width:1;stroke-dasharray:4,3}
+        .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
+        .grid-legend span{display:flex;align-items:center;gap:6px}
+        .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Основная документация</a>
+        <div class="sep"></div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html" class="active">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>RRT* — Optimal RRT</h1>
+        <p class="subtitle">Алгоритм №4 — случайное дерево, которое умнеет со временем</p>
+
+        <!-- ============ СУТЬ ============ -->
+        <h2>О чём вообще речь</h2>
+
+        <p>RRT из предыдущей главы — штука мощная, но у него есть фундаментальная проблема: путь, который он находит, почти всегда <strong>кривой и неоптимальный</strong>. Какую бы случайную точку ни бросил — она определила путь, и обратного хода нет.</p>
+
+        <p>RRT* (читается «RRT-star») решает эту проблему одним элегантным трюком: <strong>rewiring</strong> — перепривязка узлов. Каждый раз, когда мы добавляем новый узел в дерево, мы оглядываемся вокруг и спрашиваем: «А может, кто-то из соседей мог бы добраться до корня быстрее через меня?» Если да — перепривязываем.</p>
+
+        <div class="analogy">Представь сеть дорог. Ты строишь их случайно, как в RRT. Но после каждой новой дороги ты проверяешь: а нет ли у соседних посёлков более короткого пути до столицы через мою новую дорогу? Если есть — перестраиваешь маршрут. Со временем вся сеть оптимизируется, и дороги становятся всё прямее и короче.</div>
+
+        <h3>Главное отличие от RRT</h3>
+
+        <div class="card highlight">
+            <strong>RRT</strong> = добавил узел → забыл.<br>
+            <strong>RRT*</strong> = добавил узел → проверил соседей → перепривязал тех, кому стало выгоднее → <em>дерево стало лучше</em>.
+        </div>
+
+        <p>Математически доказано: при $n \to \infty$ (бесконечное число итераций) путь RRT* <strong>сходится к оптимальному</strong>. Это называется <em>асимптотическая оптимальность</em>. На практике это значит: чем дольше работает RRT* — тем лучше путь. RRT такого не умеет.</p>
+
+        <!-- ============ ИСТОРИЯ ============ -->
+        <h2>Немного истории</h2>
+
+        <p>RRT* предложили <strong>Сертак Караман</strong> и <strong>Эмилио Фраззоли</strong> (MIT) в 2011 году. Их статья <em>"Sampling-based Algorithms for Optimal Motion Planning"</em> стала одной из самых цитируемых в робототехнике. Они доказали, что обычный RRT <strong>никогда</strong> не сойдётся к оптимальному пути (даже с бесконечным временем), и предложили RRT* как решение — с доказательством сходимости.</p>
+
+        <p>Забавный факт: добавление rewiring к RRT — это буквально ~20 строк кода. Но эти 20 строк превращают «какой-нибудь путь» в «почти оптимальный путь».</p>
+
+        <!-- ============ МАТЕМАТИКА ============ -->
+        <h2>Математика</h2>
+
+        <p>RRT* наследует все операции RRT (Sample, Nearest, Steer, CollisionFree) и добавляет две новые: <strong>Near</strong> и <strong>Rewire</strong>.</p>
+
+        <h3>1. Радиус поиска соседей (Near)</h3>
+
+        <p>Вместо поиска одного ближайшего узла, RRT* ищет <em>всех соседей</em> в радиусе $r_n$:</p>
+
+        <div class="formula-block">
+            $$r_n = \min\left(\gamma \cdot \left(\frac{\log n}{n}\right)^{1/d},\; \eta\right)$$
+        </div>
+
+        <p>Здесь:</p>
+        <ul>
+            <li>$n$ — текущее количество узлов в дереве</li>
+            <li>$d$ — размерность пространства (для 2D карты $d = 2$)</li>
+            <li>$\gamma$ — константа, зависящая от объёма свободного пространства</li>
+            <li>$\eta$ — максимальный шаг (step size), ограничивает радиус сверху</li>
+        </ul>
+
+        <div class="card">
+            <strong>Что эта формула делает?</strong> Радиус $r_n$ уменьшается по мере роста дерева. В начале (мало узлов) — ищем далеко, много соседей, активный rewiring. Позже (много узлов) — ищем близко, дерево уже почти оптимально. Это гарантирует сходимость и не даёт алгоритму тратить время на поиск в огромном радиусе.
+        </div>
+
+        <h3>2. Выбор лучшего родителя (ChooseParent)</h3>
+
+        <p>Когда мы нашли $q_\text{new}$, мы не привязываем его к ближайшему узлу (как в RRT). Вместо этого смотрим на <em>всех соседей</em> в радиусе $r_n$ и выбираем того, через кого путь от старта до $q_\text{new}$ минимален:</p>
+
+        <div class="formula-block">
+            $$q_\text{parent} = \arg\min_{q \in \text{Near}(q_\text{new}, r_n)} \left[ \text{cost}(q) + \|q - q_\text{new}\| \right]$$
+        </div>
+
+        <p>$\text{cost}(q)$ — стоимость пути от старта до узла $q$ по дереву. Мы выбираем не просто ближайший узел, а тот, через который <strong>суммарный путь</strong> будет кратчайшим.</p>
+
+        <h3>3. Перепривязка соседей (Rewire)</h3>
+
+        <p>После добавления $q_\text{new}$ проверяем каждого соседа: не станет ли ему выгоднее проходить через $q_\text{new}$?</p>
+
+        <div class="formula-block">
+            $$\text{Для каждого } q \in \text{Near}: \quad \text{если } \text{cost}(q_\text{new}) + \|q_\text{new} - q\| < \text{cost}(q), \text{ то } q.\text{parent} = q_\text{new}$$
+        </div>
+
+        <p>Простым языком: «Эй, сосед! Раньше ты добирался до старта через своего старого родителя, и это стоило тебе X. Но если пойдёшь через меня — будет Y, а Y &lt; X. Перевяжись ко мне!»</p>
+
+        <div class="analogy">Представь навигатор, который постоянно пересчитывает маршрут. Появилась новая дорога — и вдруг оказалось, что через неё три соседних города могут добираться до центра быстрее. Навигатор автоматически переключает их маршруты. Со временем все маршруты становятся оптимальными.</div>
+
+        <!-- ============ ПО ШАГАМ ============ -->
+        <h2>Как работает: пошагово</h2>
+
+        <p>Шаги 1–4 идентичны RRT. Отличия начинаются с шага 5:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Помещаем $q_\text{start}$ в дерево. <code>cost(start) = 0</code>.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Генерируем $q_\text{rand}$ (случайную точку или цель с goal bias).</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Находим $q_\text{nearest}$ — ближайший узел дерева.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">Делаем шаг: $q_\text{new} = \text{steer}(q_\text{nearest}, q_\text{rand}, \Delta q)$. Проверяем коллизии.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-text"><span style="color:var(--orange);font-weight:700">НОВОЕ:</span> Ищем всех соседей $q_\text{new}$ в радиусе $r_n$. Из них выбираем <strong>лучшего родителя</strong> — того, через кого путь от старта минимален. Привязываем $q_\text{new}$ к нему (а не к $q_\text{nearest}$!).</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-text"><span style="color:var(--orange);font-weight:700">НОВОЕ:</span> <strong>Rewire</strong> — для каждого соседа проверяем: может ли он сократить свой путь до старта, пройдя через $q_\text{new}$? Если да — перепривязываем его родителя на $q_\text{new}$.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-text">Проверяем близость к цели. Если $q_\text{new}$ рядом — путь найден. Но в отличие от RRT, <strong>мы не останавливаемся</strong> — можно продолжить и улучшать путь.</div>
+        </div>
+
+        <!-- ============ ВИЗУАЛИЗАЦИЯ ============ -->
+        <h2>Визуальный пример</h2>
+
+        <p>Та же карта: старт — внизу слева, цель — вверху справа, стена посередине. Смотри, как RRT* строит дерево и перепривязывает узлы:</p>
+
+        <div class="tree-viz" style="height:430px">
+            <svg viewBox="0 0 500 430">
+                <!-- Obstacle -->
+                <rect class="obstacle" x="200" y="80" width="30" height="200" rx="4"/>
+
+                <!-- Labels -->
+                <text x="50" y="385" fill="#6c9eff" font-size="14" font-weight="bold">START</text>
+                <text x="400" y="50" fill="#a78bfa" font-size="14" font-weight="bold">GOAL</text>
+
+                <!-- Rewiring radius visualization (for node at 175,145) -->
+                <circle class="radius" cx="175" cy="145" r="70"/>
+                <text x="205" y="100" fill="#fb923c" font-size="10" font-style="italic">r_n — радиус</text>
+                <text x="205" y="112" fill="#fb923c" font-size="10" font-style="italic">поиска соседей</text>
+
+                <!-- OLD edges (before rewiring) — dashed red -->
+                <line class="edge old" x1="90" y1="305" x2="70" y2="260"/>
+                <line class="edge old" x1="70" y1="260" x2="100" y2="215"/>
+                <line class="edge old" x1="100" y1="215" x2="140" y2="175"/>
+
+                <!-- Rewired edges (orange dashed) -->
+                <line class="edge rewired" x1="135" y1="275" x2="100" y2="215"/>
+                <line class="edge rewired" x1="175" y1="240" x2="140" y2="175"/>
+
+                <!-- Regular tree edges -->
+                <line class="edge" x1="50" y1="370" x2="90" y2="305"/>
+                <line class="edge" x1="50" y1="370" x2="85" y2="390"/>
+                <line class="edge" x1="90" y1="305" x2="135" y2="275"/>
+                <line class="edge" x1="135" y1="275" x2="175" y2="240"/>
+                <line class="edge" x1="175" y1="240" x2="185" y2="195"/>
+                <line class="edge" x1="185" y1="195" x2="175" y2="145"/>
+
+                <!-- Dead-end branches (dim) -->
+                <line class="edge" x1="85" y1="390" x2="130" y2="380" style="opacity:.25"/>
+                <line class="edge" x1="130" y1="380" x2="160" y2="360" style="opacity:.25"/>
+                <line class="edge" x1="245" y1="60" x2="270" y2="105" style="opacity:.25"/>
+
+                <!-- Past-wall edges -->
+                <line class="edge" x1="175" y1="145" x2="180" y2="65"/>
+                <line class="edge" x1="180" y1="65" x2="245" y2="60"/>
+                <line class="edge" x1="245" y1="60" x2="310" y2="55"/>
+                <line class="edge" x1="310" y1="55" x2="365" y2="50"/>
+                <line class="edge" x1="365" y1="50" x2="420" y2="45"/>
+
+                <!-- PATH (optimal after rewiring) -->
+                <line class="edge path" x1="50" y1="370" x2="90" y2="305"/>
+                <line class="edge path" x1="90" y1="305" x2="135" y2="275"/>
+                <line class="edge path" x1="135" y1="275" x2="175" y2="240"/>
+                <line class="edge path" x1="175" y1="240" x2="185" y2="195"/>
+                <line class="edge path" x1="185" y1="195" x2="175" y2="145"/>
+                <line class="edge path" x1="175" y1="145" x2="180" y2="65"/>
+                <line class="edge path" x1="180" y1="65" x2="245" y2="60"/>
+                <line class="edge path" x1="245" y1="60" x2="310" y2="55"/>
+                <line class="edge path" x1="310" y1="55" x2="365" y2="50"/>
+                <line class="edge path" x1="365" y1="50" x2="420" y2="45"/>
+
+                <!-- Dead-end nodes -->
+                <circle class="node" cx="85" cy="390" r="4" style="opacity:.3"/>
+                <circle class="node" cx="130" cy="380" r="4" style="opacity:.3"/>
+                <circle class="node" cx="160" cy="360" r="4" style="opacity:.3"/>
+                <circle class="node" cx="270" cy="105" r="4" style="opacity:.3"/>
+
+                <!-- Rewired nodes (orange) -->
+                <circle class="node rewired" cx="100" cy="215" r="5"/>
+                <circle class="node rewired" cx="140" cy="175" r="5"/>
+                <circle class="node rewired" cx="70" cy="260" r="4" style="opacity:.4"/>
+
+                <!-- Path nodes -->
+                <circle class="node path" cx="90" cy="305" r="5"/>
+                <circle class="node path" cx="135" cy="275" r="5"/>
+                <circle class="node path" cx="175" cy="240" r="5"/>
+                <circle class="node path" cx="185" cy="195" r="5"/>
+                <circle class="node path" cx="175" cy="145" r="5"/>
+                <circle class="node path" cx="180" cy="65" r="5"/>
+                <circle class="node path" cx="245" cy="60" r="5"/>
+                <circle class="node path" cx="310" cy="55" r="5"/>
+                <circle class="node path" cx="365" cy="50" r="5"/>
+
+                <!-- Start and Goal -->
+                <circle class="node start" cx="50" cy="370" r="8"/>
+                <circle class="node goal" cx="420" cy="45" r="8"/>
+
+                <!-- Annotations -->
+                <text x="55" y="255" fill="#f87171" font-size="9" font-style="italic">старый путь</text>
+                <text x="55" y="265" fill="#f87171" font-size="9" font-style="italic">(отброшен)</text>
+
+                <text x="105" y="210" fill="#fb923c" font-size="9" font-weight="bold">rewired!</text>
+                <text x="145" y="170" fill="#fb923c" font-size="9" font-weight="bold">rewired!</text>
+            </svg>
+        </div>
+
+        <div class="grid-legend">
+            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:#6c9eff"></span> Старт</span>
+            <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:#a78bfa"></span> Цель</span>
+            <span><span class="dot" style="background:rgba(74,222,128,.3);border-color:#4ade80"></span> Оптимальный путь</span>
+            <span><span class="dot" style="background:rgba(251,146,60,.3);border-color:#fb923c"></span> Перепривязанные узлы</span>
+            <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.5)"></span> Старые связи (удалены)</span>
+        </div>
+
+        <div class="card">
+            <strong>Что тут происходит:</strong>
+            <ol>
+                <li>Дерево растёт так же, как в RRT — от старта к цели через случайные точки</li>
+                <li>Но при добавлении каждого нового узла алгоритм проверяет <strong>соседей в радиусе $r_n$</strong> (оранжевый пунктирный круг)</li>
+                <li>Красные пунктирные линии — <strong>старые связи</strong>, которые были менее эффективны. Они удалены</li>
+                <li>Оранжевые пунктирные линии — <strong>новые связи</strong> (rewiring). Узлы перепривязались к лучшим родителям</li>
+                <li>Итоговый зелёный путь <strong>прямее и короче</strong>, чем был бы в обычном RRT</li>
+            </ol>
+        </div>
+
+        <div class="card warn">
+            <strong>RRT vs RRT* на одной карте:</strong> обычный RRT нашёл бы кривой путь с лишними изгибами (как на странице RRT). RRT* постепенно «выпрямляет» дерево через rewiring. Чем больше итераций — тем прямее путь. В пределе — он совпадёт с оптимальным.
+        </div>
+
+        <!-- ============ ПСЕВДОКОД ============ -->
+        <h2>Псевдокод</h2>
+
+<pre>
+RRT_Star(q_start, q_goal, map, max_iterations):
+    T.init(q_start, cost=0)
+
+    for i = 1 to max_iterations:
+        q_rand = sample(map, goal_bias)
+        q_nearest = nearest(T, q_rand)
+        q_new = steer(q_nearest, q_rand, Δq)
+
+        if not collision_free(q_nearest, q_new, map):
+            continue
+
+        // === ОТЛИЧИЕ №1: выбор лучшего родителя ===
+        neighbors = near(T, q_new, r_n)          // все соседи в радиусе r_n
+        q_best = q_nearest
+        cost_best = cost(q_nearest) + dist(q_nearest, q_new)
+
+        for q_near in neighbors:                  // ищем лучшего родителя
+            new_cost = cost(q_near) + dist(q_near, q_new)
+            if new_cost < cost_best AND collision_free(q_near, q_new):
+                q_best = q_near
+                cost_best = new_cost
+
+        T.add_node(q_new, parent=q_best, cost=cost_best)
+
+        // === ОТЛИЧИЕ №2: перепривязка соседей ===
+        for q_near in neighbors:                  // rewiring
+            new_cost = cost(q_new) + dist(q_new, q_near)
+            if new_cost < cost(q_near) AND collision_free(q_new, q_near):
+                q_near.parent = q_new             // перепривязка!
+                q_near.cost = new_cost
+                update_costs_recursive(q_near)    // обновить потомков
+
+        if dist(q_new, q_goal) < threshold:
+            // путь найден, но можно продолжить для улучшения
+            ...
+
+    return best_path(T, q_goal)
+</pre>
+
+        <div class="card highlight">
+            <strong>Ключевое отличие от RRT — всего два блока:</strong>
+            <ul>
+                <li><code>ChooseParent</code> — перебираем соседей, выбираем с минимальной стоимостью пути</li>
+                <li><code>Rewire</code> — перебираем тех же соседей, перепривязываем если выгоднее</li>
+            </ul>
+            Остальное — один в один RRT. Вот почему RRT* — это «RRT + 20 строк кода».
+        </div>
+
+        <!-- ============ СЛОЖНОСТЬ ============ -->
+        <h2>Сложность</h2>
+
+        <table>
+            <tr><th>Метрика</th><th style="white-space:nowrap">Значение</th><th>Пояснение</th></tr>
+            <tr>
+                <td>Время (наивно)</td>
+                <td style="white-space:nowrap">$O(n^2)$</td>
+                <td>На каждой итерации: поиск ближайшего $O(n)$ + поиск соседей $O(n)$ + rewiring $O(k)$</td>
+            </tr>
+            <tr>
+                <td>Время (с KD-деревом)</td>
+                <td style="white-space:nowrap">$O(n \log n)$</td>
+                <td>KD-дерево: nearest + near за $O(\log n)$. Rewiring — $O(k \log n)$ где $k$ — число соседей</td>
+            </tr>
+            <tr>
+                <td>Память</td>
+                <td style="white-space:nowrap">$O(n)$</td>
+                <td>Узлы + рёбра + стоимости. Чуть больше RRT за счёт хранения cost</td>
+            </tr>
+            <tr>
+                <td>Полнота</td>
+                <td><span class="tag orange">Вероятностно полный</span></td>
+                <td>Как и RRT: найдёт путь при достаточном числе итераций</td>
+            </tr>
+            <tr>
+                <td>Оптимальность</td>
+                <td><span class="tag green">Асимптотически оптимален</span></td>
+                <td>При $n \to \infty$ стоимость пути сходится к оптимальной. <strong>Это главное отличие от RRT</strong></td>
+            </tr>
+        </table>
+
+        <!-- ============ ПЛЮСЫ/МИНУСЫ ============ -->
+        <h2>Плюсы и минусы</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <h3 style="margin-top:0;color:var(--green)">Плюсы</h3>
+                <ul>
+                    <li><strong>Асимптотическая оптимальность</strong> — путь улучшается с каждой итерацией</li>
+                    <li>Работает в пространствах <strong>любой размерности</strong></li>
+                    <li>Минимальное отличие от RRT — легко переключиться</li>
+                    <li>Можно задать time budget: «работай 500мс и отдай лучший путь»</li>
+                    <li>Anytime-алгоритм: первый путь быстро, потом улучшает</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <h3 style="margin-top:0;color:var(--orange)">Минусы</h3>
+                <ul>
+                    <li><strong>Медленнее RRT</strong> — на каждом шаге дополнительный поиск соседей и rewiring</li>
+                    <li>Сходимость к оптимуму <strong>медленная</strong> — нужны тысячи итераций</li>
+                    <li>В 2D сетках A* даёт оптимум <em>сразу</em>, а RRT* — через N итераций</li>
+                    <li>Результат по-прежнему <strong>не детерминирован</strong></li>
+                    <li>Рекурсивное обновление cost потомков может быть затратным</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ C++ ROS2 ============ -->
+        <h2>Интеграция с ROS2 (C++)</h2>
+
+        <p>Показываю только отличия от RRT. Структура ноды та же — меняется логика внутри <code>plan()</code>:</p>
+
+<pre>
+// Структура узла — добавляем cost
+struct Node {
+    double x, y;
+    int parent;
+    double cost;  // стоимость пути от старта до этого узла
+};
+
+// Внутри plan():
+// ... (шаги 1-4 как в RRT) ...
+
+// === ОТЛИЧИЕ №1: ChooseParent ===
+double r_n = std::min(
+    gamma_ * std::pow(std::log((double)tree.size()) / tree.size(), 1.0 / 2.0),
+    step_size_
+);
+
+// Найти всех соседей в радиусе r_n
+std::vector&lt;int&gt; neighbors;
+for (int j = 0; j &lt; (int)tree.size(); ++j) {
+    if (hypot(tree[j].x - nx, tree[j].y - ny) &lt; r_n)
+        neighbors.push_back(j);
+}
+
+// Выбрать лучшего родителя
+int best_parent = nearest_idx;
+double best_cost = tree[nearest_idx].cost + hypot(nx - tree[nearest_idx].x, ny - tree[nearest_idx].y);
+
+for (int j : neighbors) {
+    double new_cost = tree[j].cost + hypot(nx - tree[j].x, ny - tree[j].y);
+    if (new_cost &lt; best_cost &amp;&amp; collision_free(tree[j].x, tree[j].y, nx, ny)) {
+        best_parent = j;
+        best_cost = new_cost;
+    }
+}
+
+tree.push_back({nx, ny, best_parent, best_cost});
+int new_idx = tree.size() - 1;
+
+// === ОТЛИЧИЕ №2: Rewire ===
+for (int j : neighbors) {
+    double new_cost = best_cost + hypot(tree[j].x - nx, tree[j].y - ny);
+    if (new_cost &lt; tree[j].cost &amp;&amp; collision_free(nx, ny, tree[j].x, tree[j].y)) {
+        tree[j].parent = new_idx;
+        tree[j].cost = new_cost;
+        // TODO: рекурсивно обновить cost всех потомков j
+    }
+}
+</pre>
+
+        <div class="card">
+            <strong>Обрати внимание на <code>gamma_</code></strong> — это важная константа. Для 2D пространства обычно $\gamma = 2 \cdot \sqrt{\frac{\text{area}_\text{free}}{\pi}}$. На практике можно начать с $\gamma = 1.0$ и подбирать экспериментально. Слишком маленький — мало rewiring, медленная сходимость. Слишком большой — много лишних проверок, тормозит.
+        </div>
+
+        <!-- ============ INFORMED RRT* ============ -->
+        <h2>Бонус: Informed RRT*</h2>
+
+        <p>Важная оптимизация, о которой стоит знать. После нахождения первого пути (стоимость $c_\text{best}$) мы знаем, что оптимальный путь не может быть длиннее $c_\text{best}$. Значит, нет смысла сэмплировать точки <em>везде</em> — достаточно сэмплировать внутри <strong>эллипса</strong> с фокусами в старте и цели:</p>
+
+        <div class="formula-block">
+            $$\text{Эллипс: } \frac{\|q - q_\text{start}\| + \|q - q_\text{goal}\|}{c_\text{best}} \leq 1$$
+        </div>
+
+        <p>Сэмплирование в эллипсе вместо всей карты <strong>драматически ускоряет</strong> сходимость к оптимуму — в 5–10 раз меньше итераций. Реализация: вместо <code>random_point(map)</code> генерируешь точку внутри эллипса.</p>
+
+        <!-- ============ СРАВНЕНИЕ ============ -->
+        <h2>Сравнение с другими алгоритмами</h2>
+
+        <table>
+            <tr>
+                <th>Критерий</th>
+                <th>Что это значит</th>
+                <th>RRT</th>
+                <th>RRT*</th>
+                <th>A*</th>
+            </tr>
+            <tr>
+                <td>Оптимальность</td>
+                <td style="font-size:.88em;color:var(--text2)">Гарантирует ли кратчайший путь</td>
+                <td><span class="tag orange">Нет</span></td>
+                <td><span class="tag green">Асимптот.</span></td>
+                <td><span class="tag green">Да</span></td>
+            </tr>
+            <tr>
+                <td>Скорость первого пути</td>
+                <td style="font-size:.88em;color:var(--text2)">Как быстро найдёт хоть какой-то путь</td>
+                <td><span class="tag green">Быстро</span></td>
+                <td><span class="tag blue">Средне</span></td>
+                <td><span class="tag green">Быстро</span></td>
+            </tr>
+            <tr>
+                <td>Улучшение пути</td>
+                <td style="font-size:.88em;color:var(--text2)">Может ли алгоритм продолжить работу и улучшить уже найденный путь</td>
+                <td><span class="tag orange">Нет</span></td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag orange">Нет</span></td>
+            </tr>
+            <tr>
+                <td style="white-space:nowrap">Многомерные пространства</td>
+                <td style="font-size:.88em;color:var(--text2)">Работа с 6+ степенями свободы</td>
+                <td><span class="tag green">Отлично</span></td>
+                <td><span class="tag green">Отлично</span></td>
+                <td><span class="tag orange">Плохо</span></td>
+            </tr>
+            <tr>
+                <td>Anytime</td>
+                <td style="font-size:.88em;color:var(--text2)">Можно ли прервать в любой момент и получить лучший на данный момент результат</td>
+                <td><span class="tag orange">Нет</span></td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag orange">Нет</span></td>
+            </tr>
+            <tr>
+                <td>Накладные расходы</td>
+                <td style="font-size:.88em;color:var(--text2)">Сколько дополнительных вычислений на каждом шаге</td>
+                <td><span class="tag green">Мало</span></td>
+                <td><span class="tag orange">Средне</span></td>
+                <td><span class="tag green">Мало</span></td>
+            </tr>
+        </table>
+
+        <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
+        <h2>Когда использовать RRT*</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <h3 style="margin-top:0;color:var(--green)">Используй RRT*, если:</h3>
+                <ul>
+                    <li>Нужен <strong>хороший</strong> (близкий к оптимальному) путь в многомерном пространстве</li>
+                    <li>Есть time budget: «планируй 200мс, потом отдай лучшее что есть»</li>
+                    <li>Карта меняется — можно инкрементально достраивать дерево</li>
+                    <li>RRT нашёл путь, но он слишком кривой</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <h3 style="margin-top:0;color:var(--orange)">НЕ используй RRT*, если:</h3>
+                <ul>
+                    <li>Нужен <strong>гарантированно</strong> оптимальный путь прямо сейчас — используй A*</li>
+                    <li>Карта маленькая и двумерная — A* будет быстрее и точнее</li>
+                    <li>Нужен детерминированный результат</li>
+                    <li>Время жёстко ограничено (RRT* нужно время на сходимость)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="algo-3-rrt.html">← 3. RRT</a>
+            <a href="algo-5-theta-star.html">5. Theta* →</a>
+        </div>
+    </div>
+</body>
+</html>

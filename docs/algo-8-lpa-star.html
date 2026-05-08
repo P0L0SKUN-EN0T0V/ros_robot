@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LPA* — Подробный разбор</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8em;font-weight:600;margin:2px 4px 2px 0}
+        .tag.blue{background:rgba(108,158,255,.15);color:var(--accent)}
+        .tag.green{background:rgba(74,222,128,.15);color:var(--green)}
+        .tag.orange{background:rgba(251,146,60,.15);color:var(--orange)}
+        .tag.purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.15em}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media(max-width:700px){.grid{grid-template-columns:1fr}}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .katex{font-size:1.1em}
+        .katex-display{margin:12px 0}
+        .grid-viz{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:620px;margin:16px auto}
+        .grid-viz .cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;font-size:.75em;line-height:1.35;min-height:72px;display:flex;flex-direction:column;justify-content:center;position:relative}
+        .grid-viz .cell.wall{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)}
+        .grid-viz .cell.path{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);border-width:2px}
+        .grid-viz .cell.explored{background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)}
+        .grid-viz .cell.start{background:rgba(108,158,255,.2);border-color:var(--accent);border-width:2px}
+        .grid-viz .cell.goal{background:rgba(167,139,250,.2);border-color:var(--accent2);border-width:2px}
+        .grid-viz .cell .lbl{font-weight:700;font-size:1.05em;margin-bottom:2px}
+        .grid-viz .cell .vals{color:var(--text2);font-family:'Courier New',monospace;font-size:.85em}
+        .grid-viz .cell .vals b{color:var(--accent)}
+        .grid-viz .cell .ord{position:absolute;top:2px;right:5px;font-size:.7em;color:var(--orange);font-weight:700}
+        .grid-viz .cell.unvisited{opacity:.45}
+        .grid-viz .cell.changed{background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.4);border-width:2px}
+        .grid-viz .cell.consistent{border-color:var(--green);border-width:2px}
+        .grid-viz .cell.inconsistent{border-color:var(--orange);border-width:2px;box-shadow:0 0 8px rgba(251,146,60,.3)}
+        .grid-viz .cell.newwall{background:rgba(248,113,113,.3);border-color:rgba(248,113,113,.6);border-width:2px;animation:pulse 1.5s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+        .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
+        .grid-legend span{display:flex;align-items:center;gap:6px}
+        .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Основная документация</a>
+        <div class="sep"></div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html" class="active">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>LPA*</h1>
+        <p class="subtitle">Алгоритм №8 — «живучий» A*: не считает заново то, что не изменилось</p>
+
+        <!-- ============ СУТЬ ============ -->
+        <h2>О чём вообще речь</h2>
+
+        <div class="analogy">
+            Представь, что ты проложил маршрут по навигатору. На одной улице начали ремонт — перекрыли 100 метров. Обычный A* выбросит весь старый маршрут и пересчитает от нуля. LPA* скажет: «Так, я помню все расстояния. Перекрытие затрагивает 3 перекрёстка — пересчитаю только их, остальные 50 перекрёстков оставлю как есть». Результат тот же, работы — в 10 раз меньше.
+        </div>
+
+        <div class="card highlight">
+            <p><strong>LPA* (Lifelong Planning A*)</strong> — инкрементальная версия A*. При изменении карты не пересчитывает всё с нуля, а обновляет только затронутые узлы. Поиск идёт от старта к цели (в отличие от D* Lite, который ищет от цели к старту).</p>
+            <p style="margin-top:12px">Ключевая идея: каждый узел хранит два значения — $g$ и $rhs$. Когда они равны, узел <em>consistent</em>. Когда нет — его надо пересчитать. При изменении карты становятся inconsistent только соседи изменённых клеток.</p>
+        </div>
+
+        <!-- ============ ФОРМУЛЫ ============ -->
+        <h2>Два ключевых значения</h2>
+
+        <div class="grid">
+            <div class="card">
+                <h3>$g(s)$ — текущая оценка</h3>
+                <p>Как в обычном A*: стоимость кратчайшего найденного пути от старта до $s$.</p>
+            </div>
+            <div class="card">
+                <h3>$rhs(s)$ — «должно быть»</h3>
+                <p>Одношаговый lookahead: минимум среди всех предшественников.</p>
+            </div>
+        </div>
+
+        <div class="formula-block">
+            $$rhs(s) = \begin{cases} 0 & \text{если } s = s_{start} \\ \min_{s' \in Pred(s)} \big(g(s') + c(s', s)\big) & \text{иначе} \end{cases}$$
+        </div>
+
+        <div class="card highlight">
+            <p><strong>Consistency (согласованность):</strong></p>
+            <ul>
+                <li><strong>Consistent:</strong> $g(s) = rhs(s)$ — узел в порядке, ничего делать не надо</li>
+                <li><strong>Overconsistent:</strong> $g(s) > rhs(s)$ — нашёлся путь короче, обновляем $g$</li>
+                <li><strong>Underconsistent:</strong> $g(s) < rhs(s)$ — старый путь стал хуже (стена!), увеличиваем $g$</li>
+            </ul>
+        </div>
+
+        <h3>Приоритетная очередь</h3>
+        <p>Inconsistent узлы помещаются в очередь с ключом:</p>
+        <div class="formula-block">
+            $$key(s) = \big[\min(g(s), rhs(s)) + h(s),\; \min(g(s), rhs(s))\big]$$
+        </div>
+        <p>Двухкомпонентный ключ: первый элемент — как $f$ в A*, второй — для тай-брейка.</p>
+
+        <!-- ============ АЛГОРИТМ ============ -->
+        <h2>Как работает алгоритм</h2>
+
+        <h3>Фаза 1: Первый поиск (как A*)</h3>
+        <div class="step"><div class="step-num">1</div><div class="step-text">Инициализация: $g(s) = \infty$, $rhs(s) = \infty$ для всех узлов. $rhs(start) = 0$. Добавляем старт в очередь.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">Достаём узел с минимальным ключом. Если overconsistent ($g > rhs$): ставим $g = rhs$ (нашли кратчайший путь). Если underconsistent ($g < rhs$): ставим $g = \infty$ (обнуляем).</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Обновляем $rhs$ соседей и добавляем inconsistent соседей в очередь.</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text">Повторяем пока цель не станет consistent и ключ цели ≤ минимальному ключу в очереди.</div></div>
+
+        <h3>Фаза 2: Изменение карты → инкрементальный пересчёт</h3>
+        <div class="step"><div class="step-num">5</div><div class="step-text">Карта изменилась (новая стена). Обновляем $rhs$ только для соседей изменённых клеток.</div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-text">Помечаем эти узлы как inconsistent, добавляем в очередь.</div></div>
+        <div class="step"><div class="step-num">7</div><div class="step-text">Запускаем ComputeShortestPath() — она обновит только «волну» от изменений, не трогая остальных.</div></div>
+
+        <!-- ============ ВИЗУАЛЬНЫЙ ПРИМЕР ============ -->
+        <h2>Визуальный пример</h2>
+
+        <p>Карта 5×5. S(0,0) → G(4,4), стена на (2,1) и (2,2). LPA* ищет от старта к цели.</p>
+
+        <h3>Фаза 1: первый поиск</h3>
+        <p>g-значения от старта (расстояние от S до каждой клетки кратчайшим путём):</p>
+
+        <div class="grid">
+            <div>
+                <p style="text-align:center;font-size:.9em;color:var(--text2);margin-bottom:6px">g-значения + rhs (все consistent)</p>
+                <div class="grid-viz">
+                    <!-- Row 0: g values from start -->
+                    <div class="cell start path consistent"><div class="lbl">S</div><div class="vals">g=0<br>rhs=0</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=1<br>rhs=1</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=2<br>rhs=2</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=3<br>rhs=3</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=4<br>rhs=4</div></div>
+                    <!-- Row 1 -->
+                    <div class="cell explored consistent path"><div class="vals">g=1<br>rhs=1</div></div>
+                    <div class="cell explored consistent path"><div class="vals">g=2<br>rhs=2</div></div>
+                    <div class="cell wall"><div class="lbl">▓</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=4<br>rhs=4</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=5<br>rhs=5</div></div>
+                    <!-- Row 2 -->
+                    <div class="cell explored consistent"><div class="vals">g=2<br>rhs=2</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=3<br>rhs=3</div></div>
+                    <div class="cell wall"><div class="lbl">▓</div></div>
+                    <div class="cell explored consistent path"><div class="vals">g=5<br>rhs=5</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=6<br>rhs=6</div></div>
+                    <!-- Row 3 -->
+                    <div class="cell explored consistent"><div class="vals">g=3<br>rhs=3</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=4<br>rhs=4</div></div>
+                    <div class="cell explored consistent path"><div class="vals">g=3<br>rhs=3</div></div>
+                    <div class="cell explored consistent path"><div class="vals">g=4<br>rhs=4</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=5<br>rhs=5</div></div>
+                    <!-- Row 4 -->
+                    <div class="cell explored consistent"><div class="vals">g=4<br>rhs=4</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=5<br>rhs=5</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=4<br>rhs=4</div></div>
+                    <div class="cell explored consistent path"><div class="vals">g=5<br>rhs=5</div></div>
+                    <div class="cell goal consistent path"><div class="lbl">G</div><div class="vals">g=6<br>rhs=6</div></div>
+                </div>
+            </div>
+            <div>
+                <p style="text-align:center;font-size:.9em;color:var(--text2);margin-bottom:6px">Чистый путь (фаза 1)</p>
+                <div style="position:relative">
+                    <div class="grid-viz">
+                        <div class="cell start path"><div class="lbl">S</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell wall"><div class="lbl">▓</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell wall"><div class="lbl">▓</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell goal path"><div class="lbl">G</div></div>
+                    </div>
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
+                        <polyline points="10,10 10,30 30,30 30,50 30,70 50,70 70,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <h3>Фаза 2: появилась новая стена на (1,2)</h3>
+        <p>Стена перекрывает часть пути. LPA* обновляет только <strong>4 узла</strong> — соседей новой стены. Остальные 20 клеток остаются нетронутыми.</p>
+
+        <div class="grid">
+            <div>
+                <p style="text-align:center;font-size:.9em;color:var(--text2);margin-bottom:6px">После изменения (оранжевые = пересчитаны)</p>
+                <div class="grid-viz">
+                    <!-- Row 0 -->
+                    <div class="cell start path consistent"><div class="lbl">S</div><div class="vals">g=0</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=1</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=2</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=3</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=4</div></div>
+                    <!-- Row 1 -->
+                    <div class="cell explored consistent path"><div class="vals">g=1</div></div>
+                    <div class="cell changed"><div class="vals">g=2<br><b>rhs=2</b></div></div>
+                    <div class="cell wall"><div class="lbl">▓</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=4</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=5</div></div>
+                    <!-- Row 2 -->
+                    <div class="cell explored consistent path"><div class="vals">g=2</div></div>
+                    <div class="cell changed"><div class="vals">g=3<br><b>rhs=3</b></div></div>
+                    <div class="cell wall"><div class="lbl">▓</div></div>
+                    <div class="cell changed"><div class="vals">g=5<br><b>rhs=5</b></div></div>
+                    <div class="cell explored consistent"><div class="vals">g=6</div></div>
+                    <!-- Row 3 -->
+                    <div class="cell explored consistent path"><div class="vals">g=3</div></div>
+                    <div class="cell changed"><div class="vals">g=4<br><b>rhs=4</b></div></div>
+                    <div class="cell newwall"><div class="lbl">▓ new</div></div>
+                    <div class="cell explored consistent path"><div class="vals">g=4</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=5</div></div>
+                    <!-- Row 4 -->
+                    <div class="cell explored consistent"><div class="vals">g=4</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=5</div></div>
+                    <div class="cell explored consistent"><div class="vals">g=4</div></div>
+                    <div class="cell explored consistent path"><div class="vals">g=5</div></div>
+                    <div class="cell goal consistent path"><div class="lbl">G</div><div class="vals">g=6</div></div>
+                </div>
+            </div>
+            <div>
+                <p style="text-align:center;font-size:.9em;color:var(--text2);margin-bottom:6px">Новый путь (обход через col 0)</p>
+                <div style="position:relative">
+                    <div class="grid-viz">
+                        <div class="cell start path"><div class="lbl">S</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell wall"><div class="lbl">▓</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell wall"><div class="lbl">▓</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell newwall"><div class="lbl">▓</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell"><div class="vals">&nbsp;</div></div>
+                        <div class="cell path"><div class="vals">&nbsp;</div></div>
+                        <div class="cell goal path"><div class="lbl">G</div></div>
+                    </div>
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
+                        <polyline points="10,10 10,30 10,50 10,70 50,70 70,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-legend">
+            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:var(--accent)"></span> Старт</span>
+            <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:var(--accent2)"></span> Цель</span>
+            <span><span class="dot" style="border-color:var(--green)"></span> Consistent</span>
+            <span><span class="dot" style="background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.4)"></span> Пересчитан</span>
+            <span><span class="dot" style="background:rgba(248,113,113,.3);border-color:rgba(248,113,113,.6)"></span> Новая стена</span>
+        </div>
+
+        <div class="card success">
+            <p><strong>Эффективность:</strong> при изменении 1 клетки LPA* пересчитывает 4 узла из 25. A* пересчитал бы все 25. Чем больше карта, тем больше выигрыш.</p>
+        </div>
+
+        <!-- ============ LPA* vs D* Lite ============ -->
+        <h2>LPA* vs D* Lite</h2>
+
+        <div class="card highlight">
+            <p>D* Lite = LPA* «наоборот». Оба используют g/rhs, оба инкрементальные. Но:</p>
+            <table>
+                <tr><th>Аспект</th><th>LPA*</th><th>D* Lite</th></tr>
+                <tr>
+                    <td>Направление поиска</td>
+                    <td>Старт → Цель</td>
+                    <td>Цель → Старт</td>
+                </tr>
+                <tr>
+                    <td>Когда полезен</td>
+                    <td>Старт фиксирован, карта меняется</td>
+                    <td>Робот движется, карта меняется</td>
+                </tr>
+                <tr>
+                    <td>Кто обновляет путь</td>
+                    <td>Внешний наблюдатель (e.g. сервер)</td>
+                    <td>Сам робот на ходу</td>
+                </tr>
+                <tr>
+                    <td>Применение в ROS2</td>
+                    <td>Статический планировщик с апдейтами карты</td>
+                    <td>Nav2 planner для мобильного робота</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ============ PSEUDOCODE ============ -->
+        <h2>Псевдокод</h2>
+
+<pre>
+<span style="color:var(--accent)">function</span> Initialize():
+    <span style="color:var(--accent)">for all</span> s ∈ S:
+        g(s) ← ∞;  rhs(s) ← ∞
+    rhs(s_start) ← 0
+    U.insert(s_start, CalcKey(s_start))
+
+<span style="color:var(--accent)">function</span> CalcKey(s):
+    <span style="color:var(--accent)">return</span> [min(g(s), rhs(s)) + h(s, s_goal),  min(g(s), rhs(s))]
+
+<span style="color:var(--accent)">function</span> UpdateVertex(u):
+    <span style="color:var(--accent)">if</span> u ≠ s_start:
+        rhs(u) ← min over predecessors s': g(s') + c(s', u)
+    <span style="color:var(--accent)">if</span> u ∈ U: U.remove(u)
+    <span style="color:var(--accent)">if</span> g(u) ≠ rhs(u): U.insert(u, CalcKey(u))
+
+<span style="color:var(--accent)">function</span> ComputeShortestPath():
+    <span style="color:var(--accent)">while</span> U.topKey() < CalcKey(s_goal) <span style="color:var(--accent)">or</span> rhs(s_goal) ≠ g(s_goal):
+        u ← U.pop()
+        <span style="color:var(--accent)">if</span> g(u) > rhs(u):        <span style="color:var(--text2)">// overconsistent</span>
+            g(u) ← rhs(u)
+            <span style="color:var(--accent)">for all</span> s ∈ Succ(u): UpdateVertex(s)
+        <span style="color:var(--accent)">else</span>:                     <span style="color:var(--text2)">// underconsistent</span>
+            g(u) ← ∞
+            <span style="color:var(--accent)">for all</span> s ∈ Succ(u) ∪ {u}: UpdateVertex(s)
+
+<span style="color:var(--accent)">function</span> Main():
+    Initialize()
+    ComputeShortestPath()      <span style="color:var(--text2)">// первый поиск</span>
+    <span style="color:var(--accent)">while</span> карта меняется:
+        <span style="color:var(--accent)">for</span> каждого изменённого ребра (u, v):
+            обнови c(u, v)
+            UpdateVertex(v)
+        ComputeShortestPath()   <span style="color:var(--text2)">// инкрементальный пересчёт</span>
+</pre>
+
+        <!-- ============ C++ ROS2 ============ -->
+        <h2>Реализация в C++ (ROS2)</h2>
+
+        <p>Основные структуры и функция инкрементального обновления. Остальной код A* переиспользуется.</p>
+
+<pre>
+<span style="color:var(--text2)">// --- lpa_star.hpp ---</span>
+<span style="color:var(--accent)">#include</span> &lt;unordered_map&gt;
+<span style="color:var(--accent)">#include</span> &lt;queue&gt;
+
+<span style="color:var(--accent)">struct</span> LPANode {
+    <span style="color:var(--accent2)">int</span> x, y;
+    <span style="color:var(--accent2)">double</span> g = 1e9, rhs = 1e9;
+    std::pair&lt;<span style="color:var(--accent2)">double</span>,<span style="color:var(--accent2)">double</span>&gt; key() <span style="color:var(--accent)">const</span> {
+        <span style="color:var(--accent2)">double</span> m = std::min(g, rhs);
+        <span style="color:var(--accent)">return</span> {m + heuristic(x, y, gx, gy), m};
+    }
+};
+
+<span style="color:var(--accent2)">void</span> update_vertex(LPANode&amp; u) {
+    <span style="color:var(--accent)">if</span> (u.x != sx || u.y != sy) {
+        u.rhs = 1e9;
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; [nx, ny] : neighbors(u.x, u.y)) {
+            <span style="color:var(--accent)">if</span> (!walkable(nx, ny)) <span style="color:var(--accent)">continue</span>;
+            <span style="color:var(--accent2)">double</span> cost = nodes[{nx,ny}].g + edge_cost(nx,ny,u.x,u.y);
+            u.rhs = std::min(u.rhs, cost);
+        }
+    }
+    open_list.erase(&amp;u);  <span style="color:var(--text2)">// удалить если есть</span>
+    <span style="color:var(--accent)">if</span> (u.g != u.rhs)
+        open_list.insert(&amp;u, u.key());
+}
+
+<span style="color:var(--text2)">// При обнаружении новой стены на (wx, wy):</span>
+<span style="color:var(--accent2)">void</span> on_wall_added(<span style="color:var(--accent2)">int</span> wx, <span style="color:var(--accent2)">int</span> wy) {
+    grid[wy][wx] = WALL;
+    <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; [nx, ny] : neighbors(wx, wy)) {
+        update_vertex(nodes[{nx, ny}]);  <span style="color:var(--text2)">// только соседи!</span>
+    }
+    compute_shortest_path();  <span style="color:var(--text2)">// инкрементально</span>
+}
+</pre>
+
+        <!-- ============ СЛОЖНОСТЬ ============ -->
+        <h2>Сложность</h2>
+
+        <table>
+            <tr><th>Метрика</th><th>Значение</th><th>Что это значит</th></tr>
+            <tr>
+                <td>Первый поиск</td>
+                <td style="white-space:nowrap">$O(V \log V + E)$</td>
+                <td>Как A* — полный поиск от старта до цели</td>
+            </tr>
+            <tr>
+                <td>Инкрементальный</td>
+                <td style="white-space:nowrap">$O(\Delta \log \Delta)$</td>
+                <td>$\Delta$ = число затронутых узлов. Обычно $\Delta \ll V$</td>
+            </tr>
+            <tr>
+                <td>Память</td>
+                <td style="white-space:nowrap">$O(V)$</td>
+                <td>g и rhs для каждого узла + очередь</td>
+            </tr>
+        </table>
+
+        <!-- ============ СРАВНЕНИЕ ============ -->
+        <h2>Сравнение</h2>
+
+        <table>
+            <tr><th>Критерий</th><th>Что это значит</th><th>A*</th><th>LPA*</th><th>D* Lite</th></tr>
+            <tr>
+                <td>Оптимальность</td>
+                <td>Кратчайший путь гарантирован</td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag green">Да</span></td>
+            </tr>
+            <tr>
+                <td>Инкрементальный</td>
+                <td>Пересчитывает только изменения</td>
+                <td><span class="tag orange">Нет</span></td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag green">Да</span></td>
+            </tr>
+            <tr>
+                <td>Направление</td>
+                <td>Откуда куда ведёт поиск</td>
+                <td>S → G</td>
+                <td>S → G</td>
+                <td>G → S</td>
+            </tr>
+            <tr>
+                <td>Движущийся робот</td>
+                <td>Обновляет путь при движении</td>
+                <td><span class="tag orange">Нет</span></td>
+                <td><span class="tag orange">Нет</span></td>
+                <td><span class="tag green">Да</span></td>
+            </tr>
+            <tr>
+                <td>Память</td>
+                <td>Дополнительные данные на узел</td>
+                <td>g, f, parent</td>
+                <td>g, rhs, parent</td>
+                <td>g, rhs, parent</td>
+            </tr>
+        </table>
+
+        <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
+        <h2>Когда использовать</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <p><strong>Идеально для:</strong></p>
+                <ul>
+                    <li>Централизованный планировщик (сервер знает всю карту)</li>
+                    <li>Карта обновляется, но старт фиксирован</li>
+                    <li>Частые мелкие изменения (строительство, блокировка дорог)</li>
+                    <li>Серверная маршрутизация для нескольких роботов</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <p><strong>Лучше выбрать D* Lite, если:</strong></p>
+                <ul>
+                    <li>Робот движется и обнаруживает препятствия на ходу</li>
+                    <li>Старт меняется каждый шаг (текущая позиция робота)</li>
+                    <li>Нужна реакция в реальном времени на сенсоры</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="algo-7-jps.html">← 7. Jump Point Search</a>
+            <a href="algo-9-hybrid-astar.html">9. Hybrid A* →</a>
+        </div>
+    </div>
+</body>
+</html>

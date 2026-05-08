@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D* Lite — Подробный разбор</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8em;font-weight:600;margin:2px 4px 2px 0}
+        .tag.blue{background:rgba(108,158,255,.15);color:var(--accent)}
+        .tag.green{background:rgba(74,222,128,.15);color:var(--green)}
+        .tag.orange{background:rgba(251,146,60,.15);color:var(--orange)}
+        .tag.purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.15em}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media(max-width:700px){.grid{grid-template-columns:1fr}}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .katex{font-size:1.1em}
+        .katex-display{margin:12px 0}
+        .grid-viz{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:620px;margin:16px auto}
+        .grid-viz .cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;font-size:.75em;line-height:1.35;min-height:72px;display:flex;flex-direction:column;justify-content:center;position:relative}
+        .grid-viz .cell.wall{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)}
+        .grid-viz .cell.path{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);border-width:2px}
+        .grid-viz .cell.explored{background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)}
+        .grid-viz .cell.start{background:rgba(108,158,255,.2);border-color:var(--accent);border-width:2px}
+        .grid-viz .cell.goal{background:rgba(167,139,250,.2);border-color:var(--accent2);border-width:2px}
+        .grid-viz .cell .lbl{font-weight:700;font-size:1.05em;margin-bottom:2px}
+        .grid-viz .cell .vals{color:var(--text2);font-family:'Courier New',monospace;font-size:.85em}
+        .grid-viz .cell .vals b{color:var(--accent)}
+        .grid-viz .cell .ord{position:absolute;top:2px;right:5px;font-size:.7em;color:var(--orange);font-weight:700}
+        .grid-viz .cell.unvisited{opacity:.45}
+        .grid-viz .cell.changed{background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.4);border-width:2px}
+        .grid-viz .cell.newwall{background:rgba(248,113,113,.3);border-color:rgba(248,113,113,.6);border-width:2px;animation:pulse 1.5s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+        .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
+        .grid-legend span{display:flex;align-items:center;gap:6px}
+        .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Основная документация</a>
+        <div class="sep"></div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html" class="active">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>D* Lite</h1>
+        <p class="subtitle">Алгоритм №6 — навигация в меняющемся мире</p>
+
+        <!-- ============ СУТЬ ============ -->
+        <h2>О чём вообще речь</h2>
+
+        <p>Все алгоритмы до этого предполагали, что карта <strong>статична</strong> — нарисовали стены, запустили поиск, нашли путь, поехали. Но реальный мир так не работает. Робот едет по коридору и вдруг — <strong>дверь закрылась</strong>. Или человек встал на пути. Или обвалился потолок (ладно, это для марсоходов).</p>
+
+        <p>Что делает A*? Весь путь — в мусорку, пересчитай заново. На маленькой карте это терпимо, но на карте 1000×1000 полный пересчёт занимает сотни миллисекунд. Робот стоит и ждёт.</p>
+
+        <p>D* Lite умеет <strong>пересчитывать путь инкрементально</strong> — обновляет только ту часть, которая затронута изменением. Дверь закрылась? Пересчитаем 20 клеток вокруг двери вместо 100 000 клеток всей карты.</p>
+
+        <div class="analogy">Представь GPS-навигатор в машине. Ты едешь по маршруту, и вдруг дорога перекрыта. Навигатор не пересчитывает маршрут с нуля от дома — он только перестраивает кусок пути от текущей позиции. Это и есть D* Lite: «перепланируй минимум, используя то, что уже знаешь».</div>
+
+        <div class="card highlight">
+            <strong>Главная идея:</strong> D* Lite ищет путь <strong>от цели к роботу</strong> (задом наперёд). Когда карта меняется около робота — нужно обновить только несколько узлов рядом с роботом, а не весь путь.
+        </div>
+
+        <!-- ============ КЛЮЧЕВАЯ ИНВЕРСИЯ ============ -->
+        <h2>Почему «задом наперёд»?</h2>
+
+        <p>Это самый контринтуитивный момент D* Lite. A* ищет путь <strong>от робота к цели</strong>. D* Lite — <strong>от цели к роботу</strong>. Зачем?</p>
+
+        <p>Подумай: робот движется вперёд, и изменения на карте происходят <strong>рядом с роботом</strong> (он видит новые препятствия своими сенсорами). Если дерево поиска растёт от цели — то изменения затрагивают только «листья» дерева (рядом с роботом), а не «корень» (цель). Обновить листья дешёво. Обновить корень — дорого.</p>
+
+        <div class="card">
+            <strong>Аналогия:</strong> представь дерево (настоящее). Если ветер обломит пару веточек на краю кроны — дерево в целом не изменилось. Но если подрубить ствол (корень) — упадёт всё. D* Lite ставит «корень» на цель, а «веточки» — у робота. Изменения карты = обломанные веточки, а не подрубленный ствол.
+        </div>
+
+        <!-- ============ МАТЕМАТИКА ============ -->
+        <h2>Математика</h2>
+
+        <p>D* Lite основан на LPA* (алгоритм №8), который, в свою очередь, основан на Dijkstra. Здесь два ключевых значения для каждого узла:</p>
+
+        <h3>1. Два типа стоимости: g и rhs</h3>
+
+        <div class="formula-block">
+            $$g(s) \text{ — текущая оценка расстояния от цели до } s$$
+        </div>
+        <div class="formula-block">
+            $$\text{rhs}(s) = \begin{cases} 0 & \text{если } s = \text{goal} \\ \min_{s' \in \text{succ}(s)} \left[ g(s') + c(s, s') \right] & \text{иначе} \end{cases}$$
+        </div>
+
+        <p>$g(s)$ — это то, что мы <em>думаем</em> о расстоянии. $\text{rhs}(s)$ (right-hand side) — это то, что расстояние <em>должно быть</em> на основе соседей. Когда $g(s) = \text{rhs}(s)$ — узел <strong>согласован</strong> (consistent). Когда не равны — узел нужно обновить.</p>
+
+        <div class="analogy">Представь бухгалтерию. g(s) — это «записано в журнале». rhs(s) — это «посчитано заново». Если совпадает — порядок. Если не совпадает — нужна ревизия. D* Lite делает ревизию только для «несовпадающих» записей, а не для всей бухгалтерии.</div>
+
+        <h3>2. Ключ приоритета</h3>
+
+        <p>Вместо простого $f(n)$ D* Lite использует двухкомпонентный ключ:</p>
+
+        <div class="formula-block">
+            $$\text{key}(s) = \left[\; \min(g(s), \text{rhs}(s)) + h(s_\text{start}, s) + k_m, \;\; \min(g(s), \text{rhs}(s)) \;\right]$$
+        </div>
+
+        <p>$k_m$ — накопленная поправка за перемещение робота. $h(s_\text{start}, s)$ — эвристика (расстояние от текущей позиции робота до $s$). Двухкомпонентный ключ нужен для корректного упорядочивания в priority queue.</p>
+
+        <h3>3. Состояния узлов</h3>
+
+        <table>
+            <tr><th>Состояние</th><th>Условие</th><th>Что это значит</th></tr>
+            <tr>
+                <td><span class="tag green">Consistent</span></td>
+                <td style="white-space:nowrap">$g(s) = \text{rhs}(s)$</td>
+                <td>Узел актуален, пересчёт не нужен</td>
+            </tr>
+            <tr>
+                <td><span class="tag orange">Overconsistent</span></td>
+                <td style="white-space:nowrap">$g(s) > \text{rhs}(s)$</td>
+                <td>Нашёлся более короткий путь — нужно уменьшить g(s)</td>
+            </tr>
+            <tr>
+                <td><span class="tag purple">Underconsistent</span></td>
+                <td style="white-space:nowrap">$g(s) < \text{rhs}(s)$</td>
+                <td>Путь стал длиннее (препятствие появилось) — нужно увеличить g(s)</td>
+            </tr>
+        </table>
+
+        <!-- ============ ПО ШАГАМ ============ -->
+        <h2>Как работает: пошагово</h2>
+
+        <h3>Фаза 1: Первоначальный поиск</h3>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Устанавливаем $g(\text{goal}) = \infty$, $\text{rhs}(\text{goal}) = 0$. Все остальные узлы: $g = \text{rhs} = \infty$.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Добавляем цель в priority queue (она единственная «несогласованная» — $g \neq \text{rhs}$).</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Запускаем <code>ComputeShortestPath()</code> — обрабатываем узлы из очереди, пока стартовый узел не станет согласованным. Это похоже на обратный Dijkstra.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">Путь найден. Робот начинает движение по пути (от старта к цели, следуя по минимальным g-значениям соседей).</div>
+        </div>
+
+        <h3>Фаза 2: Обновление при изменении карты</h3>
+
+        <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-text">Робот движется и сенсоры замечают изменение: новое препятствие или освободившаяся клетка.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-text">Для каждой изменённой клетки пересчитываем $\text{rhs}$ и, если $g \neq \text{rhs}$, добавляем в priority queue.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-text">Обновляем $k_m$ (поправку за перемещение робота).</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">8</div>
+            <div class="step-text">Снова запускаем <code>ComputeShortestPath()</code> — но теперь она обрабатывает <strong>только несогласованные узлы</strong> (обычно их мало). Возвращаемся к шагу 5.</div>
+        </div>
+
+        <!-- ============ ВИЗУАЛИЗАЦИЯ ============ -->
+        <h2>Визуальный пример</h2>
+
+        <p>Смотри в два этапа: первоначальный путь и перепланирование после появления нового препятствия.</p>
+
+        <h3>Этап 1: Первоначальный путь (как Dijkstra от цели)</h3>
+
+        <div class="grid-viz">
+            <!-- Row 0 -->
+            <div class="cell explored"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=3</span></div>
+            <div class="cell explored"><span class="ord">#4</span><span class="lbl">·</span><span class="vals">g=2</span></div>
+            <div class="cell explored path"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1</span></div>
+            <div class="cell goal path"><span class="ord">#1</span><span class="lbl">G</span><span class="vals">g=0</span></div>
+            <!-- Row 1 -->
+            <div class="cell explored"><span class="ord">#9</span><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell explored"><span class="ord">#7</span><span class="lbl">·</span><span class="vals">g=3</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored path"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1.4</span></div>
+            <div class="cell explored"><span class="ord">#5</span><span class="lbl">·</span><span class="vals">g=1</span></div>
+            <!-- Row 2 -->
+            <div class="cell explored"><span class="ord">#12</span><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell explored"><span class="ord">#10</span><span class="lbl">·</span><span class="vals">g=3</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="ord">#11</span><span class="lbl">·</span><span class="vals">g=2.4</span></div>
+            <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2</span></div>
+            <!-- Row 3 -->
+            <div class="cell explored path"><span class="ord">#14</span><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell explored"><span class="ord">#13</span><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="ord">#15</span><span class="lbl">·</span><span class="vals">g=3.4</span></div>
+            <div class="cell explored"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=3</span></div>
+            <!-- Row 4 -->
+            <div class="cell start path"><span class="lbl">S</span><span class="vals">g=5</span></div>
+            <div class="cell explored path"><span class="lbl">·</span><span class="vals">g=5</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4</span></div>
+        </div>
+
+        <p style="text-align:center;color:var(--text2);font-size:.9em">Поиск идёт <strong>от цели (G) к старту (S)</strong>. Значения g — расстояние до цели.</p>
+
+        <h3>Этап 2: Появилось новое препятствие! Перепланирование</h3>
+
+        <div class="grid-viz">
+            <!-- Row 0 -->
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell explored path"><span class="lbl">·</span><span class="vals">g=3</span></div>
+            <div class="cell explored path"><span class="lbl">·</span><span class="vals">g=2</span></div>
+            <div class="cell explored path"><span class="lbl">·</span><span class="vals">g=1</span></div>
+            <div class="cell goal path"><span class="lbl">G</span><span class="vals">g=0</span></div>
+            <!-- Row 1 -->
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell explored path"><span class="lbl">·</span><span class="vals">g=3</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=1.4</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=1</span></div>
+            <!-- Row 2 -->
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=3</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=2.4</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=2</span></div>
+            <!-- Row 3 -->
+            <div class="cell changed"><span class="ord">fix</span><span class="lbl">·</span><span class="vals">g=4→5</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=3.4</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=3</span></div>
+            <!-- Row 4 -->
+            <div class="cell start path"><span class="lbl">S</span><span class="vals">g=5→6</span></div>
+            <div class="cell newwall"><span class="lbl">▓ NEW</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4</span></div>
+        </div>
+
+        <div class="grid-legend">
+            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:#6c9eff"></span> Старт</span>
+            <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:#a78bfa"></span> Цель</span>
+            <span><span class="dot" style="background:rgba(74,222,128,.12);border-color:#4ade80"></span> Путь</span>
+            <span><span class="dot" style="background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.4)"></span> Обновлённые узлы</span>
+            <span><span class="dot" style="background:rgba(248,113,113,.3);border-color:rgba(248,113,113,.6)"></span> Новое препятствие</span>
+        </div>
+
+        <div class="card">
+            <strong>Что произошло:</strong>
+            <ol>
+                <li>Робот начал движение из S вверх-вправо по зелёному пути</li>
+                <li>Клетка (1,4) оказалась занята — <strong>новое препятствие</strong> (мигающая красная)</li>
+                <li>D* Lite обновил <strong>только 2 узла</strong>: (0,3) и S. Их g-значения выросли</li>
+                <li>Новый путь: S идёт вверх через (0,3) → (1,1) → (1,0) → (2,0) → ... → G</li>
+                <li>Большая часть карты <strong>не пересчитывалась</strong> — значения g не изменились</li>
+            </ol>
+        </div>
+
+        <div class="card warn">
+            <strong>A* пересчитал бы все ~20 узлов заново.</strong> D* Lite — только 2. На карте 1000×1000 это разница между 1 мс и 500 мс. Для робота, движущегося со скоростью 1 м/с — это разница между плавным объездом и резкой остановкой.
+        </div>
+
+        <!-- ============ ПСЕВДОКОД ============ -->
+        <h2>Псевдокод (упрощённый)</h2>
+
+<pre>
+D_Star_Lite():
+    // Инициализация
+    for all s: g[s] = rhs[s] = INF
+    rhs[goal] = 0
+    U.insert(goal, calc_key(goal))
+    k_m = 0
+    s_last = s_start
+
+    ComputeShortestPath()              // первоначальный поиск
+
+    while s_start != goal:
+        s_start = move_robot()         // робот двигается
+
+        if map_changed():
+            for each changed edge (u, v):
+                update_cost(u, v)      // обновить стоимость ребра
+                UpdateVertex(u)        // пересчитать rhs(u)
+
+            k_m += h(s_last, s_start)  // поправка за перемещение
+            s_last = s_start
+            ComputeShortestPath()      // инкрементальный пересчёт
+
+
+ComputeShortestPath():
+    while U.top_key() < calc_key(s_start) OR rhs[s_start] != g[s_start]:
+        u = U.pop()
+
+        if g[u] > rhs[u]:             // overconsistent
+            g[u] = rhs[u]             // уменьшаем g
+            for each predecessor s of u:
+                UpdateVertex(s)
+
+        else:                          // underconsistent
+            g[u] = INF                // сбрасываем g
+            UpdateVertex(u)
+            for each predecessor s of u:
+                UpdateVertex(s)
+
+
+UpdateVertex(u):
+    if u != goal:
+        rhs[u] = min over successors s' of [g[s'] + cost(u, s')]
+
+    if u in U: U.remove(u)
+    if g[u] != rhs[u]: U.insert(u, calc_key(u))
+</pre>
+
+        <div class="card highlight">
+            <strong>Ключевые идеи в коде:</strong>
+            <ul>
+                <li><code>ComputeShortestPath()</code> — обрабатывает только несогласованные узлы ($g \neq \text{rhs}$)</li>
+                <li>При первом вызове — полный поиск (как Dijkstra от цели)</li>
+                <li>При последующих вызовах — только обновление затронутых узлов</li>
+                <li><code>k_m</code> — компенсирует перемещение робота, чтобы не пересчитывать ключи всех узлов</li>
+                <li>Overconsistent ($g > \text{rhs}$) — путь стал короче, уменьшаем g</li>
+                <li>Underconsistent ($g < \text{rhs}$) — путь стал длиннее (новое препятствие), сбрасываем g</li>
+            </ul>
+        </div>
+
+        <!-- ============ СЛОЖНОСТЬ ============ -->
+        <h2>Сложность</h2>
+
+        <table>
+            <tr><th>Метрика</th><th style="white-space:nowrap">Значение</th><th>Пояснение</th></tr>
+            <tr>
+                <td>Первый поиск</td>
+                <td style="white-space:nowrap">$O(N \log N)$</td>
+                <td>Как Dijkstra/A* — полный обход графа</td>
+            </tr>
+            <tr>
+                <td>Перепланирование</td>
+                <td style="white-space:nowrap">$O(k \log k)$</td>
+                <td>$k$ — число затронутых узлов. Обычно $k \ll N$. Это главный выигрыш!</td>
+            </tr>
+            <tr>
+                <td>Память</td>
+                <td style="white-space:nowrap">$O(N)$</td>
+                <td>g, rhs, key для каждого узла + priority queue</td>
+            </tr>
+            <tr>
+                <td>Полнота</td>
+                <td><span class="tag green">Полный</span></td>
+                <td>Находит путь, если он существует</td>
+            </tr>
+            <tr>
+                <td>Оптимальность</td>
+                <td><span class="tag green">Оптимален</span></td>
+                <td>Кратчайший путь гарантирован (как Dijkstra)</td>
+            </tr>
+        </table>
+
+        <!-- ============ C++ ROS2 ============ -->
+        <h2>Интеграция с ROS2 (C++)</h2>
+
+        <p>D* Lite идеально вписывается в ROS2-архитектуру: нода подписана на <code>/map</code> и при каждом обновлении карты инкрементально пересчитывает путь:</p>
+
+<pre>
+#include &lt;rclcpp/rclcpp.hpp&gt;
+#include &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
+#include &lt;nav_msgs/msg/path.hpp&gt;
+#include &lt;queue&gt;
+#include &lt;unordered_map&gt;
+
+class DStarLitePlanner : public rclcpp::Node {
+public:
+    DStarLitePlanner() : Node("dstar_lite_planner") {
+        map_sub_ = this-&gt;create_subscription&lt;nav_msgs::msg::OccupancyGrid&gt;(
+            "/map", 10, [this](nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+                if (!initialized_) {
+                    initialize(msg);
+                    compute_shortest_path();
+                    initialized_ = true;
+                } else {
+                    // Инкрементальное обновление!
+                    auto changes = detect_changes(old_map_, msg);
+                    if (!changes.empty()) {
+                        for (auto [x, y] : changes) {
+                            update_vertex(x, y);
+                            for (auto [nx, ny] : neighbors(x, y))
+                                update_vertex(nx, ny);
+                        }
+                        k_m_ += heuristic(s_last_, s_start_);
+                        s_last_ = s_start_;
+                        compute_shortest_path();  // пересчитает МАЛО
+                    }
+                    old_map_ = msg;
+                }
+                publish_path();
+            });
+
+        path_pub_ = this-&gt;create_publisher&lt;nav_msgs::msg::Path&gt;("/planned_path", 10);
+    }
+
+private:
+    void compute_shortest_path() {
+        while (!U_.empty() &amp;&amp;
+               (U_.top().key &lt; calc_key(s_start_) ||
+                rhs_[s_start_] != g_[s_start_])) {
+
+            auto u = U_.pop();
+
+            if (g_[u] &gt; rhs_[u]) {
+                g_[u] = rhs_[u];  // overconsistent → fix
+                for (auto s : predecessors(u))
+                    update_vertex(s);
+            } else {
+                g_[u] = INF;      // underconsistent → reset
+                update_vertex(u);
+                for (auto s : predecessors(u))
+                    update_vertex(s);
+            }
+        }
+    }
+
+    void update_vertex(int x, int y) {
+        auto id = cell_id(x, y);
+        if (id != goal_id_) {
+            double min_rhs = INF;
+            for (auto [nx, ny] : successors(x, y)) {
+                double val = g_[cell_id(nx,ny)] + cost(x,y,nx,ny);
+                if (val &lt; min_rhs) min_rhs = val;
+            }
+            rhs_[id] = min_rhs;
+        }
+        U_.remove(id);
+        if (g_[id] != rhs_[id])
+            U_.insert(id, calc_key(id));
+    }
+
+    // ... (initialize, detect_changes, publish_path, heuristic, etc.)
+
+    bool initialized_ = false;
+    double k_m_ = 0;
+    // g_, rhs_ — hash maps: cell_id → double
+    // U_ — priority queue с двухкомпонентным ключом
+};
+</pre>
+
+        <div class="card">
+            <strong>Главное в ROS2-интеграции:</strong> при <em>каждом</em> обновлении <code>/map</code> (а это ~1-10 раз в секунду от SLAM) нода запускает <strong>инкрементальный</strong> пересчёт. Не полный A* каждый раз, а обновление только затронутых клеток. На практике это 1–5 мс вместо 50–500 мс.
+        </div>
+
+        <!-- ============ ПЛЮСЫ/МИНУСЫ ============ -->
+        <h2>Плюсы и минусы</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <h3 style="margin-top:0;color:var(--green)">Плюсы</h3>
+                <ul>
+                    <li><strong>Быстрое перепланирование</strong> — обновляет только затронутые узлы</li>
+                    <li>Оптимальный путь гарантирован</li>
+                    <li>Идеален для <strong>динамических сред</strong> (люди, двери, мебель)</li>
+                    <li>Стандарт в nav2 (ROS2 Navigation Stack)</li>
+                    <li>Работает с реалтайм-обновлениями карты от SLAM</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <h3 style="margin-top:0;color:var(--orange)">Минусы</h3>
+                <ul>
+                    <li><strong>Сложная реализация</strong> — g/rhs, двухкомпонентный ключ, k_m, overconsistent/underconsistent</li>
+                    <li>Первый поиск не быстрее A* (выигрыш только при перепланировании)</li>
+                    <li>Больше памяти — хранит g И rhs для каждого узла</li>
+                    <li>Priority queue с удалением — стандартная <code>std::priority_queue</code> не подходит (нужна своя или <code>std::set</code>)</li>
+                    <li>Отладка — сложно, состояния узлов неинтуитивны</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ СРАВНЕНИЕ ============ -->
+        <h2>Сравнение с другими алгоритмами</h2>
+
+        <table>
+            <tr>
+                <th>Критерий</th>
+                <th>Что это значит</th>
+                <th>A*</th>
+                <th>D* Lite</th>
+                <th>LPA*</th>
+            </tr>
+            <tr>
+                <td>Статическая карта</td>
+                <td style="font-size:.88em;color:var(--text2)">Карта не меняется после запуска</td>
+                <td><span class="tag green">Отлично</span></td>
+                <td><span class="tag blue">Так же</span></td>
+                <td><span class="tag blue">Так же</span></td>
+            </tr>
+            <tr>
+                <td>Динамическая карта</td>
+                <td style="font-size:.88em;color:var(--text2)">Карта меняется на ходу (препятствия появляются/исчезают)</td>
+                <td><span class="tag orange">Полный пересчёт</span></td>
+                <td><span class="tag green">Инкрементально</span></td>
+                <td><span class="tag green">Инкрементально</span></td>
+            </tr>
+            <tr>
+                <td>Робот движется</td>
+                <td style="font-size:.88em;color:var(--text2)">Робот перемещается и стартовая позиция меняется</td>
+                <td><span class="tag orange">Пересчёт</span></td>
+                <td><span class="tag green">Учитывает (k_m)</span></td>
+                <td><span class="tag orange">Не учитывает</span></td>
+            </tr>
+            <tr>
+                <td>Сложность кода</td>
+                <td style="font-size:.88em;color:var(--text2)">Насколько трудно реализовать корректно</td>
+                <td><span class="tag green">Простой</span></td>
+                <td><span class="tag orange">Сложный</span></td>
+                <td><span class="tag blue">Средний</span></td>
+            </tr>
+            <tr>
+                <td>Направление поиска</td>
+                <td style="font-size:.88em;color:var(--text2)">Откуда начинается обход графа</td>
+                <td><span class="tag blue">Старт → Цель</span></td>
+                <td><span class="tag purple">Цель → Старт</span></td>
+                <td><span class="tag blue">Старт → Цель</span></td>
+            </tr>
+        </table>
+
+        <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
+        <h2>Когда использовать D* Lite</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <h3 style="margin-top:0;color:var(--green)">Используй D* Lite, если:</h3>
+                <ul>
+                    <li>Карта <strong>часто меняется</strong> во время движения робота</li>
+                    <li>Нужно реагировать на новые препятствия <strong>в реальном времени</strong></li>
+                    <li>SLAM обновляет карту несколько раз в секунду</li>
+                    <li>Робот работает в среде с людьми, дверями, подвижными объектами</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <h3 style="margin-top:0;color:var(--orange)">НЕ используй D* Lite, если:</h3>
+                <ul>
+                    <li>Карта <strong>статична</strong> — A* проще и работает так же</li>
+                    <li>Нужен any-angle путь — D* Lite даёт сеточные пути (добавь Theta* поверх)</li>
+                    <li>Пространство многомерное — используй RRT/RRT*</li>
+                    <li>Сложность реализации пугает — начни с A* и добавляй по необходимости</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="algo-5-theta-star.html">← 5. Theta*</a>
+            <a href="algo-7-jps.html">7. Jump Point Search →</a>
+        </div>
+    </div>
+</body>
+</html>

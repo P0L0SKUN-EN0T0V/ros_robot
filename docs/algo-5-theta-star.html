@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theta* — Подробный разбор</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8em;font-weight:600;margin:2px 4px 2px 0}
+        .tag.blue{background:rgba(108,158,255,.15);color:var(--accent)}
+        .tag.green{background:rgba(74,222,128,.15);color:var(--green)}
+        .tag.orange{background:rgba(251,146,60,.15);color:var(--orange)}
+        .tag.purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.15em}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media(max-width:700px){.grid{grid-template-columns:1fr}}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .katex{font-size:1.1em}
+        .katex-display{margin:12px 0}
+        .grid-viz{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:620px;margin:16px auto}
+        .grid-viz .cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;font-size:.75em;line-height:1.35;min-height:72px;display:flex;flex-direction:column;justify-content:center;position:relative}
+        .grid-viz .cell.wall{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)}
+        .grid-viz .cell.path{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);border-width:2px}
+        .grid-viz .cell.explored{background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)}
+        .grid-viz .cell.start{background:rgba(108,158,255,.2);border-color:var(--accent);border-width:2px}
+        .grid-viz .cell.goal{background:rgba(167,139,250,.2);border-color:var(--accent2);border-width:2px}
+        .grid-viz .cell .lbl{font-weight:700;font-size:1.05em;margin-bottom:2px}
+        .grid-viz .cell .vals{color:var(--text2);font-family:'Courier New',monospace;font-size:.85em}
+        .grid-viz .cell .vals b{color:var(--accent)}
+        .grid-viz .cell .ord{position:absolute;top:2px;right:5px;font-size:.7em;color:var(--orange);font-weight:700}
+        .grid-viz .cell.unvisited{opacity:.45}
+        .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
+        .grid-legend span{display:flex;align-items:center;gap:6px}
+        .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
+        /* Theta*-specific: line-of-sight overlay */
+        .grid-overlay{position:relative;max-width:620px;margin:16px auto}
+        .grid-overlay svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Основная документация</a>
+        <div class="sep"></div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html" class="active">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Theta* — Any-Angle Path Planning</h1>
+        <p class="subtitle">Алгоритм №5 — A*, который умеет ходить не только по клеткам</p>
+
+        <!-- ============ СУТЬ ============ -->
+        <h2>О чём вообще речь</h2>
+
+        <p>У A* есть одна раздражающая проблема: путь всегда идёт <strong>по рёбрам сетки</strong> — горизонтально, вертикально или по диагонали (45°). Робот движется ступеньками, хотя мог бы просто пройти по прямой. Результат: путь длиннее, чем нужно, а робот делает кучу лишних поворотов.</p>
+
+        <p>Theta* решает это одним простым вопросом: <strong>«А видит ли родитель моего родителя меня напрямую?»</strong> Если да — зачем промежуточный узел? Рисуем прямую линию и срезаем угол.</p>
+
+        <div class="analogy">Представь, что ты идёшь по городу строго по тротуарам (A*). Дошёл до перекрёстка, повернул, дошёл до следующего, снова повернул. Но если посмотреть — через площадь можно было пройти напрямую по диагонали, срезав оба поворота. Theta* — это ты, который каждый раз оглядывается назад и спрашивает: «А я вижу тот перекрёсток, откуда пришёл? Может, мне срезать?»</div>
+
+        <div class="card highlight">
+            <strong>Theta* = A* + проверка прямой видимости (line-of-sight).</strong><br>
+            Всё остальное — та же сетка, та же эвристика, та же priority queue. Разница — один дополнительный <code>if</code> при обновлении узла.
+        </div>
+
+        <!-- ============ ПРОБЛЕМА A* ============ -->
+        <h2>Проблема A*: путь по ступенькам</h2>
+
+        <p>Посмотри на сетку 5×5 без препятствий. Нужно пройти от (0,0) до (4,4). A* пойдёт по диагонали — вроде неплохо. Но если цель не на диагонали — например, (0,0) → (4,2) — A* будет «лесенкой»: диагональ-диагональ-горизонталь-диагональ. Путь получается длиннее геометрически оптимального (прямой линии) на <strong>5–15%</strong>.</p>
+
+        <p>Theta* устраняет эту проблему. Узлы пути могут соединяться <em>любыми</em> прямыми линиями (any-angle), а не только рёбрами сетки. Результат — путь, который выглядит так, как будто его прокладывал человек, а не робот.</p>
+
+        <!-- ============ МАТЕМАТИКА ============ -->
+        <h2>Математика</h2>
+
+        <p>Theta* использует ту же формулу приоритета, что и A*:</p>
+
+        <div class="formula-block">
+            $$f(n) = g(n) + h(n)$$
+        </div>
+
+        <p>Но $g(n)$ может вычисляться <strong>двумя способами</strong> — и в этом вся магия:</p>
+
+        <h3>Путь 1: Через соседа (как в A*)</h3>
+
+        <div class="formula-block">
+            $$g_1(n) = g(\text{parent}(s)) + \text{dist}(\text{parent}(s),\; n)$$
+        </div>
+
+        <p>Здесь $s$ — текущий сосед, через которого мы пришли к $n$. Это стандартный A*-вариант: стоимость до родителя $s$ + расстояние от $s$ до $n$.</p>
+
+        <h3>Путь 2: Через «дедушку» (line-of-sight)</h3>
+
+        <div class="formula-block">
+            $$g_2(n) = g(\text{parent}(\text{parent}(s))) + \text{dist}(\text{parent}(\text{parent}(s)),\; n)$$
+        </div>
+
+        <p>А тут мы спрашиваем: <strong>вижу ли я «дедушку»</strong> — родителя моего родителя — напрямую? Если между нами нет препятствий (line-of-sight), то зачем промежуточный узел? Идём напрямую к «дедушке», путь короче.</p>
+
+        <div class="card">
+            <strong>Правило выбора:</strong><br>
+            Если <code>line_of_sight(parent(parent(s)), n)</code> = true <strong>и</strong> $g_2(n) < g_1(n)$:<br>
+            → используем Путь 2 (через «дедушку»), parent(n) = parent(parent(s))<br><br>
+            Иначе:<br>
+            → используем Путь 1 (стандартный A*), parent(n) = s
+        </div>
+
+        <h3>Проверка прямой видимости (Line-of-Sight)</h3>
+
+        <p>Ключевая операция Theta*. Проверяем, можно ли провести прямую линию от точки A до точки B, не задев ни одной занятой клетки. Используется алгоритм Брезенхема (тот же, что рисует линии на экране):</p>
+
+        <div class="formula-block">
+            $$\text{LineOfSight}(A, B) = \forall\, \text{cell} \in \text{Bresenham}(A, B): \;\text{cell} \neq \text{obstacle}$$
+        </div>
+
+        <p>Простым языком: проводим виртуальную линию от A до B, проверяем каждую клетку на пути. Если хоть одна занята — прямой видимости нет.</p>
+
+        <!-- ============ ПО ШАГАМ ============ -->
+        <h2>Как работает: пошагово</h2>
+
+        <p>Шаги почти идентичны A*. Единственное отличие — шаг 4:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Помещаем старт в open list, $g(\text{start}) = 0$.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Извлекаем узел с минимальным $f(n)$ из open list.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Если это цель — восстанавливаем путь по parent-ссылкам. <strong>Готово!</strong></div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text"><span style="color:var(--orange);font-weight:700">КЛЮЧЕВОЙ ШАГ:</span> Для каждого соседа $n$ текущего узла $s$:<br>
+            <strong>a)</strong> Проверяем line-of-sight от <code>parent(s)</code> до $n$.<br>
+            <strong>b)</strong> Если видимость есть и путь через <code>parent(s)</code> короче → устанавливаем <code>parent(n) = parent(s)</code> и $g(n)$ = путь через parent(s).<br>
+            <strong>c)</strong> Если видимости нет → стандартный A*: <code>parent(n) = s</code>, $g(n)$ = путь через s.<br>
+            <strong>d)</strong> Обновляем $f(n) = g(n) + h(n)$, добавляем в open list.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-text">Возвращаемся к шагу 2.</div>
+        </div>
+
+        <!-- ============ ВИЗУАЛИЗАЦИЯ ============ -->
+        <h2>Визуальный пример: A* vs Theta*</h2>
+
+        <p>Одна и та же карта 5×5, стена посередине. Смотри разницу в путях:</p>
+
+        <h3>A* — путь по рёбрам сетки</h3>
+
+        <div class="grid-viz">
+            <!-- Row 0 (top) -->
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell explored"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=2.8</span></div>
+            <div class="cell explored path"><span class="ord">#10</span><span class="lbl">·</span><span class="vals">g=3.8</span></div>
+            <div class="cell goal path"><span class="ord">#12</span><span class="lbl">G</span><span class="vals">g=4.8</span></div>
+            <!-- Row 1 -->
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell explored path"><span class="ord">#5</span><span class="lbl">·</span><span class="vals">g=1.4</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="ord">#11</span><span class="lbl">·</span><span class="vals">g=4.2</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <!-- Row 2 -->
+            <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
+            <div class="cell explored"><span class="ord">#4</span><span class="lbl">·</span><span class="vals">g=1.4</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="ord">#9</span><span class="lbl">·</span><span class="vals">g=3.8</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <!-- Row 3 -->
+            <div class="cell explored path"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
+            <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2.0</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <!-- Row 4 (bottom) -->
+            <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0</span></div>
+            <div class="cell explored"><span class="ord">#7</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+        </div>
+
+        <p style="text-align:center;color:var(--text2);font-size:.9em">A*: путь S → (0,3) → (1,1) ↗ (2,0) → (3,0) → G. Ступеньки и повороты. <strong>Длина ≈ 4.8</strong></p>
+
+        <h3>Theta* — путь по прямым линиям</h3>
+
+        <div class="grid-viz">
+            <!-- Row 0 (top) -->
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell explored"><span class="ord">#7</span><span class="lbl">·</span><span class="vals">g=2.8</span></div>
+            <div class="cell explored path"><span class="ord">#9</span><span class="lbl">⟋</span><span class="vals">g=3.6</span></div>
+            <div class="cell goal path"><span class="ord">#10</span><span class="lbl">G</span><span class="vals">g=4.5</span></div>
+            <!-- Row 1 -->
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell explored path"><span class="ord">#4</span><span class="lbl">⟋</span><span class="vals">g=1.4</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=3.8</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <!-- Row 2 -->
+            <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
+            <div class="cell explored"><span class="ord">#5</span><span class="lbl">·</span><span class="vals">g=1.4</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <!-- Row 3 -->
+            <div class="cell explored"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
+            <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2.0</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <!-- Row 4 (bottom) -->
+            <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+            <div class="cell unvisited"><span class="lbl">·</span></div>
+        </div>
+
+        <p style="text-align:center;color:var(--text2);font-size:.9em">Theta*: путь S → (1,1) ⟋ (3,0) → G. Прямые линии, минимум поворотов. <strong>Длина ≈ 4.5</strong></p>
+
+        <div class="grid-legend">
+            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:#6c9eff"></span> Старт</span>
+            <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:#a78bfa"></span> Цель</span>
+            <span><span class="dot" style="background:rgba(74,222,128,.12);border-color:#4ade80"></span> Путь</span>
+            <span><span class="dot" style="background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)"></span> Исследовано</span>
+            <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
+        </div>
+
+        <div class="card">
+            <strong>Разница:</strong>
+            <ul>
+                <li>A* прошёл 12 шагов, длина пути ≈ 4.8. Путь «ступенчатый»</li>
+                <li>Theta* прошёл 10 шагов, длина пути ≈ 4.5. Путь из прямых линий</li>
+                <li>Theta* «перепрыгнул» через промежуточный узел (0,3): S видит (1,1) напрямую → зачем ходить через (0,3)?</li>
+                <li>Символ ⟋ показывает, что узел связан с «дедушкой» напрямую (line-of-sight), а не с ближайшим соседом</li>
+            </ul>
+        </div>
+
+        <div class="card warn">
+            <strong>Экономия ~6% на этой карте.</strong> Кажется мелочью? На больших картах (100×100, 1000×1000) разница вырастает до 10–15%. А для робота каждый лишний поворот — это торможение, разворот, ускорение. Прямые линии = быстрее и экономичнее.
+        </div>
+
+        <!-- ============ ПСЕВДОКОД ============ -->
+        <h2>Псевдокод</h2>
+
+<pre>
+Theta_Star(start, goal, grid):
+    open_list = priority_queue()
+    g[start] = 0
+    f[start] = h(start, goal)
+    parent[start] = start
+    open_list.push(start, f[start])
+
+    while open_list is not empty:
+        s = open_list.pop()       // узел с минимальным f
+
+        if s == goal:
+            return reconstruct_path(parent, goal)
+
+        for each neighbor n of s:
+            if n is obstacle: continue
+
+            // === ОТЛИЧИЕ ОТ A*: проверка line-of-sight ===
+            if line_of_sight(parent[s], n):
+                // Путь 2: через "дедушку"
+                new_g = g[parent[s]] + dist(parent[s], n)
+                if new_g < g[n]:
+                    g[n] = new_g
+                    f[n] = new_g + h(n, goal)
+                    parent[n] = parent[s]     // "дедушка"!
+                    open_list.push(n, f[n])
+            else:
+                // Путь 1: стандартный A*
+                new_g = g[s] + dist(s, n)
+                if new_g < g[n]:
+                    g[n] = new_g
+                    f[n] = new_g + h(n, goal)
+                    parent[n] = s
+                    open_list.push(n, f[n])
+
+    return FAILURE
+
+
+line_of_sight(A, B):     // алгоритм Брезенхема
+    dx = abs(B.x - A.x),  dy = abs(B.y - A.y)
+    sx = sign(B.x - A.x), sy = sign(B.y - A.y)
+    err = dx - dy
+    x = A.x, y = A.y
+
+    while (x, y) != (B.x, B.y):
+        if grid[x][y] is obstacle: return false
+        e2 = 2 * err
+        if e2 > -dy: err -= dy; x += sx
+        if e2 <  dx: err += dx; y += sy
+
+    return true
+</pre>
+
+        <div class="card highlight">
+            <strong>Всего одно отличие от A*:</strong> блок <code>if line_of_sight(parent[s], n)</code>. Если видимость есть — привязываем узел к «дедушке». Если нет — работаем как обычный A*. Вот и вся «магия».
+        </div>
+
+        <!-- ============ СЛОЖНОСТЬ ============ -->
+        <h2>Сложность</h2>
+
+        <table>
+            <tr><th>Метрика</th><th style="white-space:nowrap">Значение</th><th>Пояснение</th></tr>
+            <tr>
+                <td>Время</td>
+                <td style="white-space:nowrap">$O(N^2 \log N)$</td>
+                <td>Как A*, но каждый шаг дороже из-за line-of-sight проверки (Брезенхем: $O(\sqrt{N})$ в худшем случае)</td>
+            </tr>
+            <tr>
+                <td>Память</td>
+                <td style="white-space:nowrap">$O(N)$</td>
+                <td>Такая же, как у A*: open list + closed set + g/f/parent массивы</td>
+            </tr>
+            <tr>
+                <td>Полнота</td>
+                <td><span class="tag green">Полный</span></td>
+                <td>Если путь существует — найдёт. Работает на сетке, как A*</td>
+            </tr>
+            <tr>
+                <td>Оптимальность</td>
+                <td><span class="tag orange">Почти оптимален</span></td>
+                <td>Не гарантирует строгий оптимум (в отличие от A*), но на практике даёт пути, <strong>очень близкие</strong> к оптимальным</td>
+            </tr>
+        </table>
+
+        <div class="card">
+            <strong>Почему «почти» оптимален?</strong> Theta* проверяет line-of-sight только к <code>parent(s)</code>, а не ко <em>всем</em> предкам. Теоретически, связь с «прадедушкой» могла бы дать ещё более короткий путь. Но на практике разница мизерная, а проверка всех предков — дорогая.
+        </div>
+
+        <!-- ============ ПЛЮСЫ/МИНУСЫ ============ -->
+        <h2>Плюсы и минусы</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <h3 style="margin-top:0;color:var(--green)">Плюсы</h3>
+                <ul>
+                    <li>Пути <strong>короче и прямее</strong>, чем у A* — на 5–15%</li>
+                    <li>Минимальное отличие от A* — легко реализовать, если уже есть A*</li>
+                    <li>Меньше поворотов → робот движется плавнее и быстрее</li>
+                    <li>Полный алгоритм — всегда находит путь, если он есть</li>
+                    <li>Работает на стандартной OccupancyGrid</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <h3 style="margin-top:0;color:var(--orange)">Минусы</h3>
+                <ul>
+                    <li><strong>Медленнее A*</strong> из-за проверок line-of-sight (Брезенхем на каждом шаге)</li>
+                    <li>Не строго оптимален (но очень близок к оптимуму)</li>
+                    <li>Работает только на 2D сетках (не для многомерных пространств)</li>
+                    <li>Line-of-sight check может быть дорогой на больших картах</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ C++ ROS2 ============ -->
+        <h2>Интеграция с ROS2 (C++)</h2>
+
+        <p>Показываю только отличие от A* — функцию line-of-sight и модифицированный цикл обновления соседей:</p>
+
+<pre>
+// Line-of-Sight check (алгоритм Брезенхема)
+bool line_of_sight(int x0, int y0, int x1, int y1,
+                   const nav_msgs::msg::OccupancyGrid&amp; grid) {
+    int dx = std::abs(x1 - x0), dy = std::abs(y1 - y0);
+    int sx = (x0 &lt; x1) ? 1 : -1;
+    int sy = (y0 &lt; y1) ? 1 : -1;
+    int err = dx - dy;
+
+    while (x0 != x1 || y0 != y1) {
+        if (grid.data[y0 * grid.info.width + x0] &gt; 50)
+            return false;  // препятствие!
+
+        int e2 = 2 * err;
+        if (e2 &gt; -dy) { err -= dy; x0 += sx; }
+        if (e2 &lt;  dx) { err += dx; y0 += sy; }
+    }
+    return true;
+}
+
+// Внутри основного цикла A* — замена блока обновления соседа:
+for (auto [nx, ny] : neighbors(cx, cy)) {
+    if (closed[ny][nx] || is_wall(nx, ny)) continue;
+
+    // === THETA*: проверяем line-of-sight к parent(current) ===
+    int px = parent_x[cy][cx];  // координаты родителя текущего узла
+    int py = parent_y[cy][cx];
+
+    if (line_of_sight(px, py, nx, ny, *map_)) {
+        // Путь 2: через "дедушку"
+        double new_g = g[py][px] + hypot(nx - px, ny - py);
+        if (new_g &lt; g[ny][nx]) {
+            g[ny][nx] = new_g;
+            f[ny][nx] = new_g + heuristic(nx, ny, gx, gy);
+            parent_x[ny][nx] = px;  // привязываем к "дедушке"!
+            parent_y[ny][nx] = py;
+            open.push({f[ny][nx], nx, ny});
+        }
+    } else {
+        // Путь 1: стандартный A*
+        double new_g = g[cy][cx] + hypot(nx - cx, ny - cy);
+        if (new_g &lt; g[ny][nx]) {
+            g[ny][nx] = new_g;
+            f[ny][nx] = new_g + heuristic(nx, ny, gx, gy);
+            parent_x[ny][nx] = cx;
+            parent_y[ny][nx] = cy;
+            open.push({f[ny][nx], nx, ny});
+        }
+    }
+}
+</pre>
+
+        <div class="card highlight">
+            <strong>Ключевые моменты в коде:</strong>
+            <ul>
+                <li><code>line_of_sight()</code> — алгоритм Брезенхема, проверяет отрезок по клеткам. Сложность $O(\max(dx, dy))$</li>
+                <li><code>parent_x/parent_y</code> — хранят координаты родителя каждого узла. В Theta* родитель может быть не соседом!</li>
+                <li><code>hypot(nx - px, ny - py)</code> — евклидово расстояние, не Manhattan. В Theta* расстояния считаются по прямой</li>
+                <li>Если line-of-sight удался — узел привязывается к «дедушке», пропуская промежуточный узел</li>
+            </ul>
+        </div>
+
+        <!-- ============ ВАРИАНТЫ ============ -->
+        <h2>Варианты Theta*</h2>
+
+        <table>
+            <tr><th>Вариант</th><th>Отличие</th><th>Плюс</th></tr>
+            <tr>
+                <td><strong>Lazy Theta*</strong></td>
+                <td>Откладывает line-of-sight проверку до момента извлечения узла из open list</td>
+                <td>Меньше проверок line-of-sight, быстрее на практике</td>
+            </tr>
+            <tr>
+                <td><strong>Angle-Propagation Theta*</strong></td>
+                <td>Хранит допустимый диапазон углов для каждого узла</td>
+                <td>Меньше ложных проверок, быстрее в плотных картах</td>
+            </tr>
+            <tr>
+                <td><strong>ANYA</strong></td>
+                <td>Truly optimal any-angle (не приближение)</td>
+                <td>Гарантированно оптимальный any-angle путь</td>
+            </tr>
+        </table>
+
+        <!-- ============ СРАВНЕНИЕ ============ -->
+        <h2>Сравнение с другими алгоритмами</h2>
+
+        <table>
+            <tr>
+                <th>Критерий</th>
+                <th>Что это значит</th>
+                <th>A*</th>
+                <th>Theta*</th>
+                <th>RRT</th>
+            </tr>
+            <tr>
+                <td>Тип путей</td>
+                <td style="font-size:.88em;color:var(--text2)">Какие углы могут быть в пути: только 45°/90° (сетка) или любые</td>
+                <td><span class="tag blue">Сеточный</span></td>
+                <td><span class="tag green">Any-angle</span></td>
+                <td><span class="tag green">Any-angle</span></td>
+            </tr>
+            <tr>
+                <td>Оптимальность</td>
+                <td style="font-size:.88em;color:var(--text2)">Гарантирует ли кратчайший путь</td>
+                <td><span class="tag green">Да (на сетке)</span></td>
+                <td><span class="tag orange">Почти</span></td>
+                <td><span class="tag orange">Нет</span></td>
+            </tr>
+            <tr>
+                <td>Длина пути</td>
+                <td style="font-size:.88em;color:var(--text2)">Реальная длина пути в метрах (не в клетках)</td>
+                <td><span class="tag orange">Длиннее</span></td>
+                <td><span class="tag green">Короче</span></td>
+                <td><span class="tag orange">Зависит</span></td>
+            </tr>
+            <tr>
+                <td>Скорость</td>
+                <td style="font-size:.88em;color:var(--text2)">Время работы алгоритма</td>
+                <td><span class="tag green">Быстро</span></td>
+                <td><span class="tag blue">Чуть медленнее</span></td>
+                <td><span class="tag orange">Зависит от карты</span></td>
+            </tr>
+            <tr>
+                <td>Плавность пути</td>
+                <td style="font-size:.88em;color:var(--text2)">Сколько поворотов делает робот — меньше = лучше</td>
+                <td><span class="tag orange">Ступеньки</span></td>
+                <td><span class="tag green">Прямые</span></td>
+                <td><span class="tag orange">Ломаный</span></td>
+            </tr>
+            <tr>
+                <td>Сложность реализации</td>
+                <td style="font-size:.88em;color:var(--text2)">Сколько кода нужно добавить поверх базового алгоритма</td>
+                <td><span class="tag green">Базовый</span></td>
+                <td><span class="tag green">+20 строк</span></td>
+                <td><span class="tag blue">Другой подход</span></td>
+            </tr>
+        </table>
+
+        <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
+        <h2>Когда использовать Theta*</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <h3 style="margin-top:0;color:var(--green)">Используй Theta*, если:</h3>
+                <ul>
+                    <li>У тебя уже есть A* и нужно <strong>улучшить качество путей</strong> минимальными усилиями</li>
+                    <li>Робот может двигаться под <strong>любым углом</strong> (не только 0°/45°/90°)</li>
+                    <li>Важна <strong>плавность</strong> движения и минимум поворотов</li>
+                    <li>Карта 2D — OccupancyGrid из лидара</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <h3 style="margin-top:0;color:var(--orange)">НЕ используй Theta*, если:</h3>
+                <ul>
+                    <li>Пространство многомерное (6D+) — используй RRT/RRT*</li>
+                    <li>Нужен <strong>строго</strong> оптимальный путь — используй ANYA или A* с пост-обработкой</li>
+                    <li>Карта очень плотная (лабиринт) — line-of-sight почти никогда не срабатывает, overhead впустую</li>
+                    <li>Скорость критична и каждая миллисекунда на счету — A* или JPS быстрее</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="algo-4-rrt-star.html">← 4. RRT*</a>
+            <a href="algo-6-dstar-lite.html">6. D* Lite →</a>
+        </div>
+    </div>
+</body>
+</html>

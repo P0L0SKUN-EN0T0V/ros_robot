@@ -198,81 +198,153 @@
         <!-- ============ ВИЗУАЛИЗАЦИЯ ============ -->
         <h2>Визуальный пример: A* vs Theta*</h2>
 
-        <p>Одна и та же карта 5×5, стена посередине. Смотри разницу в путях:</p>
+        <p>Одна и та же карта 5×5, стена посередине. Слева — подробная карта с g/f значениями, справа — чистый путь.</p>
 
         <h3>A* — путь по рёбрам сетки</h3>
 
-        <div class="grid-viz">
-            <!-- Row 0 -->
-            <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0 h=8<br><b>f=8</b></span></div>
-            <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1 h=7<br><b>f=8</b></span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <!-- Row 1 -->
-            <div class="cell explored path"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1 h=7<br><b>f=8</b></span></div>
-            <div class="cell explored path"><span class="ord">#4</span><span class="lbl">·</span><span class="vals">g=2 h=6<br><b>f=8</b></span></div>
-            <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <!-- Row 2 -->
-            <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2 h=6<br><b>f=8</b></span></div>
-            <div class="cell explored path"><span class="ord">#5</span><span class="lbl">·</span><span class="vals">g=3 h=5<br><b>f=8</b></span></div>
-            <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <!-- Row 3 -->
-            <div class="cell explored"><span class="ord">#10</span><span class="lbl">·</span><span class="vals">g=3 h=5<br><b>f=8</b></span></div>
-            <div class="cell explored path"><span class="ord">#7</span><span class="lbl">·</span><span class="vals">g=4 h=4<br><b>f=8</b></span></div>
-            <div class="cell explored path"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=5 h=3<br><b>f=8</b></span></div>
-            <div class="cell explored path"><span class="ord">#9</span><span class="lbl">·</span><span class="vals">g=6 h=2<br><b>f=8</b></span></div>
-            <div class="cell explored path"><span class="ord">#11</span><span class="lbl">·</span><span class="vals">g=7 h=1<br><b>f=8</b></span></div>
-            <!-- Row 4 -->
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell explored"><span class="ord">#12</span><span class="lbl">·</span><span class="vals">g=5 h=4<br><b>f=9</b></span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell explored"><span class="ord">#13</span><span class="lbl">·</span><span class="vals">g=7 h=1<br><b>f=8</b></span></div>
-            <div class="cell goal path"><span class="ord">#14</span><span class="lbl">G</span><span class="vals">g=8 h=0<br><b>f=8</b></span></div>
-        </div>
+        <div class="grid" style="align-items:start">
+            <!-- LEFT: detailed A* grid -->
+            <div>
+                <div class="grid-viz" style="max-width:310px">
+                    <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0 h=8<br><b>f=8</b></span></div>
+                    <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1 h=7<br><b>f=8</b></span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored path"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1 h=7<br><b>f=8</b></span></div>
+                    <div class="cell explored path"><span class="ord">#4</span><span class="lbl">·</span><span class="vals">g=2 h=6<br><b>f=8</b></span></div>
+                    <div class="cell wall"><span class="lbl">▓</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2 h=6<br><b>f=8</b></span></div>
+                    <div class="cell explored path"><span class="ord">#5</span><span class="lbl">·</span><span class="vals">g=3 h=5<br><b>f=8</b></span></div>
+                    <div class="cell wall"><span class="lbl">▓</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored"><span class="ord">#10</span><span class="lbl">·</span><span class="vals">g=3 h=5<br><b>f=8</b></span></div>
+                    <div class="cell explored path"><span class="ord">#7</span><span class="lbl">·</span><span class="vals">g=4 h=4<br><b>f=8</b></span></div>
+                    <div class="cell explored path"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=5 h=3<br><b>f=8</b></span></div>
+                    <div class="cell explored path"><span class="ord">#9</span><span class="lbl">·</span><span class="vals">g=6 h=2<br><b>f=8</b></span></div>
+                    <div class="cell explored path"><span class="ord">#11</span><span class="lbl">·</span><span class="vals">g=7 h=1<br><b>f=8</b></span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored"><span class="ord">#12</span><span class="lbl">·</span><span class="vals">g=5 h=4<br><b>f=9</b></span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored"><span class="ord">#13</span><span class="lbl">·</span><span class="vals">g=7 h=1<br><b>f=8</b></span></div>
+                    <div class="cell goal path"><span class="ord">#14</span><span class="lbl">G</span><span class="vals">g=8 h=0<br><b>f=8</b></span></div>
+                </div>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">Подробная карта с g/h/f</p>
+            </div>
 
-        <p style="text-align:center;color:var(--text2);font-size:.9em">A*: путь обходит стену снизу по рёбрам сетки. 14 шагов, <strong>длина = 8</strong> (Manhattan)</p>
+            <!-- RIGHT: clean A* path only -->
+            <div>
+                <div style="position:relative;max-width:260px;margin:16px auto">
+                    <div class="grid-viz" style="max-width:260px">
+                        <div class="cell start path"><span class="lbl">S</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell path"><span class="lbl">↓</span></div>
+                        <div class="cell path"><span class="lbl">↘</span></div>
+                        <div class="cell wall"><span class="lbl">▓</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell path"><span class="lbl">↓</span></div>
+                        <div class="cell wall"><span class="lbl">▓</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell path"><span class="lbl">→</span></div>
+                        <div class="cell path"><span class="lbl">→</span></div>
+                        <div class="cell path"><span class="lbl">→</span></div>
+                        <div class="cell path"><span class="lbl">↘</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell goal path"><span class="lbl">G</span></div>
+                    </div>
+                </div>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">Чистый путь A*: <strong>ступеньки</strong><br>Длина = 8.0</p>
+            </div>
+        </div>
 
         <h3>Theta* — путь по прямым линиям</h3>
 
-        <div class="grid-viz">
-            <!-- Row 0 -->
-            <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0<br><b>⟋ корень</b></span></div>
-            <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <!-- Row 1 -->
-            <div class="cell explored"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
-            <div class="cell explored"><span class="ord">#4</span><span class="lbl">⟋</span><span class="vals">g=1.41<br>parent=S</span></div>
-            <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <!-- Row 2 -->
-            <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2.0</span></div>
-            <div class="cell explored"><span class="ord">#5</span><span class="lbl">⟋</span><span class="vals">g=2.24<br>parent=S</span></div>
-            <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <!-- Row 3 -->
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell explored path"><span class="ord">#7</span><span class="lbl">⟋</span><span class="vals">g=3.16<br><b>parent=S</b></span></div>
-            <div class="cell explored"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=4.16</span></div>
-            <div class="cell explored"><span class="ord">#9</span><span class="lbl">⟋</span><span class="vals">g=5.16<br>parent=(1,3)</span></div>
-            <div class="cell explored"><span class="ord">#11</span><span class="lbl">·</span><span class="vals">g=6.16</span></div>
-            <!-- Row 4 -->
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell unvisited"><span class="lbl">·</span></div>
-            <div class="cell explored"><span class="ord">#12</span><span class="lbl">·</span><span class="vals">g=6.16</span></div>
-            <div class="cell goal path"><span class="ord">#10</span><span class="lbl">G</span><span class="vals">g=6.32<br><b>parent=(1,3)</b></span></div>
-        </div>
+        <div class="grid" style="align-items:start">
+            <!-- LEFT: detailed Theta* grid -->
+            <div>
+                <div class="grid-viz" style="max-width:310px">
+                    <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0<br><b>⟋ корень</b></span></div>
+                    <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
+                    <div class="cell explored"><span class="ord">#4</span><span class="lbl">⟋</span><span class="vals">g=1.41<br>parent=S</span></div>
+                    <div class="cell wall"><span class="lbl">▓</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2.0</span></div>
+                    <div class="cell explored"><span class="ord">#5</span><span class="lbl">⟋</span><span class="vals">g=2.24<br>parent=S</span></div>
+                    <div class="cell wall"><span class="lbl">▓</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored path"><span class="ord">#7</span><span class="lbl">⟋</span><span class="vals">g=3.16<br><b>parent=S</b></span></div>
+                    <div class="cell explored"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=4.16</span></div>
+                    <div class="cell explored"><span class="ord">#9</span><span class="lbl">⟋</span><span class="vals">g=5.16</span></div>
+                    <div class="cell explored"><span class="ord">#11</span><span class="lbl">·</span><span class="vals">g=6.16</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored"><span class="ord">#12</span><span class="lbl">·</span><span class="vals">g=6.16</span></div>
+                    <div class="cell goal path"><span class="ord">#10</span><span class="lbl">G</span><span class="vals">g=6.32<br><b>parent=(1,3)</b></span></div>
+                </div>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">Подробная карта с g и parent</p>
+            </div>
 
-        <p style="text-align:center;color:var(--text2);font-size:.9em">Theta*: путь S ⟋ (1,3) ⟋ G — всего <strong>два прямых отрезка</strong>! Длина ≈ 6.32 (евклидова)</p>
+            <!-- RIGHT: clean Theta* path with SVG lines -->
+            <div>
+                <div style="position:relative;max-width:260px;margin:16px auto">
+                    <div class="grid-viz" style="max-width:260px">
+                        <div class="cell start path"><span class="lbl">S</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell wall"><span class="lbl">▓</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell wall"><span class="lbl">▓</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell path"><span class="lbl">⟋</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell goal path"><span class="lbl">G</span></div>
+                    </div>
+                    <svg viewBox="0 0 260 260" style="position:absolute;top:16px;left:0;width:100%;height:calc(100% - 16px);pointer-events:none">
+                        <!-- Line from S center to (1,3) center -->
+                        <line x1="26" y1="26" x2="78" y2="182" stroke="#4ade80" stroke-width="3" opacity=".8"/>
+                        <!-- Line from (1,3) to G -->
+                        <line x1="78" y1="182" x2="234" y2="234" stroke="#4ade80" stroke-width="3" opacity=".8"/>
+                    </svg>
+                </div>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">Чистый путь Theta*: <strong>2 прямых отрезка</strong><br>Длина ≈ 6.32</p>
+            </div>
+        </div>
 
         <div class="grid-legend">
             <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:#6c9eff"></span> Старт</span>
@@ -283,18 +355,17 @@
         </div>
 
         <div class="card">
-            <strong>Разница:</strong>
+            <strong>Сравни правые карты — разница очевидна:</strong>
             <ul>
-                <li>A*: путь из <strong>8 рёбер</strong> по сетке (ступеньки вдоль стены, потом вдоль строки 3)</li>
-                <li>Theta*: путь из <strong>2 прямых отрезков</strong> — S→(1,3)→G. Евклидова длина 6.32 vs 8 у A*</li>
-                <li>Символ ⟋ = узел связан не с соседом, а с «дедушкой» или более ранним предком через line-of-sight</li>
-                <li>(1,3) привязан напрямую к S — Theta* проверил, что линия S→(1,3) не пересекает стену</li>
-                <li>G привязан к (1,3) — линия (1,3)→G тоже свободна от препятствий</li>
+                <li><strong>A*</strong>: путь из 8 рёбер — ↓↘↓→→→↘ — лесенка вдоль стены и вдоль строки</li>
+                <li><strong>Theta*</strong>: всего 2 прямых отрезка — S⟋(1,3)⟋G. Зелёные линии показывают реальный путь робота</li>
+                <li>Theta* проверил line-of-sight: линия S→(1,3) не пересекает стену, линия (1,3)→G тоже свободна</li>
+                <li>Символ ⟋ = узел привязан не к соседу, а напрямую к дальнему предку через line-of-sight</li>
             </ul>
         </div>
 
         <div class="card warn">
-            <strong>Экономия ~21% на этой карте</strong> (6.32 vs 8.0). На больших картах разница — 10–15%. Для робота каждый лишний поворот — торможение, разворот, ускорение. Прямые линии = быстрее и экономичнее.
+            <strong>Экономия ~21% на этой карте</strong> (6.32 vs 8.0). На больших картах — 10–15%. Для робота каждый лишний поворот — торможение, разворот, ускорение. Прямые линии = быстрее и экономичнее.
         </div>
 
         <!-- ============ ПСЕВДОКОД ============ -->

@@ -440,17 +440,17 @@ RRT(q_start, q_goal, map, max_iterations):
             <tr><th>Метрика</th><th>Значение</th><th>Пояснение</th></tr>
             <tr>
                 <td>Время (наивно)</td>
-                <td>$O(n^2)$</td>
+                <td style="white-space:nowrap">$O(n^2)$</td>
                 <td>На каждой итерации ищем ближайший узел среди всех $n$ узлов дерева</td>
             </tr>
             <tr>
                 <td>Время (с KD-деревом)</td>
-                <td>$O(n \log n)$</td>
+                <td style="white-space:nowrap">$O(n \log n)$</td>
                 <td>KD-дерево ускоряет поиск ближайшего соседа до $O(\log n)$</td>
             </tr>
             <tr>
                 <td>Память</td>
-                <td>$O(n)$</td>
+                <td style="white-space:nowrap">$O(n)$</td>
                 <td>Храним узлы и рёбра дерева</td>
             </tr>
             <tr>
@@ -735,48 +735,56 @@ private:
         <table>
             <tr>
                 <th>Критерий</th>
+                <th>Что это значит</th>
                 <th>A*</th>
                 <th>Dijkstra</th>
                 <th>RRT</th>
             </tr>
             <tr>
                 <td>Тип</td>
+                <td style="font-size:.88em;color:var(--text2)">Как алгоритм представляет пространство: разбивает на клетки (сетка) или работает с произвольными точками (sampling)</td>
                 <td><span class="tag blue">Сеточный</span></td>
                 <td><span class="tag blue">Сеточный</span></td>
                 <td><span class="tag purple">Sampling</span></td>
             </tr>
             <tr>
                 <td>Оптимальность</td>
+                <td style="font-size:.88em;color:var(--text2)">Гарантирует ли алгоритм <em>кратчайший</em> путь, а не просто какой-нибудь</td>
                 <td><span class="tag green">Да</span></td>
                 <td><span class="tag green">Да</span></td>
                 <td><span class="tag orange">Нет</span></td>
             </tr>
             <tr>
                 <td>Полнота</td>
+                <td style="font-size:.88em;color:var(--text2)">Если путь существует — найдёт ли его алгоритм? «Вероятностно» = найдёт, но может потребоваться больше итераций</td>
                 <td><span class="tag green">Полный</span></td>
                 <td><span class="tag green">Полный</span></td>
                 <td><span class="tag orange">Вероятностно</span></td>
             </tr>
             <tr>
-                <td>Многомерные пространства</td>
+                <td style="white-space:nowrap">Многомерные пространства</td>
+                <td style="font-size:.88em;color:var(--text2)">Как справляется, когда у робота много степеней свободы (суставы, углы, высота). Сетка в 6D = триллионы клеток</td>
                 <td><span class="tag orange">Плохо</span></td>
                 <td><span class="tag orange">Плохо</span></td>
                 <td><span class="tag green">Отлично</span></td>
             </tr>
             <tr>
                 <td>Детерминированность</td>
+                <td style="font-size:.88em;color:var(--text2)">Даёт ли одинаковый результат при каждом запуске с одними и теми же входными данными</td>
                 <td><span class="tag green">Да</span></td>
                 <td><span class="tag green">Да</span></td>
                 <td><span class="tag orange">Нет</span></td>
             </tr>
             <tr>
-                <td>Скорость (2D сетка)</td>
+                <td style="white-space:nowrap">Скорость (2D сетка)</td>
+                <td style="font-size:.88em;color:var(--text2)">Насколько быстро работает на обычной плоской карте, разбитой на клетки</td>
                 <td><span class="tag green">Быстро</span></td>
                 <td><span class="tag blue">Средне</span></td>
                 <td><span class="tag orange">Медленно</span></td>
             </tr>
             <tr>
-                <td>Скорость (6D+)</td>
+                <td style="white-space:nowrap">Скорость (6D+)</td>
+                <td style="font-size:.88em;color:var(--text2)">Скорость в пространствах с 6+ измерениями (манипуляторы, дроны). Сеточные алгоритмы здесь не применимы</td>
                 <td><span class="tag orange">Невозможно</span></td>
                 <td><span class="tag orange">Невозможно</span></td>
                 <td><span class="tag green">Быстро</span></td>

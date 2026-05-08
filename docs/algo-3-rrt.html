@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RRT — Подробный разбор</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8em;font-weight:600;margin:2px 4px 2px 0}
+        .tag.blue{background:rgba(108,158,255,.15);color:var(--accent)}
+        .tag.green{background:rgba(74,222,128,.15);color:var(--green)}
+        .tag.orange{background:rgba(251,146,60,.15);color:var(--orange)}
+        .tag.purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.15em}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media(max-width:700px){.grid{grid-template-columns:1fr}}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .katex{font-size:1.1em}
+        .katex-display{margin:12px 0}
+        .grid-viz{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:620px;margin:16px auto}
+        .grid-viz .cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;font-size:.75em;line-height:1.35;min-height:72px;display:flex;flex-direction:column;justify-content:center;position:relative}
+        .grid-viz .cell.wall{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)}
+        .grid-viz .cell.path{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);border-width:2px}
+        .grid-viz .cell.explored{background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)}
+        .grid-viz .cell.start{background:rgba(108,158,255,.2);border-color:var(--accent);border-width:2px}
+        .grid-viz .cell.goal{background:rgba(167,139,250,.2);border-color:var(--accent2);border-width:2px}
+        .grid-viz .cell .lbl{font-weight:700;font-size:1.05em;margin-bottom:2px}
+        .grid-viz .cell .vals{color:var(--text2);font-family:'Courier New',monospace;font-size:.85em}
+        .grid-viz .cell .vals b{color:var(--accent)}
+        .grid-viz .cell .ord{position:absolute;top:2px;right:5px;font-size:.7em;color:var(--orange);font-weight:700}
+        .grid-viz .cell.unvisited{opacity:.45}
+        .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
+        .grid-legend span{display:flex;align-items:center;gap:6px}
+        .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
+        /* RRT-specific: tree visualization */
+        .tree-viz{position:relative;width:100%;max-width:620px;height:400px;margin:16px auto;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+        .tree-viz svg{width:100%;height:100%}
+        .tree-viz .node-label{fill:var(--text);font-size:11px;font-family:'Courier New',monospace}
+        .tree-viz .edge{stroke:var(--accent);stroke-width:1.5;opacity:.6}
+        .tree-viz .edge.path{stroke:var(--green);stroke-width:3;opacity:1}
+        .tree-viz .node{r:5;fill:var(--accent);opacity:.7}
+        .tree-viz .node.start{r:8;fill:var(--accent);opacity:1}
+        .tree-viz .node.goal{r:8;fill:var(--accent2);opacity:1}
+        .tree-viz .node.path{fill:var(--green);opacity:1}
+        .tree-viz .obstacle{fill:rgba(248,113,113,.25);stroke:rgba(248,113,113,.5);stroke-width:1}
+        .tree-viz .sample{r:3;fill:var(--orange);opacity:.5}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Основная документация</a>
+        <div class="sep"></div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html" class="active">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>RRT — Rapidly-exploring Random Tree</h1>
+        <p class="subtitle">Алгоритм №3 — случайное дерево, которое «прорастает» к цели</p>
+
+        <!-- ============ СУТЬ ============ -->
+        <h2>О чём вообще речь</h2>
+
+        <p>Забудь сетки. Забудь клетки. RRT — это совершенно другой подход к навигации. Если A* и Dijkstra методично перебирают клетки на карте, то RRT <strong>бросает случайные точки</strong> в пространство и постепенно «выращивает» дерево путей из стартовой позиции.</p>
+
+        <p>Представь себе растение. Ты кидаешь семечко (стартовая точка) в землю, и от него начинают расти ветки — в случайных направлениях. Каждая новая ветка тянется к случайной точке, но растёт только на фиксированную длину. Постепенно дерево заполняет всё пространство, обходя препятствия. Как только одна из веток дотянется до цели — путь найден.</p>
+
+        <div class="analogy">Представь, что ты заблудился в огромном поле с заборами. У тебя нет карты, GPS, компаса. Твоя стратегия: бросаешь камень в случайном направлении, идёшь к тому месту, где он упал (но не до конца — ровно 5 шагов). Помечаешь путь верёвкой. Бросаешь снова. И снова. Рано или поздно верёвка дотянется до выхода. Не самый эффективный путь, но он точно будет найден.</div>
+
+        <h3>Зачем нужен, если есть A*?</h3>
+
+        <p>A* отлично работает на сетке — 2D карте, разбитой на клетки. Но что, если у робота <strong>6 суставов</strong>, и каждый может поворачиваться от 0° до 360°? Это 6-мерное пространство. Попробуй-ка разбить его на клетки — получишь триллионы ячеек. A* утонет.</p>
+
+        <p>RRT создан именно для таких ситуаций — <strong>многомерные пространства</strong>, где сетка просто невозможна. Но и в 2D (на плоскости) он прекрасно работает — особенно в больших открытых картах с редкими препятствиями.</p>
+
+        <div class="card highlight">
+            <strong>Главная идея RRT одним предложением:</strong><br>
+            Случайно выбираем точку в пространстве → находим ближайший узел дерева → делаем шаг от этого узла в направлении случайной точки → добавляем новый узел → повторяем.
+        </div>
+
+        <!-- ============ ИСТОРИЯ ============ -->
+        <h2>Немного истории</h2>
+
+        <p>RRT придумал <strong>Стивен Лавалль</strong> (Steven LaValle) в 1998 году. На тот момент роботика столкнулась с проблемой: манипуляторы с 6+ степенями свободы не могли планировать движение классическими алгоритмами — пространство поиска было слишком огромным. Лавалль предложил элегантное решение: не нужно исследовать всё пространство — достаточно «разбрасывать» случайные точки и наращивать дерево.</p>
+
+        <p>Публикация: <em>"Rapidly-exploring Random Trees: A New Tool for Path Planning"</em>, 1998. С тех пор RRT стал стандартом де-факто для планирования в высокоразмерных пространствах — от роборук до беспилотных автомобилей.</p>
+
+        <!-- ============ ФОРМУЛЫ ============ -->
+        <h2>Математика</h2>
+
+        <p>В RRT нет привычной функции $f(n) = g(n) + h(n)$. Здесь всё строится вокруг трёх простых операций:</p>
+
+        <h3>1. Случайная точка (Sample)</h3>
+
+        <p>Генерируем случайную точку $q_\text{rand}$ равномерно в пространстве:</p>
+
+        <div class="formula-block">
+            $$q_\text{rand} = (x_\text{rand},\; y_\text{rand}), \quad x \in [0, W],\; y \in [0, H]$$
+        </div>
+
+        <p>где $W$ и $H$ — ширина и высота карты. Важный трюк: с некоторой вероятностью $p_\text{goal}$ (обычно 5–10%) вместо случайной точки берём саму цель. Это называется <strong>goal bias</strong> — без него дерево может долго блуждать, не зная куда расти.</p>
+
+        <h3>2. Ближайший узел (Nearest)</h3>
+
+        <p>Находим узел дерева $q_\text{near}$, ближайший к $q_\text{rand}$ по евклидову расстоянию:</p>
+
+        <div class="formula-block">
+            $$q_\text{near} = \arg\min_{q \in T} \|q - q_\text{rand}\|$$
+        </div>
+
+        <p>$T$ — это наше дерево (множество всех узлов). Для каждой новой случайной точки мы проходимся по всем узлам дерева и ищем ближайший. В наивной реализации это $O(n)$, но с KD-деревом можно ускорить до $O(\log n)$.</p>
+
+        <h3>3. Новый узел (Steer)</h3>
+
+        <p>От $q_\text{near}$ делаем шаг длиной $\Delta q$ (step size) в направлении $q_\text{rand}$:</p>
+
+        <div class="formula-block">
+            $$q_\text{new} = q_\text{near} + \Delta q \cdot \frac{q_\text{rand} - q_\text{near}}{\|q_\text{rand} - q_\text{near}\|}$$
+        </div>
+
+        <p>Здесь $\Delta q$ — это длина «веточки». Слишком маленький шаг — дерево растёт медленно. Слишком большой — может «проскочить» через препятствие. Обычно $\Delta q$ подбирают экспериментально — для нашей задачи в Gazebo это может быть 0.3–0.5 метра.</p>
+
+        <h3>4. Проверка коллизий (CollisionFree)</h3>
+
+        <p>Прежде чем добавить ребро $q_\text{near} \to q_\text{new}$ в дерево, проверяем, что отрезок не пересекает препятствия:</p>
+
+        <div class="formula-block">
+            $$\text{CollisionFree}(q_\text{near}, q_\text{new}) = \begin{cases} \text{true} & \text{если отрезок свободен} \\ \text{false} & \text{если пересекает препятствие} \end{cases}$$
+        </div>
+
+        <p>Это делается просто: проходим по отрезку маленькими шажками и проверяем, не попал ли какой-то из них в занятую клетку OccupancyGrid. Если коллизия — отбрасываем эту точку и генерируем новую.</p>
+
+        <!-- ============ ПО ШАГАМ ============ -->
+        <h2>Как работает: пошагово</h2>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Помещаем стартовую точку $q_\text{start}$ в дерево. Это единственный узел — корень.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Генерируем случайную точку $q_\text{rand}$. С вероятностью ~5% это цель, иначе — случайная точка на карте.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Ищем ближайший узел дерева $q_\text{near}$ к этой случайной точке.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">Делаем шаг длиной $\Delta q$ от $q_\text{near}$ к $q_\text{rand}$. Получаем $q_\text{new}$.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-text">Проверяем: отрезок $q_\text{near} \to q_\text{new}$ свободен от препятствий?<br>
+                — Если <strong>да</strong> → добавляем $q_\text{new}$ в дерево, проводим ребро к $q_\text{near}$.<br>
+                — Если <strong>нет</strong> → отбрасываем, идём на шаг 2.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-text">Проверяем: $q_\text{new}$ достаточно близок к цели $q_\text{goal}$ (расстояние < порога)?<br>
+                — Если <strong>да</strong> → соединяем с целью, <strong>путь найден!</strong><br>
+                — Если <strong>нет</strong> → возвращаемся на шаг 2.</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-text">Восстанавливаем путь: от цели идём по «родителям» обратно к старту. Каждый узел помнит, от какого узла он «вырос».</div>
+        </div>
+
+        <!-- ============ ВИЗУАЛИЗАЦИЯ ============ -->
+        <h2>Визуальный пример</h2>
+
+        <p>RRT — это не сеточный алгоритм, поэтому привычная 5×5 сетка здесь не совсем подходит. Но давай покажем, как RRT работает на той же карте — только в непрерывном пространстве. Старт — левый нижний угол, цель — правый верхний, посередине — стена.</p>
+
+        <div class="tree-viz">
+            <svg viewBox="0 0 500 400">
+                <!-- Obstacle (wall in the middle) -->
+                <rect class="obstacle" x="200" y="80" width="30" height="200" rx="4"/>
+
+                <!-- Labels -->
+                <text x="50" y="350" class="node-label" fill="#6c9eff" font-size="14" font-weight="bold">START</text>
+                <text x="400" y="50" class="node-label" fill="#a78bfa" font-size="14" font-weight="bold">GOAL</text>
+
+                <!-- Tree edges (exploration) - showing how RRT grows -->
+                <!-- Iteration 1: random point upper-left area -->
+                <line class="edge" x1="50" y1="340" x2="90" y2="305"/>
+                <!-- Iteration 2: random point right (blocked by wall) → goes up -->
+                <line class="edge" x1="50" y1="340" x2="85" y2="370"/>
+                <!-- Iteration 3 -->
+                <line class="edge" x1="90" y1="305" x2="135" y2="275"/>
+                <!-- Iteration 4 -->
+                <line class="edge" x1="90" y1="305" x2="70" y2="260"/>
+                <!-- Iteration 5 -->
+                <line class="edge" x1="135" y1="275" x2="175" y2="240"/>
+                <!-- Iteration 6: branch going down -->
+                <line class="edge" x1="85" y1="370" x2="130" y2="355"/>
+                <!-- Iteration 7 -->
+                <line class="edge" x1="70" y1="260" x2="100" y2="215"/>
+                <!-- Iteration 8: trying to go right but wall blocks → grows up -->
+                <line class="edge" x1="175" y1="240" x2="185" y2="195"/>
+                <!-- Iteration 9 -->
+                <line class="edge" x1="100" y1="215" x2="140" y2="175"/>
+                <!-- Iteration 10: going up to pass wall -->
+                <line class="edge" x1="185" y1="195" x2="175" y2="145"/>
+                <!-- Iteration 11 -->
+                <line class="edge" x1="140" y1="175" x2="170" y2="130"/>
+                <!-- Iteration 12: passing above the wall! -->
+                <line class="edge" x1="175" y1="145" x2="180" y2="60"/>
+                <!-- Iteration 13: past the wall! -->
+                <line class="edge" x1="180" y1="60" x2="245" y2="55"/>
+                <!-- Iteration 14 -->
+                <line class="edge" x1="245" y1="55" x2="305" y2="70"/>
+                <!-- Iteration 15 -->
+                <line class="edge" x1="305" y1="70" x2="355" y2="55"/>
+                <!-- Iteration 16: reaching goal area -->
+                <line class="edge" x1="355" y1="55" x2="420" y2="45"/>
+
+                <!-- Dead-end branches (exploration that didn't lead anywhere) -->
+                <line class="edge" x1="130" y1="355" x2="165" y2="370" style="opacity:.3"/>
+                <line class="edge" x1="165" y1="370" x2="185" y2="345" style="opacity:.3"/>
+                <line class="edge" x1="135" y1="275" x2="160" y2="310" style="opacity:.3"/>
+                <line class="edge" x1="170" y1="130" x2="155" y2="85" style="opacity:.3"/>
+                <line class="edge" x1="245" y1="55" x2="270" y2="100" style="opacity:.3"/>
+                <line class="edge" x1="305" y1="70" x2="320" y2="120" style="opacity:.3"/>
+                <line class="edge" x1="320" y1="120" x2="350" y2="155" style="opacity:.3"/>
+
+                <!-- Path edges (the solution) -->
+                <line class="edge path" x1="50" y1="340" x2="90" y2="305"/>
+                <line class="edge path" x1="90" y1="305" x2="135" y2="275"/>
+                <line class="edge path" x1="135" y1="275" x2="175" y2="240"/>
+                <line class="edge path" x1="175" y1="240" x2="185" y2="195"/>
+                <line class="edge path" x1="185" y1="195" x2="175" y2="145"/>
+                <line class="edge path" x1="175" y1="145" x2="180" y2="60"/>
+                <line class="edge path" x1="180" y1="60" x2="245" y2="55"/>
+                <line class="edge path" x1="245" y1="55" x2="305" y2="70"/>
+                <line class="edge path" x1="305" y1="70" x2="355" y2="55"/>
+                <line class="edge path" x1="355" y1="55" x2="420" y2="45"/>
+
+                <!-- Random sample points (orange dots) -->
+                <circle class="sample" cx="120" cy="290" r="3"/>
+                <circle class="sample" cx="95" cy="380" r="3"/>
+                <circle class="sample" cx="50" cy="230" r="3"/>
+                <circle class="sample" cx="190" cy="210" r="3"/>
+                <circle class="sample" cx="145" cy="150" r="3"/>
+                <circle class="sample" cx="400" cy="30" r="3"/>
+                <circle class="sample" cx="310" cy="50" r="3"/>
+                <circle class="sample" cx="280" cy="140" r="3"/>
+                <circle class="sample" cx="175" cy="380" r="3"/>
+                <circle class="sample" cx="160" cy="50" r="3"/>
+
+                <!-- Tree nodes -->
+                <!-- Dead-end nodes (dim) -->
+                <circle class="node" cx="165" cy="370" r="4" style="opacity:.35"/>
+                <circle class="node" cx="185" cy="345" r="4" style="opacity:.35"/>
+                <circle class="node" cx="160" cy="310" r="4" style="opacity:.35"/>
+                <circle class="node" cx="155" cy="85" r="4" style="opacity:.35"/>
+                <circle class="node" cx="270" cy="100" r="4" style="opacity:.35"/>
+                <circle class="node" cx="320" cy="120" r="4" style="opacity:.35"/>
+                <circle class="node" cx="350" cy="155" r="4" style="opacity:.35"/>
+                <circle class="node" cx="130" cy="355" r="4" style="opacity:.35"/>
+
+                <!-- Path nodes -->
+                <circle class="node path" cx="90" cy="305" r="5"/>
+                <circle class="node path" cx="135" cy="275" r="5"/>
+                <circle class="node path" cx="175" cy="240" r="5"/>
+                <circle class="node path" cx="185" cy="195" r="5"/>
+                <circle class="node path" cx="175" cy="145" r="5"/>
+                <circle class="node path" cx="180" cy="60" r="5"/>
+                <circle class="node path" cx="245" cy="55" r="5"/>
+                <circle class="node path" cx="305" cy="70" r="5"/>
+                <circle class="node path" cx="355" cy="55" r="5"/>
+
+                <!-- Non-path exploration nodes -->
+                <circle class="node" cx="85" cy="370" r="4"/>
+                <circle class="node" cx="70" cy="260" r="4"/>
+                <circle class="node" cx="100" cy="215" r="4"/>
+                <circle class="node" cx="140" cy="175" r="4"/>
+                <circle class="node" cx="170" cy="130" r="4"/>
+
+                <!-- Start and Goal -->
+                <circle class="node start" cx="50" cy="340" r="8"/>
+                <circle class="node goal" cx="420" cy="45" r="8"/>
+
+                <!-- Step labels along path -->
+                <text x="75" y="298" fill="#fb923c" font-size="10" font-weight="bold">#1</text>
+                <text x="120" y="268" fill="#fb923c" font-size="10" font-weight="bold">#3</text>
+                <text x="160" y="233" fill="#fb923c" font-size="10" font-weight="bold">#5</text>
+                <text x="190" y="190" fill="#fb923c" font-size="10" font-weight="bold">#8</text>
+                <text x="160" y="140" fill="#fb923c" font-size="10" font-weight="bold">#10</text>
+                <text x="165" y="55" fill="#fb923c" font-size="10" font-weight="bold">#12</text>
+                <text x="248" y="48" fill="#fb923c" font-size="10" font-weight="bold">#13</text>
+                <text x="308" y="63" fill="#fb923c" font-size="10" font-weight="bold">#14</text>
+                <text x="358" y="48" fill="#fb923c" font-size="10" font-weight="bold">#15</text>
+            </svg>
+        </div>
+
+        <div class="grid-legend">
+            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:#6c9eff"></span> Старт</span>
+            <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:#a78bfa"></span> Цель</span>
+            <span><span class="dot" style="background:rgba(74,222,128,.3);border-color:#4ade80"></span> Найденный путь</span>
+            <span><span class="dot" style="background:rgba(108,158,255,.1);border-color:#6c9eff"></span> Ветки дерева</span>
+            <span><span class="dot" style="background:rgba(248,113,113,.25);border-color:#f87171"></span> Препятствие</span>
+            <span><span class="dot" style="background:rgba(251,146,60,.3);border-color:#fb923c"></span> Случайные точки</span>
+        </div>
+
+        <div class="card">
+            <strong>Что тут происходит:</strong>
+            <ol>
+                <li>Дерево начинает расти от <strong>START</strong> (синий кружок)</li>
+                <li>Оранжевые точки — это случайные точки ($q_\text{rand}$), которые алгоритм «бросал» в пространство</li>
+                <li>Синие линии — ветки дерева. Некоторые ушли «в никуда» (тусклые) — это нормально, так работает случайность</li>
+                <li>Красный прямоугольник — стена. Дерево не смогло пройти сквозь неё и нашло обход сверху</li>
+                <li>Зелёная линия — финальный путь от старта к цели, восстановленный по «родителям» узлов</li>
+            </ol>
+        </div>
+
+        <div class="card warn">
+            <strong>Обрати внимание:</strong> путь RRT — кривой и ломаный. Это нормально! RRT не гарантирует оптимальность. Он гарантирует только <strong>нахождение пути</strong> (если он существует). Для сглаживания пути применяют пост-обработку или используют RRT* (следующий алгоритм).
+        </div>
+
+        <!-- ============ СРАВНЕНИЕ С СЕТКОЙ ============ -->
+        <h2>RRT vs A* на сетке</h2>
+
+        <p>Чтобы было нагляднее, покажу как та же задача выглядит для A* на сетке 5×5 и для RRT:</p>
+
+        <div class="grid">
+            <div class="card">
+                <h3 style="margin-top:0">A* (сетка)</h3>
+                <ul>
+                    <li>Исследовал 14 клеток</li>
+                    <li>Нашёл <strong>оптимальный</strong> путь</li>
+                    <li>Работает только в 2D сетке</li>
+                    <li>Предсказуемый результат</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3 style="margin-top:0">RRT (непрерывное)</h3>
+                <ul>
+                    <li>Создал ~20 узлов дерева</li>
+                    <li>Нашёл <strong>какой-то</strong> путь</li>
+                    <li>Работает в <strong>любом</strong> пространстве</li>
+                    <li>Каждый запуск — разный результат</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ ПСЕВДОКОД ============ -->
+        <h2>Псевдокод</h2>
+
+<pre>
+RRT(q_start, q_goal, map, max_iterations):
+    T.init(q_start)                     // дерево с одним корнем
+
+    for i = 1 to max_iterations:
+        if random() < p_goal:           // goal bias (~5-10%)
+            q_rand = q_goal
+        else:
+            q_rand = random_point(map)  // случайная точка
+
+        q_near = nearest(T, q_rand)     // ближайший узел дерева
+
+        q_new = steer(q_near, q_rand, Δq)  // шаг длиной Δq
+
+        if collision_free(q_near, q_new, map):
+            T.add_node(q_new)
+            T.add_edge(q_near, q_new)
+
+            if distance(q_new, q_goal) < threshold:
+                T.add_edge(q_new, q_goal)
+                return reconstruct_path(T, q_start, q_goal)
+
+    return FAILURE  // путь не найден за max_iterations
+</pre>
+
+        <div class="card highlight">
+            <strong>Ключевые параметры:</strong>
+            <ul>
+                <li><code>Δq</code> (step size) — длина шага. Типично 0.3–1.0 м. Больше → быстрее, но грубее</li>
+                <li><code>p_goal</code> (goal bias) — вероятность «целиться» в цель. 5–10% — хороший баланс</li>
+                <li><code>max_iterations</code> — лимит итераций. 5000–50000 в зависимости от сложности карты</li>
+                <li><code>threshold</code> — порог «близости» к цели. Обычно = Δq</li>
+            </ul>
+        </div>
+
+        <!-- ============ СЛОЖНОСТЬ ============ -->
+        <h2>Сложность</h2>
+
+        <table>
+            <tr><th>Метрика</th><th>Значение</th><th>Пояснение</th></tr>
+            <tr>
+                <td>Время (наивно)</td>
+                <td>$O(n^2)$</td>
+                <td>На каждой итерации ищем ближайший узел среди всех $n$ узлов дерева</td>
+            </tr>
+            <tr>
+                <td>Время (с KD-деревом)</td>
+                <td>$O(n \log n)$</td>
+                <td>KD-дерево ускоряет поиск ближайшего соседа до $O(\log n)$</td>
+            </tr>
+            <tr>
+                <td>Память</td>
+                <td>$O(n)$</td>
+                <td>Храним узлы и рёбра дерева</td>
+            </tr>
+            <tr>
+                <td>Полнота</td>
+                <td><span class="tag orange">Вероятностно полный</span></td>
+                <td>При $n \to \infty$ вероятность найти путь → 1 (но не за конечное число шагов гарантированно)</td>
+            </tr>
+            <tr>
+                <td>Оптимальность</td>
+                <td><span class="tag orange">НЕ оптимален</span></td>
+                <td>Путь зависит от случайных точек. Почти никогда не кратчайший</td>
+            </tr>
+        </table>
+
+        <div class="card">
+            <strong>Вероятностная полнота</strong> — это важный нюанс. A* и Dijkstra либо находят путь, либо точно говорят «пути нет». RRT так не умеет — если за <code>max_iterations</code> итераций путь не найден, это <em>не значит</em>, что его нет. Может, нужно больше итераций. Может, нужен другой seed для генератора случайных чисел.
+        </div>
+
+        <!-- ============ ПЛЮСЫ/МИНУСЫ ============ -->
+        <h2>Плюсы и минусы</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <h3 style="margin-top:0;color:var(--green)">Плюсы</h3>
+                <ul>
+                    <li>Работает в пространствах <strong>любой размерности</strong> (2D, 3D, 6D, 100D...)</li>
+                    <li>Не нужна сетка — работает в непрерывном пространстве</li>
+                    <li>Хорошо справляется с <strong>узкими проходами</strong> (при достаточном количестве итераций)</li>
+                    <li>Простая реализация — ~50 строк кода</li>
+                    <li>Быстро находит «какой-нибудь» путь в больших открытых пространствах</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <h3 style="margin-top:0;color:var(--orange)">Минусы</h3>
+                <ul>
+                    <li><strong>Путь не оптимален</strong> — кривой, с лишними изгибами</li>
+                    <li>Результат <strong>не детерминирован</strong> — каждый запуск даёт разный путь</li>
+                    <li>В 2D сетках проигрывает A* по скорости и качеству пути</li>
+                    <li>Нужна пост-обработка пути (сглаживание, shortcutting)</li>
+                    <li>Плохо работает в узких лабиринтах с длинными коридорами</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ C++ ROS2 ============ -->
+        <h2>Интеграция с ROS2 (C++)</h2>
+
+        <p>Ниже — скелет ROS2-ноды, реализующей RRT-планировщик. Нода подписывается на карту (<code>/map</code>), получает стартовую и целевую позицию, строит дерево и публикует путь:</p>
+
+<pre>
+#include &lt;rclcpp/rclcpp.hpp&gt;
+#include &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
+#include &lt;nav_msgs/msg/path.hpp&gt;
+#include &lt;geometry_msgs/msg/pose_stamped.hpp&gt;
+#include &lt;random&gt;
+#include &lt;cmath&gt;
+#include &lt;vector&gt;
+
+struct Node {
+    double x, y;
+    int parent;  // индекс родительского узла в дереве
+};
+
+class RRTPlanner : public rclcpp::Node {
+public:
+    RRTPlanner() : Node("rrt_planner") {
+        // Параметры
+        this-&gt;declare_parameter("step_size", 0.5);
+        this-&gt;declare_parameter("goal_bias", 0.05);
+        this-&gt;declare_parameter("max_iterations", 10000);
+        this-&gt;declare_parameter("goal_threshold", 0.5);
+
+        step_size_     = this-&gt;get_parameter("step_size").as_double();
+        goal_bias_     = this-&gt;get_parameter("goal_bias").as_double();
+        max_iter_      = this-&gt;get_parameter("max_iterations").as_int();
+        goal_thresh_   = this-&gt;get_parameter("goal_threshold").as_double();
+
+        // Подписки и паблишеры
+        map_sub_ = this-&gt;create_subscription&lt;nav_msgs::msg::OccupancyGrid&gt;(
+            "/map", 10, [this](nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+                map_ = msg;
+            });
+
+        path_pub_ = this-&gt;create_publisher&lt;nav_msgs::msg::Path&gt;("/planned_path", 10);
+
+        // Генератор случайных чисел
+        rng_ = std::mt19937(std::random_device{}());
+    }
+
+    nav_msgs::msg::Path plan(double sx, double sy, double gx, double gy) {
+        std::vector&lt;Node&gt; tree;
+        tree.push_back({sx, sy, -1});
+
+        std::uniform_real_distribution&lt;double&gt; dist_x(0, map_width_);
+        std::uniform_real_distribution&lt;double&gt; dist_y(0, map_height_);
+        std::uniform_real_distribution&lt;double&gt; dist_01(0, 1);
+
+        for (int i = 0; i &lt; max_iter_; ++i) {
+            // 1. Sample
+            double rx, ry;
+            if (dist_01(rng_) &lt; goal_bias_) {
+                rx = gx; ry = gy;  // goal bias
+            } else {
+                rx = dist_x(rng_); ry = dist_y(rng_);
+            }
+
+            // 2. Nearest
+            int nearest_idx = 0;
+            double min_dist = 1e9;
+            for (int j = 0; j &lt; (int)tree.size(); ++j) {
+                double d = hypot(tree[j].x - rx, tree[j].y - ry);
+                if (d &lt; min_dist) { min_dist = d; nearest_idx = j; }
+            }
+
+            // 3. Steer
+            double dx = rx - tree[nearest_idx].x;
+            double dy = ry - tree[nearest_idx].y;
+            double dist = hypot(dx, dy);
+            double nx = tree[nearest_idx].x + step_size_ * dx / dist;
+            double ny = tree[nearest_idx].y + step_size_ * dy / dist;
+
+            // 4. Collision check
+            if (!collision_free(tree[nearest_idx].x, tree[nearest_idx].y, nx, ny))
+                continue;
+
+            // 5. Add to tree
+            tree.push_back({nx, ny, nearest_idx});
+
+            // 6. Goal check
+            if (hypot(nx - gx, ny - gy) &lt; goal_thresh_) {
+                tree.push_back({gx, gy, (int)tree.size() - 1});
+                return reconstruct_path(tree);
+            }
+        }
+
+        RCLCPP_WARN(this-&gt;get_logger(), "RRT: path not found in %d iterations", max_iter_);
+        return nav_msgs::msg::Path();  // пустой путь
+    }
+
+private:
+    bool collision_free(double x1, double y1, double x2, double y2) {
+        // Проверяем отрезок с шагом resolution/2
+        double dist = hypot(x2 - x1, y2 - y1);
+        int steps = std::max(2, (int)(dist / (resolution_ * 0.5)));
+        for (int i = 0; i &lt;= steps; ++i) {
+            double t = (double)i / steps;
+            double cx = x1 + t * (x2 - x1);
+            double cy = y1 + t * (y2 - y1);
+            if (is_occupied(cx, cy)) return false;
+        }
+        return true;
+    }
+
+    bool is_occupied(double x, double y) {
+        int mx = (int)((x - origin_x_) / resolution_);
+        int my = (int)((y - origin_y_) / resolution_);
+        if (mx &lt; 0 || mx &gt;= map_w_ || my &lt; 0 || my &gt;= map_h_) return true;
+        return map_-&gt;data[my * map_w_ + mx] &gt; 50;  // >50 = занято
+    }
+
+    nav_msgs::msg::Path reconstruct_path(const std::vector&lt;Node&gt;&amp; tree) {
+        nav_msgs::msg::Path path;
+        path.header.frame_id = "map";
+        path.header.stamp = this-&gt;now();
+
+        int idx = tree.size() - 1;
+        while (idx != -1) {
+            geometry_msgs::msg::PoseStamped ps;
+            ps.header = path.header;
+            ps.pose.position.x = tree[idx].x;
+            ps.pose.position.y = tree[idx].y;
+            path.poses.push_back(ps);
+            idx = tree[idx].parent;
+        }
+        std::reverse(path.poses.begin(), path.poses.end());
+        return path;
+    }
+
+    // Данные
+    nav_msgs::msg::OccupancyGrid::SharedPtr map_;
+    double step_size_, goal_bias_, goal_thresh_, resolution_ = 0.05;
+    double map_width_, map_height_, origin_x_, origin_y_;
+    int max_iter_, map_w_, map_h_;
+    std::mt19937 rng_;
+
+    rclcpp::Subscription&lt;nav_msgs::msg::OccupancyGrid&gt;::SharedPtr map_sub_;
+    rclcpp::Publisher&lt;nav_msgs::msg::Path&gt;::SharedPtr path_pub_;
+};
+</pre>
+
+        <div class="card highlight">
+            <strong>Ключевые отличия от A*/Dijkstra в коде:</strong>
+            <ul>
+                <li><strong>Нет priority_queue</strong> — вместо неё случайный сэмплинг и поиск ближайшего соседа</li>
+                <li><strong>Нет сетки</strong> — координаты непрерывные (double), не индексы клеток</li>
+                <li><strong>collision_free()</strong> — проверяет не клетку, а <em>отрезок</em> (много точек вдоль линии)</li>
+                <li><strong>std::mt19937</strong> — генератор случайных чисел (Mersenne Twister). В роботике это стандарт</li>
+                <li>Каждый узел хранит <code>parent</code> — индекс узла, от которого «вырос»</li>
+            </ul>
+        </div>
+
+        <!-- ============ ПОСТ-ОБРАБОТКА ============ -->
+        <h2>Сглаживание пути (Post-processing)</h2>
+
+        <p>RRT-путь всегда ломаный и неоптимальный. В реальных системах его обязательно сглаживают. Простейший метод — <strong>shortcutting</strong>:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Берём два случайных узла пути: $p_i$ и $p_j$ (где $j > i + 1$).</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Проверяем: можно ли провести прямую линию от $p_i$ до $p_j$ без столкновений?</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Если да — удаляем все промежуточные узлы $p_{i+1} \ldots p_{j-1}$. Путь стал короче!</div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">Повторяем 50–100 раз. Каждый раз путь немного улучшается.</div>
+        </div>
+
+        <!-- ============ ВАРИАНТЫ ============ -->
+        <h2>Семейство RRT</h2>
+
+        <table>
+            <tr><th>Вариант</th><th>Отличие от базового RRT</th><th>Плюс</th></tr>
+            <tr>
+                <td><strong>RRT*</strong></td>
+                <td>Перепривязывает узлы к лучшим родителям (rewiring)</td>
+                <td>Асимптотически оптимален</td>
+            </tr>
+            <tr>
+                <td><strong>RRT-Connect</strong></td>
+                <td>Два дерева растут навстречу (от старта и от цели)</td>
+                <td>Быстрее находит путь в 2-5 раз</td>
+            </tr>
+            <tr>
+                <td><strong>Informed RRT*</strong></td>
+                <td>После первого пути сужает область сэмплирования (эллипс)</td>
+                <td>Быстрее сходится к оптимуму</td>
+            </tr>
+            <tr>
+                <td><strong>Bi-directional RRT</strong></td>
+                <td>Как RRT-Connect, но без жадного расширения</td>
+                <td>Компромисс скорости и качества</td>
+            </tr>
+        </table>
+
+        <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
+        <h2>Когда использовать RRT</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <h3 style="margin-top:0;color:var(--green)">Используй RRT, если:</h3>
+                <ul>
+                    <li>Пространство высокоразмерное (манипуляторы, дроны с 6+ DOF)</li>
+                    <li>Карта большая и разреженная (мало препятствий)</li>
+                    <li>Нужно быстро найти <em>хоть какой-то</em> путь</li>
+                    <li>Нет жёстких требований к оптимальности</li>
+                    <li>Нужно планировать с учётом кинематических ограничений робота</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <h3 style="margin-top:0;color:var(--orange)">НЕ используй RRT, если:</h3>
+                <ul>
+                    <li>Нужен кратчайший путь — используй A* или RRT*</li>
+                    <li>Карта — плотный лабиринт (A* справится лучше)</li>
+                    <li>Нужен детерминированный результат (один и тот же путь каждый раз)</li>
+                    <li>Карта маленькая (5×5, 10×10) — A* будет быстрее</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ СРАВНИТЕЛЬНАЯ ТАБЛИЦА ============ -->
+        <h2>Сравнение с другими алгоритмами</h2>
+
+        <table>
+            <tr>
+                <th>Критерий</th>
+                <th>A*</th>
+                <th>Dijkstra</th>
+                <th>RRT</th>
+            </tr>
+            <tr>
+                <td>Тип</td>
+                <td><span class="tag blue">Сеточный</span></td>
+                <td><span class="tag blue">Сеточный</span></td>
+                <td><span class="tag purple">Sampling</span></td>
+            </tr>
+            <tr>
+                <td>Оптимальность</td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag orange">Нет</span></td>
+            </tr>
+            <tr>
+                <td>Полнота</td>
+                <td><span class="tag green">Полный</span></td>
+                <td><span class="tag green">Полный</span></td>
+                <td><span class="tag orange">Вероятностно</span></td>
+            </tr>
+            <tr>
+                <td>Многомерные пространства</td>
+                <td><span class="tag orange">Плохо</span></td>
+                <td><span class="tag orange">Плохо</span></td>
+                <td><span class="tag green">Отлично</span></td>
+            </tr>
+            <tr>
+                <td>Детерминированность</td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag green">Да</span></td>
+                <td><span class="tag orange">Нет</span></td>
+            </tr>
+            <tr>
+                <td>Скорость (2D сетка)</td>
+                <td><span class="tag green">Быстро</span></td>
+                <td><span class="tag blue">Средне</span></td>
+                <td><span class="tag orange">Медленно</span></td>
+            </tr>
+            <tr>
+                <td>Скорость (6D+)</td>
+                <td><span class="tag orange">Невозможно</span></td>
+                <td><span class="tag orange">Невозможно</span></td>
+                <td><span class="tag green">Быстро</span></td>
+            </tr>
+        </table>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="algo-2-dijkstra.html">← 2. Dijkstra</a>
+            <a href="algo-4-rrt-star.html">4. RRT* →</a>
+        </div>
+    </div>
+</body>
+</html>

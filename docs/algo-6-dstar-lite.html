@@ -228,27 +228,27 @@
             <div>
                 <div class="grid-viz">
                     <!-- Row 0: g = dist to goal -->
-                    <div class="cell start path"><span class="lbl">S</span><span class="vals">g=7</span></div>
-                    <div class="cell explored path"><span class="vals">g=6</span></div>
+                    <div class="cell start path"><span class="lbl">S</span><span class="vals">g=8</span></div>
+                    <div class="cell explored path"><span class="vals">g=7</span></div>
                     <div class="cell explored"><span class="vals">g=6</span></div>
                     <div class="cell explored"><span class="vals">g=5</span></div>
                     <div class="cell explored"><span class="vals">g=4</span></div>
                     <!-- Row 1 -->
-                    <div class="cell explored"><span class="vals">g=6</span></div>
-                    <div class="cell explored path"><span class="vals">g=5</span></div>
+                    <div class="cell explored"><span class="vals">g=7</span></div>
+                    <div class="cell explored path"><span class="vals">g=6</span></div>
                     <div class="cell wall"><span class="lbl">▓</span></div>
                     <div class="cell explored"><span class="vals">g=4</span></div>
                     <div class="cell explored"><span class="vals">g=3</span></div>
                     <!-- Row 2 -->
-                    <div class="cell explored"><span class="vals">g=5</span></div>
-                    <div class="cell explored path"><span class="vals">g=4</span></div>
+                    <div class="cell explored"><span class="vals">g=6</span></div>
+                    <div class="cell explored path"><span class="vals">g=5</span></div>
                     <div class="cell wall"><span class="lbl">▓</span></div>
                     <div class="cell explored"><span class="vals">g=3</span></div>
                     <div class="cell explored"><span class="vals">g=2</span></div>
                     <!-- Row 3 -->
-                    <div class="cell explored"><span class="vals">g=4</span></div>
+                    <div class="cell explored"><span class="vals">g=5</span></div>
+                    <div class="cell explored path"><span class="vals">g=4</span></div>
                     <div class="cell explored path"><span class="vals">g=3</span></div>
-                    <div class="cell explored path"><span class="vals">g=2</span></div>
                     <div class="cell explored path"><span class="vals">g=2</span></div>
                     <div class="cell explored path"><span class="vals">g=1</span></div>
                     <!-- Row 4 -->
@@ -306,27 +306,27 @@
             <div>
                 <div class="grid-viz">
                     <!-- Row 0 -->
-                    <div class="cell start"><span class="lbl">S</span><span class="vals">g=7</span></div>
-                    <div class="cell explored path"><span class="vals">g=6→<b>7</b></span></div>
+                    <div class="cell start"><span class="lbl">S</span><span class="vals">g=8→<b>9</b></span></div>
+                    <div class="cell explored path"><span class="vals">g=7→<b>8</b></span></div>
                     <div class="cell explored"><span class="vals">g=6</span></div>
                     <div class="cell explored"><span class="vals">g=5</span></div>
                     <div class="cell explored"><span class="vals">g=4</span></div>
                     <!-- Row 1 -->
-                    <div class="cell explored"><span class="vals">g=6</span></div>
-                    <div class="cell changed"><span class="ord">fix</span><span class="vals">g=5→<b>6</b></span></div>
+                    <div class="cell explored"><span class="vals">g=7</span></div>
+                    <div class="cell changed"><span class="ord">fix</span><span class="vals">g=6→<b>7</b></span></div>
                     <div class="cell wall"><span class="lbl">▓</span></div>
                     <div class="cell explored"><span class="vals">g=4</span></div>
                     <div class="cell explored"><span class="vals">g=3</span></div>
                     <!-- Row 2 -->
-                    <div class="cell explored path"><span class="vals">g=5</span></div>
+                    <div class="cell explored path"><span class="vals">g=6</span></div>
                     <div class="cell newwall"><span class="lbl">▓ NEW</span></div>
                     <div class="cell wall"><span class="lbl">▓</span></div>
                     <div class="cell explored"><span class="vals">g=3</span></div>
                     <div class="cell explored"><span class="vals">g=2</span></div>
                     <!-- Row 3 -->
+                    <div class="cell explored path"><span class="vals">g=5</span></div>
                     <div class="cell explored path"><span class="vals">g=4</span></div>
                     <div class="cell explored path"><span class="vals">g=3</span></div>
-                    <div class="cell explored path"><span class="vals">g=2</span></div>
                     <div class="cell explored path"><span class="vals">g=2</span></div>
                     <div class="cell explored path"><span class="vals">g=1</span></div>
                     <!-- Row 4 -->
@@ -389,7 +389,7 @@
             <ol>
                 <li>Этап 1: D* Lite нашёл путь (тот же, что и A*) — обход стены снизу</li>
                 <li>Робот начал движение и дошёл до (0,1). Сенсоры обнаружили: (1,2) заблокирована!</li>
-                <li>D* Lite пересчитал <strong>только 2 узла</strong>: (1,1) и (0,1). Их g-значения выросли</li>
+                <li>D* Lite пересчитал <strong>только 3 узла</strong>: (1,1), (0,1) и S. Их g-значения выросли</li>
                 <li>Новый путь: от (0,1) идём вниз по столбцу 0, потом вправо по строке 3 → G</li>
                 <li>Все остальные g-значения <strong>не изменились</strong> — в этом суть инкрементальности</li>
             </ol>

@@ -73,12 +73,6 @@
         .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
         .grid-legend span{display:flex;align-items:center;gap:6px}
         .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
-        .grid-viz.mini{max-width:200px;gap:3px;margin:4px 0}
-        .grid-viz.mini .cell{min-height:32px;padding:2px;font-size:.6em;border-radius:5px}
-        .grid-viz.mini .cell .lbl{font-size:.85em;margin:0}
-        .grid-viz.mini .cell.focus{box-shadow:0 0 8px var(--orange);z-index:1}
-        .side-by-side{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
-        .side-by-side > div{flex:1;min-width:280px}
         @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
     </style>
 </head>
@@ -147,18 +141,27 @@
 
         <div class="card warn">
             <h3>Overconsistent vs Underconsistent</h3>
-            <p>Если $g(s) > rhs(s)$ — клетка <strong>overconsistent</strong>. Мы нашли путь лучше, чем раньше. Решение: установить $g(s) = rhs(s)$ (принять улучшение).</p>
+            <p>Если $g(s) > rhs(s)$ — клетка <strong>overconsistent</strong>. Мы нашли путь лучше, чем записано. Решение: установить $g(s) = rhs(s)$ (принять улучшение).</p>
             <p>Если $g(s) < rhs(s)$ — клетка <strong>underconsistent</strong>. Путь стал хуже (например, появилась стена). Решение: установить $g(s) = \infty$ (сбросить и пересчитать).</p>
         </div>
 
         <!-- ============ ФОРМУЛЫ ============ -->
         <h2>Формулы</h2>
 
+        <h3>Движение</h3>
+        <p>8 направлений: 4 кардинальных (↑↓←→, стоимость 1) и 4 диагональных (↗↘↙↖, стоимость $\sqrt{2} \approx 1.4$).</p>
+
         <h3>Как считать rhs</h3>
         <div class="formula-block">
             $rhs(s) = \begin{cases} 0 & \text{если } s = s_{start} \\ \min_{s' \in pred(s)} \big(g(s') + c(s', s)\big) & \text{иначе} \end{cases}$
         </div>
-        <p>Проще говоря: rhs старта = 0 (оттуда мы начинаем), а для всех остальных клеток — смотрим на соседей, берём того, через кого дешевле всего добраться.</p>
+        <p>Проще говоря: rhs старта = 0 (оттуда мы начинаем), а для всех остальных клеток — смотрим на всех 8 соседей, берём того, через кого дешевле всего добраться. Для кардинальных соседей $c = 1$, для диагональных $c = \sqrt{2}$.</p>
+
+        <h3>Эвристика (octile distance)</h3>
+        <div class="formula-block">
+            $h(s, s_{goal}) = \max(\Delta x, \Delta y) + (\sqrt{2} - 1) \cdot \min(\Delta x, \Delta y)$
+        </div>
+        <p>Та же эвристика, что в JPS — точное расстояние при 8-направленном движении без препятствий.</p>
 
         <h3>Ключ приоритета</h3>
         <div class="formula-block">
@@ -169,7 +172,7 @@
         <h3>UpdateVertex(s)</h3>
         <p>Вызывается, когда что-то изменилось вокруг клетки $s$:</p>
         <ol>
-            <li>Если $s \neq s_{start}$: пересчитай $rhs(s)$ по текущим соседям</li>
+            <li>Если $s \neq s_{start}$: пересчитай $rhs(s)$ по текущим 8 соседям</li>
             <li>Убери $s$ из очереди (если была)</li>
             <li>Если $g(s) \neq rhs(s)$: добавь $s$ обратно в очередь с новым key</li>
         </ol>
@@ -177,44 +180,44 @@
 
         <!-- ============ ВИЗУАЛЬНЫЙ ПРИМЕР ============ -->
         <h2>Визуальный пример</h2>
-        <p>Карта 5×5, 4 направления (вверх/вниз/влево/вправо), стоимость шага = 1. S(0,0) — старт, G(4,4) — цель, стены: (2,1) и (2,2).</p>
+        <p>Карта 5×5, 8 направлений. S(0,0) — старт, G(4,4) — цель, стены: (2,1) и (2,2). Кардинальный шаг = 1, диагональный = 1.4.</p>
 
         <h3>Фаза 1: первый поиск</h3>
-        <p>Первый запуск — по сути тот же A*. Раскрываем узлы, считаем g и rhs. Когда всё закончится, у всех клеток на оптимальном пути будет $g = rhs$ (consistent).</p>
+        <p>Первый запуск — по сути тот же A*. Раскрываем узлы, считаем g и rhs. Когда всё закончится, у всех клеток $g = rhs$ (consistent).</p>
 
-        <p><strong>Подробная карта</strong> — g/rhs для каждой клетки:</p>
+        <p><strong>Подробная карта</strong> — g/rhs для каждой клетки (значения округлены):</p>
 
         <div class="grid-viz">
-            <!-- Row 0 -->
-            <div class="cell start"><span class="lbl">S</span><span class="vals">g=0 rhs=0<br><b>consistent</b></span></div>
-            <div class="cell explored"><span class="vals">g=1 rhs=1<br><b>consist.</b></span></div>
-            <div class="cell explored"><span class="vals">g=2 rhs=2<br><b>consist.</b></span></div>
-            <div class="cell explored"><span class="vals">g=3 rhs=3<br><b>consist.</b></span></div>
-            <div class="cell explored"><span class="vals">g=4 rhs=4<br><b>consist.</b></span></div>
-            <!-- Row 1 -->
-            <div class="cell explored"><span class="vals">g=1 rhs=1<br><b>consist.</b></span></div>
-            <div class="cell path"><span class="vals">g=2 rhs=2<br><b>consist.</b></span></div>
+            <!-- Row 0: g = 0, 1.0, 2.0, 3.0, 4.0 -->
+            <div class="cell start"><span class="lbl">S</span><span class="vals">g=0<br>rhs=0</span></div>
+            <div class="cell explored"><span class="vals">g=1.0<br>rhs=1.0</span></div>
+            <div class="cell explored"><span class="vals">g=2.0<br>rhs=2.0</span></div>
+            <div class="cell explored"><span class="vals">g=3.0<br>rhs=3.0</span></div>
+            <div class="cell explored"><span class="vals">g=4.0<br>rhs=4.0</span></div>
+            <!-- Row 1: 1.0, 1.4, W, 3.4, 4.4 -->
+            <div class="cell explored"><span class="vals">g=1.0<br>rhs=1.0</span></div>
+            <div class="cell path"><span class="vals">g=1.4<br>rhs=1.4</span></div>
             <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell explored"><span class="vals">g=4 rhs=4<br><b>consist.</b></span></div>
-            <div class="cell explored"><span class="vals">g=5 rhs=5<br><b>consist.</b></span></div>
-            <!-- Row 2 -->
-            <div class="cell explored"><span class="vals">g=2 rhs=2<br><b>consist.</b></span></div>
-            <div class="cell path"><span class="vals">g=3 rhs=3<br><b>consist.</b></span></div>
+            <div class="cell explored"><span class="vals">g=3.4<br>rhs=3.4</span></div>
+            <div class="cell explored"><span class="vals">g=4.4<br>rhs=4.4</span></div>
+            <!-- Row 2: 2.0, 2.4, W, 4.4, 4.8 -->
+            <div class="cell explored"><span class="vals">g=2.0<br>rhs=2.0</span></div>
+            <div class="cell path"><span class="vals">g=2.4<br>rhs=2.4</span></div>
             <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell explored"><span class="vals">g=5 rhs=5<br><b>consist.</b></span></div>
-            <div class="cell explored"><span class="vals">g=6 rhs=6<br><b>consist.</b></span></div>
-            <!-- Row 3 -->
-            <div class="cell explored"><span class="vals">g=3 rhs=3<br><b>consist.</b></span></div>
-            <div class="cell path"><span class="vals">g=4 rhs=4<br><b>consist.</b></span></div>
-            <div class="cell path"><span class="vals">g=5 rhs=5<br><b>consist.</b></span></div>
-            <div class="cell path"><span class="vals">g=6 rhs=6<br><b>consist.</b></span></div>
-            <div class="cell explored"><span class="vals">g=7 rhs=7<br><b>consist.</b></span></div>
-            <!-- Row 4 -->
-            <div class="cell explored"><span class="vals">g=4 rhs=4<br><b>consist.</b></span></div>
-            <div class="cell explored"><span class="vals">g=5 rhs=5<br><b>consist.</b></span></div>
-            <div class="cell explored"><span class="vals">g=6 rhs=6<br><b>consist.</b></span></div>
-            <div class="cell path"><span class="vals">g=7 rhs=7<br><b>consist.</b></span></div>
-            <div class="cell goal"><span class="lbl">G</span><span class="vals">g=8 rhs=8<br><b>consist.</b></span></div>
+            <div class="cell explored"><span class="vals">g=4.4<br>rhs=4.4</span></div>
+            <div class="cell explored"><span class="vals">g=4.8<br>rhs=4.8</span></div>
+            <!-- Row 3: 3.0, 3.4, 3.8, 4.8, 5.8 -->
+            <div class="cell explored"><span class="vals">g=3.0<br>rhs=3.0</span></div>
+            <div class="cell explored"><span class="vals">g=3.4<br>rhs=3.4</span></div>
+            <div class="cell path"><span class="vals">g=3.8<br>rhs=3.8</span></div>
+            <div class="cell explored"><span class="vals">g=4.8<br>rhs=4.8</span></div>
+            <div class="cell explored"><span class="vals">g=5.8<br>rhs=5.8</span></div>
+            <!-- Row 4: 4.0, 4.4, 4.8, 5.2, 6.2 -->
+            <div class="cell explored"><span class="vals">g=4.0<br>rhs=4.0</span></div>
+            <div class="cell explored"><span class="vals">g=4.4<br>rhs=4.4</span></div>
+            <div class="cell explored"><span class="vals">g=4.8<br>rhs=4.8</span></div>
+            <div class="cell path"><span class="vals">g=5.2<br>rhs=5.2</span></div>
+            <div class="cell goal"><span class="lbl">G</span><span class="vals">g=6.2<br>rhs=6.2</span></div>
         </div>
 
         <p><strong>Чистый путь:</strong></p>
@@ -225,7 +228,86 @@
                 <div class="cell"><span class="vals">(2,0)</span></div>
                 <div class="cell"><span class="vals">(3,0)</span></div>
                 <div class="cell"><span class="vals">(4,0)</span></div>
-                <div class="cell path"><span class="vals">(0,1)</span></div>
+                <div class="cell"><span class="vals">(0,1)</span></div>
+                <div class="cell path"><span class="vals">(1,1)</span></div>
+                <div class="cell wall"><span class="lbl">▓</span></div>
+                <div class="cell"><span class="vals">(3,1)</span></div>
+                <div class="cell"><span class="vals">(4,1)</span></div>
+                <div class="cell"><span class="vals">(0,2)</span></div>
+                <div class="cell path"><span class="vals">(1,2)</span></div>
+                <div class="cell wall"><span class="lbl">▓</span></div>
+                <div class="cell"><span class="vals">(3,2)</span></div>
+                <div class="cell"><span class="vals">(4,2)</span></div>
+                <div class="cell"><span class="vals">(0,3)</span></div>
+                <div class="cell"><span class="vals">(1,3)</span></div>
+                <div class="cell path"><span class="vals">(2,3)</span></div>
+                <div class="cell"><span class="vals">(3,3)</span></div>
+                <div class="cell"><span class="vals">(4,3)</span></div>
+                <div class="cell"><span class="vals">(0,4)</span></div>
+                <div class="cell"><span class="vals">(1,4)</span></div>
+                <div class="cell"><span class="vals">(2,4)</span></div>
+                <div class="cell path"><span class="vals">(3,4)</span></div>
+                <div class="cell goal"><span class="lbl">G</span></div>
+            </div>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polyline points="10,10 30,30 30,50 50,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <p style="text-align:center;color:var(--text2);font-size:.9em">Путь: S→(1,1)→(1,2)→(2,3)→(3,4)→G &nbsp;|&nbsp; Стоимость: $2 + 3\sqrt{2} \approx 6.2$</p>
+
+        <h3>Фаза 2: появилась стена на (2,3)</h3>
+        <p>Робот едет по маршруту и вдруг обнаруживает: клетка (2,3) заблокирована! Старый путь шёл прямо через неё. Что делает LPA*?</p>
+
+        <div class="card warn">
+            <p><strong>Шаг 1.</strong> Помечаем (2,3) как стену. Пересчитываем rhs у всех 8 соседей (2,3). Большинство не зависели от неё — их rhs не меняется.</p>
+            <p><strong>Шаг 2.</strong> Два соседа <em>зависели</em> от (2,3): у (3,3) лучший путь шёл через (2,3), и у (3,4) тоже. Их rhs меняется → они стали <strong>inconsistent</strong>.</p>
+            <p><strong>Шаг 3.</strong> LPA* раскрывает <strong>только 3 клетки</strong> — (3,3), (3,4), (4,4) — вместо ~20 у полного A*. Новый путь найден.</p>
+        </div>
+
+        <p><strong>Карта после пересчёта</strong> — оранжевым выделены клетки, которые LPA* пересчитал:</p>
+
+        <div class="grid-viz">
+            <!-- Row 0: unchanged -->
+            <div class="cell start"><span class="lbl">S</span><span class="vals">g=0</span></div>
+            <div class="cell explored"><span class="vals">g=1.0</span></div>
+            <div class="cell explored"><span class="vals">g=2.0</span></div>
+            <div class="cell explored"><span class="vals">g=3.0</span></div>
+            <div class="cell explored"><span class="vals">g=4.0</span></div>
+            <!-- Row 1: unchanged -->
+            <div class="cell explored"><span class="vals">g=1.0</span></div>
+            <div class="cell path"><span class="vals">g=1.4</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="vals">g=3.4</span></div>
+            <div class="cell explored"><span class="vals">g=4.4</span></div>
+            <!-- Row 2: unchanged -->
+            <div class="cell explored"><span class="vals">g=2.0</span></div>
+            <div class="cell path"><span class="vals">g=2.4</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="vals">g=4.4</span></div>
+            <div class="cell explored"><span class="vals">g=4.8</span></div>
+            <!-- Row 3: (2,3)=new wall, (3,3) changed -->
+            <div class="cell explored"><span class="vals">g=3.0</span></div>
+            <div class="cell path"><span class="vals">g=3.4</span></div>
+            <div class="cell wall" style="border-color:var(--red);border-width:2px"><span class="lbl" style="color:var(--red)">NEW ▓</span></div>
+            <div class="cell changed"><span class="vals">g=5.4<br><b>было 4.8</b></span></div>
+            <div class="cell explored"><span class="vals">g=5.8</span></div>
+            <!-- Row 4: (3,4) and (4,4) changed -->
+            <div class="cell explored"><span class="vals">g=4.0</span></div>
+            <div class="cell explored"><span class="vals">g=4.4</span></div>
+            <div class="cell path"><span class="vals">g=4.8</span></div>
+            <div class="cell changed"><span class="vals">g=5.8<br><b>было 5.2</b></span></div>
+            <div class="cell goal"><span class="lbl">G</span><span class="vals">g=6.8<br><b>было 6.2</b></span></div>
+        </div>
+
+        <p><strong>Новый путь:</strong></p>
+        <div class="grid-overlay">
+            <div class="grid-viz clean">
+                <div class="cell start"><span class="lbl">S</span></div>
+                <div class="cell"><span class="vals">(1,0)</span></div>
+                <div class="cell"><span class="vals">(2,0)</span></div>
+                <div class="cell"><span class="vals">(3,0)</span></div>
+                <div class="cell"><span class="vals">(4,0)</span></div>
+                <div class="cell"><span class="vals">(0,1)</span></div>
                 <div class="cell path"><span class="vals">(1,1)</span></div>
                 <div class="cell wall"><span class="lbl">▓</span></div>
                 <div class="cell"><span class="vals">(3,1)</span></div>
@@ -237,102 +319,23 @@
                 <div class="cell"><span class="vals">(4,2)</span></div>
                 <div class="cell"><span class="vals">(0,3)</span></div>
                 <div class="cell path"><span class="vals">(1,3)</span></div>
-                <div class="cell path"><span class="vals">(2,3)</span></div>
-                <div class="cell path"><span class="vals">(3,3)</span></div>
+                <div class="cell wall"><span class="lbl">▓</span></div>
+                <div class="cell"><span class="vals">(3,3)</span></div>
                 <div class="cell"><span class="vals">(4,3)</span></div>
                 <div class="cell"><span class="vals">(0,4)</span></div>
                 <div class="cell"><span class="vals">(1,4)</span></div>
-                <div class="cell"><span class="vals">(2,4)</span></div>
-                <div class="cell path"><span class="vals">(3,4)</span></div>
-                <div class="cell goal"><span class="lbl">G</span></div>
-            </div>
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polyline points="10,10 10,30 30,30 30,50 30,70 50,70 70,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </div>
-        <p style="text-align:center;color:var(--text2);font-size:.9em">Путь: S→(0,1)→(1,1)→(1,2)→(1,3)→(2,3)→(3,3)→(3,4)→G &nbsp;|&nbsp; Стоимость: 8</p>
-
-        <h3>Фаза 2: появилась стена на (1,3)</h3>
-        <p>Робот едет по маршруту и вдруг обнаруживает: клетка (1,3) заблокирована! Что делает LPA*?</p>
-
-        <div class="card warn">
-            <p><strong>Шаг 1.</strong> Помечаем (1,3) как стену. Все соседи, которые использовали (1,3) как часть пути, получают обновление rhs.</p>
-            <p><strong>Шаг 2.</strong> Клетки (2,3) и (1,4) пересчитывают rhs — старый путь через (1,3) больше не доступен. Их rhs меняется → они стали <strong>inconsistent</strong>.</p>
-            <p><strong>Шаг 3.</strong> LPA* раскрывает <strong>только эти 2–4 клетки</strong> вместо ~20 у полного A*. Находит обходной путь.</p>
-        </div>
-
-        <p><strong>Карта после пересчёта</strong> — оранжевым выделены клетки, которые LPA* пересчитал:</p>
-
-        <div class="grid-viz">
-            <!-- Row 0 -->
-            <div class="cell start"><span class="lbl">S</span><span class="vals">g=0 rhs=0</span></div>
-            <div class="cell explored"><span class="vals">g=1 rhs=1</span></div>
-            <div class="cell explored"><span class="vals">g=2 rhs=2</span></div>
-            <div class="cell explored"><span class="vals">g=3 rhs=3</span></div>
-            <div class="cell explored"><span class="vals">g=4 rhs=4</span></div>
-            <!-- Row 1 -->
-            <div class="cell explored"><span class="vals">g=1 rhs=1</span></div>
-            <div class="cell explored"><span class="vals">g=2 rhs=2</span></div>
-            <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell explored"><span class="vals">g=4 rhs=4</span></div>
-            <div class="cell explored"><span class="vals">g=5 rhs=5</span></div>
-            <!-- Row 2 -->
-            <div class="cell path"><span class="vals">g=2 rhs=2</span></div>
-            <div class="cell path"><span class="vals">g=3 rhs=3</span></div>
-            <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell changed"><span class="vals">g=5 rhs=5<br><b>пересчёт!</b></span></div>
-            <div class="cell explored"><span class="vals">g=6 rhs=6</span></div>
-            <!-- Row 3 -->
-            <div class="cell path"><span class="vals">g=3 rhs=3</span></div>
-            <div class="cell wall" style="border-color:var(--red);border-width:2px"><span class="lbl" style="color:var(--red)">NEW ▓</span></div>
-            <div class="cell changed"><span class="vals">g=5 rhs=5<br><b>пересчёт!</b></span></div>
-            <div class="cell path"><span class="vals">g=6 rhs=6</span></div>
-            <div class="cell explored"><span class="vals">g=7 rhs=7</span></div>
-            <!-- Row 4 -->
-            <div class="cell path"><span class="vals">g=4 rhs=4</span></div>
-            <div class="cell changed"><span class="vals">g=5 rhs=5<br><b>пересчёт!</b></span></div>
-            <div class="cell path"><span class="vals">g=6 rhs=6</span></div>
-            <div class="cell path"><span class="vals">g=7 rhs=7</span></div>
-            <div class="cell goal"><span class="lbl">G</span><span class="vals">g=8 rhs=8</span></div>
-        </div>
-
-        <p><strong>Новый путь:</strong></p>
-        <div class="grid-overlay">
-            <div class="grid-viz clean">
-                <div class="cell start"><span class="lbl">S</span></div>
-                <div class="cell"><span class="vals">(1,0)</span></div>
-                <div class="cell"><span class="vals">(2,0)</span></div>
-                <div class="cell"><span class="vals">(3,0)</span></div>
-                <div class="cell"><span class="vals">(4,0)</span></div>
-                <div class="cell path"><span class="vals">(0,1)</span></div>
-                <div class="cell"><span class="vals">(1,1)</span></div>
-                <div class="cell wall"><span class="lbl">▓</span></div>
-                <div class="cell"><span class="vals">(3,1)</span></div>
-                <div class="cell"><span class="vals">(4,1)</span></div>
-                <div class="cell path"><span class="vals">(0,2)</span></div>
-                <div class="cell"><span class="vals">(1,2)</span></div>
-                <div class="cell wall"><span class="lbl">▓</span></div>
-                <div class="cell path"><span class="vals">(3,2)</span></div>
-                <div class="cell"><span class="vals">(4,2)</span></div>
-                <div class="cell path"><span class="vals">(0,3)</span></div>
-                <div class="cell wall"><span class="lbl">▓</span></div>
-                <div class="cell path"><span class="vals">(2,3)</span></div>
-                <div class="cell path"><span class="vals">(3,3)</span></div>
-                <div class="cell"><span class="vals">(4,3)</span></div>
-                <div class="cell path"><span class="vals">(0,4)</span></div>
-                <div class="cell path"><span class="vals">(1,4)</span></div>
                 <div class="cell path"><span class="vals">(2,4)</span></div>
                 <div class="cell path"><span class="vals">(3,4)</span></div>
                 <div class="cell goal"><span class="lbl">G</span></div>
             </div>
             <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polyline points="10,10 10,30 10,50 10,70 10,90 30,90 50,90 50,70 70,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="10,10 30,30 30,50 30,70 50,90 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </div>
-        <p style="text-align:center;color:var(--text2);font-size:.9em">Новый путь: S→(0,1)→(0,2)→(0,3)→(0,4)→(1,4)→(2,4)→(2,3)→(3,3)→(3,4)→G &nbsp;|&nbsp; Стоимость: 10</p>
+        <p style="text-align:center;color:var(--text2);font-size:.9em">Новый путь: S→(1,1)→(1,2)→(1,3)→(2,4)→(3,4)→G &nbsp;|&nbsp; Стоимость: $4 + 2\sqrt{2} \approx 6.8$</p>
 
         <div class="card success">
-            <p><strong>Итого:</strong> A* пересчитал бы ~20 клеток. LPA* пересчитал 3. На карте 1000×1000 разница будет не 7× а 100×+.</p>
+            <p><strong>Итого:</strong> A* пересчитал бы ~20 клеток. LPA* пересчитал <strong>3</strong>: (3,3), (3,4), (4,4). На реальной карте 1000×1000 разница будет не 7× а 100×+.</p>
         </div>
 
         <div class="grid-legend">
@@ -343,7 +346,6 @@
             <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
         </div>
 
-
         <!-- ============ АНИМАЦИЯ ============ -->
         <h2>Анимация: как работает LPA*</h2>
         <p>Два этапа: сначала первый поиск (Фаза 1), потом появляется новая стена и LPA* чинит путь (Фаза 2). Оранжевые — клетки, которые алгоритм обрабатывает прямо сейчас.</p>
@@ -353,7 +355,7 @@
                 <button id="lpa-prev" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">◀</button>
                 <button id="lpa-play" style="background:rgba(108,158,255,.15);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶ Play</button>
                 <button id="lpa-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
-                <span id="lpa-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 1 / 10</span>
+                <span id="lpa-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 1 / 9</span>
             </div>
             <div style="position:relative;max-width:380px;margin:0 auto 16px">
                 <div id="lpa-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
@@ -368,50 +370,42 @@
             let walls=[...WALLS_INIT];
             const isW=(c,r)=>walls.some(w=>w[0]===c&&w[1]===r);
 
-            // g,rhs states per step
-            // Phase 1: first search (steps 0-6), Phase 2: wall appears + fix (steps 7-9)
             const steps=[
-                // PHASE 1: First search
-                {phase:1, expand:null, processing:[], consistent:[], path:[],
-                 grs:{}, wallsExtra:[],
-                 desc:'<b>Фаза 1 — Первый поиск.</b> Все клетки: g=∞, rhs=∞. Только rhs(S)=0. S — inconsistent (g≠rhs), попадает в очередь.'},
+                {phase:1,expand:null,processing:[],consistent:[],path:[],
+                 grs:{},wallsExtra:[],
+                 desc:'<b>Фаза 1 — Первый поиск.</b> Все клетки: g=∞, rhs=∞. Только rhs(S)=0. S — inconsistent (g≠rhs), попадает в очередь. 8 направлений, диагональ=1.4.'},
 
-                {phase:1, expand:[0,0], processing:[[0,0]], consistent:[[0,0]], path:[],
-                 grs:{'0,0':'g=0'}, wallsExtra:[],
-                 desc:'<b>Шаг 1.</b> Раскрываем S(0,0). g>rhs (overconsistent) → ставим g(S)=rhs(S)=0. Обновляем соседей: rhs(1,0)=1, rhs(0,1)=1. Оба → в очередь.'},
+                {phase:1,expand:[0,0],processing:[[0,0]],consistent:[[0,0]],path:[],
+                 grs:{'0,0':'g=0'},wallsExtra:[],
+                 desc:'<b>Шаг 1.</b> Раскрываем S(0,0). Overconsistent → g=rhs=0. Обновляем 3 соседей: rhs(1,0)=1, rhs(0,1)=1, rhs(1,1)=1.4. Все → в очередь.'},
 
-                {phase:1, expand:[1,0], processing:[[1,0],[0,1]], consistent:[[0,0],[1,0],[0,1]], path:[],
-                 grs:{'0,0':'g=0','1,0':'g=1','0,1':'g=1'}, wallsExtra:[],
-                 desc:'<b>Шаг 2.</b> Раскрываем (1,0) и (0,1) — оба overconsistent, g=rhs=1. Их соседи получают обновления: rhs(1,1)=2, rhs(0,2)=2, rhs(2,0)=2.'},
+                {phase:1,expand:[1,0],processing:[[1,0],[0,1],[1,1]],consistent:[[0,0],[1,0],[0,1],[1,1]],path:[],
+                 grs:{'0,0':'g=0','1,0':'g=1','0,1':'g=1','1,1':'g=1.4'},wallsExtra:[],
+                 desc:'<b>Шаг 2.</b> Волна расходится: (1,0), (0,1), (1,1) — все overconsistent. Диагональ через (1,1) уже нашла короткий путь к (1,2) с rhs=2.4.'},
 
-                {phase:1, expand:[1,1], processing:[[1,1],[0,2],[2,0]], consistent:[[0,0],[1,0],[0,1],[1,1],[0,2],[2,0]], path:[],
-                 grs:{'0,0':'g=0','1,0':'g=1','0,1':'g=1','1,1':'g=2','0,2':'g=2','2,0':'g=2'}, wallsExtra:[],
-                 desc:'<b>Шаг 3.</b> Волна идёт дальше. (1,1), (0,2), (2,0) — все consistent. Обновляем rhs соседей: (1,2)=3, (3,0)=3, (0,3)=3.'},
+                {phase:1,expand:[1,2],processing:[[2,0],[0,2],[1,2]],consistent:[[0,0],[1,0],[0,1],[1,1],[2,0],[0,2],[1,2]],path:[],
+                 grs:{'1,1':'g=1.4','1,2':'g=2.4','2,0':'g=2','0,2':'g=2'},wallsExtra:[],
+                 desc:'<b>Шаг 3.</b> Волна продолжается. (1,2) получает g=2.4 — через диагональ (1,1). Стены (2,1) и (2,2) блокируют правый путь, волна обходит снизу.'},
 
-                {phase:1, expand:[1,2], processing:[[1,2],[1,3]], consistent:[[0,0],[1,0],[0,1],[1,1],[0,2],[2,0],[1,2],[1,3],[3,0],[0,3]], path:[],
-                 grs:{'0,0':'g=0','1,0':'g=1','0,1':'g=1','1,1':'g=2','0,2':'g=2','2,0':'g=2','1,2':'g=3','1,3':'g=4','3,0':'g=3','0,3':'g=3'}, wallsExtra:[],
-                 desc:'<b>Шаги 4-5.</b> Волна обходит стены (2,1)-(2,2). Через (1,2)→(1,3)→(2,3). Параллельно волна идёт по верху: (3,0)→(4,0)→(4,1).'},
+                {phase:1,expand:[2,3],processing:[[1,3],[2,3],[3,1]],consistent:[],path:[],
+                 grs:{'1,3':'g=3.4','2,3':'g=3.8','3,1':'g=3.4'},wallsExtra:[],
+                 desc:'<b>Шаги 4-5.</b> Волна проходит (1,3) и (2,3). Параллельно справа: через (2,0)→(3,1) со стоимостью 3.4. Диагональ (1,2)→(2,3) даёт g=3.8.'},
 
-                {phase:1, expand:[2,3], processing:[[2,3],[3,3]], consistent:[], path:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3],[3,4],[4,4]],
-                 grs:{'2,3':'g=5','3,3':'g=6','3,4':'g=7','4,4':'g=8'}, wallsExtra:[],
-                 desc:'<b>Шаги 6-7.</b> Волна достигает G(4,4) через (2,3)→(3,3)→(3,4)→G. g(G)=rhs(G)=8. Первый поиск завершён! Путь стоимостью 8.'},
+                {phase:1,expand:[3,4],processing:[[3,3],[3,4]],consistent:[],path:[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]],
+                 grs:{'3,3':'g=4.8','3,4':'g=5.2','4,4':'g=6.2'},wallsExtra:[],
+                 desc:'<b>Шаги 6-7.</b> Волна достигает G(4,4). Путь: S↘(1,1)↓(1,2)↘(2,3)↘(3,4)→G. Стоимость: 2+3√2 ≈ 6.2. Все клетки consistent.'},
 
-                {phase:1, expand:null, processing:[], consistent:[], path:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3],[3,4],[4,4]],
-                 grs:{}, wallsExtra:[],
-                 desc:'<b>Результат Фазы 1.</b> Все клетки consistent (g=rhs). Путь: S→(0,1)→(1,1)→(1,2)→(1,3)→(2,3)→(3,3)→(3,4)→G. Стоимость: 8.'},
+                {phase:1,expand:null,processing:[],consistent:[],path:[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]],
+                 grs:{},wallsExtra:[],
+                 desc:'<b>Результат Фазы 1.</b> Все клетки consistent (g=rhs). Путь: S→(1,1)→(1,2)→(2,3)→(3,4)→G. Стоимость: 6.2.'},
 
-                // PHASE 2: New wall at (1,3)
-                {phase:2, expand:null, processing:[[1,3]], consistent:[], path:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3],[3,4],[4,4]],
-                 grs:{}, wallsExtra:[[1,3]],
-                 desc:'<b>Фаза 2.</b> Появилась стена на (1,3)! Старый путь проходил через неё. LPA* обновляет rhs соседей (1,3): клетки (2,3) и (1,4) пересчитывают свои rhs.'},
+                {phase:2,expand:null,processing:[[3,3],[3,4]],consistent:[],path:[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]],
+                 grs:{'3,3':'rhs↑5.4','3,4':'rhs↑5.8'},wallsExtra:[[2,3]],
+                 desc:'<b>Фаза 2.</b> Стена на (2,3)! Путь сломан. LPA* пересчитывает rhs соседей. Только (3,3) и (3,4) зависели от (2,3) — их rhs вырос. Остальные 20+ клеток не тронуты.'},
 
-                {phase:2, expand:[2,3], processing:[[2,3],[1,4]], consistent:[], path:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3],[3,4],[4,4]],
-                 grs:{'2,3':'rhs↑','1,4':'rhs↑'}, wallsExtra:[[1,3]],
-                 desc:'<b>Пересчёт.</b> (2,3) раньше получала g=5 через (1,3). Теперь пересчитывает: лучший доступный сосед — (3,3) с g=6, или (2,4). rhs(2,3) меняется → inconsistent → в очередь. LPA* раскрывает только 3-4 узла.'},
-
-                {phase:2, expand:null, processing:[], consistent:[], path:[[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[2,4],[2,3],[3,3],[3,4],[4,4]],
-                 grs:{}, wallsExtra:[[1,3]],
-                 desc:'<b>Готово!</b> LPA* нашёл новый путь, пересчитав всего 3 клетки. A* пересчитал бы ~20. Новый путь: S→(0,1)→(0,2)→(0,3)→(0,4)→(1,4)→(2,4)→(2,3)→(3,3)→(3,4)→G. Стоимость: 10.'},
+                {phase:2,expand:null,processing:[],consistent:[],path:[[0,0],[1,1],[1,2],[1,3],[2,4],[3,4],[4,4]],
+                 grs:{'3,3':'g=5.4','3,4':'g=5.8','4,4':'g=6.8'},wallsExtra:[[2,3]],
+                 desc:'<b>Готово!</b> LPA* пересчитал 3 клетки: (3,3) 4.8→5.4, (3,4) 5.2→5.8, G 6.2→6.8. Новый путь: S→(1,1)→(1,2)→(1,3)↘(2,4)→(3,4)→G. Стоимость: 6.8.'},
             ];
 
             const grid=document.getElementById('lpa-grid');
@@ -436,7 +430,6 @@
                 counter.textContent='Шаг '+(i+1)+' / '+steps.length;
                 desc.innerHTML=s.desc;
 
-                // reset
                 for(let r=0;r<5;r++) for(let c=0;c<5;c++){
                     const el=document.getElementById(cid(c,r));
                     const w=isW(c,r);
@@ -454,7 +447,6 @@
                     else el.innerHTML='<span style="color:var(--text2);font-size:.85em">('+c+','+r+')</span>';
                 }
 
-                // processing (orange glow)
                 s.processing.forEach(([c,r])=>{
                     if(isW(c,r))return;
                     const el=document.getElementById(cid(c,r));
@@ -462,13 +454,11 @@
                     el.style.boxShadow='0 0 10px rgba(251,146,60,.3)';
                 });
 
-                // consistent (subtle blue)
                 s.consistent.forEach(([c,r])=>{
                     const el=document.getElementById(cid(c,r));
                     el.style.background='rgba(108,158,255,.08)';el.style.borderColor='rgba(108,158,255,.25)';
                 });
 
-                // g/rhs labels
                 Object.entries(s.grs).forEach(([key,val])=>{
                     const[c,r]=key.split(',').map(Number);
                     if(isW(c,r))return;
@@ -479,20 +469,17 @@
                     el.innerHTML=lbl+'<span style="color:var(--text2);font-size:.85em">'+val+'</span>';
                 });
 
-                // expand node — bright glow
                 if(s.expand){
                     const el=document.getElementById(cid(s.expand[0],s.expand[1]));
                     el.style.boxShadow='0 0 14px var(--orange)';
                     el.style.background='rgba(251,146,60,.2)';
                 }
 
-                // start/goal always visible
                 const se=document.getElementById(cid(0,0));
                 se.style.borderColor='var(--accent)';se.style.borderWidth='2px';
                 const ge=document.getElementById(cid(4,4));
                 ge.style.borderColor='var(--accent2)';ge.style.borderWidth='2px';
 
-                // SVG path
                 let h='';
                 if(s.path.length>1){
                     const pts=s.path.map(([c,r])=>sp(c,r).join(',')).join(' ');
@@ -530,18 +517,22 @@ U.Insert(s_start, CalcKey(s_start))
 return [min(g(s), rhs(s)) + h(s, s_goal),
         min(g(s), rhs(s))]
 
+<span style="color:var(--green)">// h(s, goal) — octile distance</span>
+dx = |s.x - goal.x|, dy = |s.y - goal.y|
+return max(dx, dy) + (√2 - 1) · min(dx, dy)
+
 <span style="color:var(--green)">// UpdateVertex(u)</span>
 if u ≠ s_start:
-    rhs(u) = min over all predecessors s':
-              g(s') + c(s', u)
+    rhs(u) = min over all 8 neighbors s':
+              g(s') + c(s', u)       <span style="color:var(--orange)">// c = 1 кардин., √2 диаг.</span>
 if u ∈ U: U.Remove(u)
 if g(u) ≠ rhs(u): U.Insert(u, CalcKey(u))
 
 <span style="color:var(--green)">// ComputeShortestPath()</span>
-while U.TopKey() < CalcKey(s_goal) OR
+while U.TopKey() &lt; CalcKey(s_goal) OR
       rhs(s_goal) ≠ g(s_goal):
     u = U.Pop()
-    if g(u) > rhs(u):           <span style="color:var(--orange)">// overconsistent</span>
+    if g(u) &gt; rhs(u):           <span style="color:var(--orange)">// overconsistent</span>
         g(u) = rhs(u)
         for all s ∈ successors(u):
             UpdateVertex(s)
@@ -570,7 +561,6 @@ ComputeShortestPath()</pre>
 <span style="color:var(--accent2)">#include</span> &lt;cmath&gt;
 <span style="color:var(--accent2)">#include</span> &lt;algorithm&gt;
 
-<span style="color:var(--green)">// Клетка на сетке</span>
 <span style="color:var(--accent)">struct</span> Cell {
     <span style="color:var(--accent)">int</span> x, y;
     <span style="color:var(--accent)">bool</span> operator==(<span style="color:var(--accent)">const</span> Cell&amp; o) <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> x==o.x &amp;&amp; y==o.y; }
@@ -582,47 +572,53 @@ ComputeShortestPath()</pre>
 
 <span style="color:var(--accent)">class</span> LPAStar {
     <span style="color:var(--accent)">int</span> W, H;
-    std::vector&lt;std::vector&lt;<span style="color:var(--accent)">bool</span>&gt;&gt; grid; <span style="color:var(--green)">// true = blocked</span>
+    std::vector&lt;std::vector&lt;<span style="color:var(--accent)">bool</span>&gt;&gt; grid;
     Cell start, goal;
     std::unordered_map&lt;Cell, <span style="color:var(--accent)">double</span>, CellHash&gt; g_val, rhs_val;
 
-    <span style="color:var(--green)">// Priority queue: (key, cell)</span>
     <span style="color:var(--accent)">using</span> PQEntry = std::pair&lt;Key, Cell&gt;;
-    std::vector&lt;PQEntry&gt; U; <span style="color:var(--green)">// min-heap</span>
+    std::vector&lt;PQEntry&gt; U;
 
-    <span style="color:var(--accent)">double</span> INF = 1e18;
+    <span style="color:var(--accent)">static constexpr double</span> INF = 1e18;
+    <span style="color:var(--accent)">static constexpr double</span> SQRT2 = 1.41421356;
 
+    <span style="color:var(--green)">// Octile distance</span>
     <span style="color:var(--accent)">double</span> h(Cell s) {
-        <span style="color:var(--accent)">return</span> std::abs(s.x - goal.x) + std::abs(s.y - goal.y);
+        <span style="color:var(--accent)">int</span> dx = std::abs(s.x - goal.x);
+        <span style="color:var(--accent)">int</span> dy = std::abs(s.y - goal.y);
+        <span style="color:var(--accent)">return</span> std::max(dx,dy) + (SQRT2-1)*std::min(dx,dy);
     }
 
-    <span style="color:var(--accent)">double</span> g(Cell s) { <span style="color:var(--accent)">auto</span> it = g_val.find(s); <span style="color:var(--accent)">return</span> it != g_val.end() ? it-&gt;second : INF; }
-    <span style="color:var(--accent)">double</span> rhs(Cell s) { <span style="color:var(--accent)">auto</span> it = rhs_val.find(s); <span style="color:var(--accent)">return</span> it != rhs_val.end() ? it-&gt;second : INF; }
+    <span style="color:var(--accent)">double</span> g(Cell s) { <span style="color:var(--accent)">auto</span> it=g_val.find(s); <span style="color:var(--accent)">return</span> it!=g_val.end()?it-&gt;second:INF; }
+    <span style="color:var(--accent)">double</span> rhs(Cell s) { <span style="color:var(--accent)">auto</span> it=rhs_val.find(s); <span style="color:var(--accent)">return</span> it!=rhs_val.end()?it-&gt;second:INF; }
 
     Key calcKey(Cell s) {
         <span style="color:var(--accent)">double</span> m = std::min(g(s), rhs(s));
         <span style="color:var(--accent)">return</span> {m + h(s), m};
     }
 
-    std::vector&lt;Cell&gt; neighbors(Cell s) {
-        std::vector&lt;Cell&gt; nb;
-        <span style="color:var(--accent)">int</span> dx[] = {1,-1,0,0}, dy[] = {0,0,1,-1};
-        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">int</span> i = 0; i &lt; 4; i++) {
-            Cell n = {s.x+dx[i], s.y+dy[i]};
-            <span style="color:var(--accent)">if</span> (n.x&gt;=0 &amp;&amp; n.x&lt;W &amp;&amp; n.y&gt;=0 &amp;&amp; n.y&lt;H &amp;&amp; !grid[n.y][n.x])
-                nb.push_back(n);
+    <span style="color:var(--green)">// 8 направлений</span>
+    std::vector&lt;std::pair&lt;Cell,<span style="color:var(--accent)">double</span>&gt;&gt; neighbors(Cell s) {
+        std::vector&lt;std::pair&lt;Cell,<span style="color:var(--accent)">double</span>&gt;&gt; nb;
+        <span style="color:var(--accent)">int</span> dx[]={1,-1,0,0,1,1,-1,-1};
+        <span style="color:var(--accent)">int</span> dy[]={0,0,1,-1,1,-1,1,-1};
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">int</span> i=0; i&lt;8; i++) {
+            Cell n={s.x+dx[i], s.y+dy[i]};
+            <span style="color:var(--accent)">if</span> (n.x&gt;=0 &amp;&amp; n.x&lt;W &amp;&amp; n.y&gt;=0 &amp;&amp; n.y&lt;H &amp;&amp; !grid[n.y][n.x]) {
+                <span style="color:var(--accent)">double</span> cost = (dx[i]!=0 &amp;&amp; dy[i]!=0) ? SQRT2 : 1.0;
+                nb.push_back({n, cost});
+            }
         }
         <span style="color:var(--accent)">return</span> nb;
     }
 
     <span style="color:var(--accent)">void</span> uRemove(Cell s) {
         U.erase(std::remove_if(U.begin(), U.end(),
-            [&amp;](auto&amp; e){ <span style="color:var(--accent)">return</span> e.second == s; }), U.end());
+            [&amp;](<span style="color:var(--accent)">auto</span>&amp; e){ <span style="color:var(--accent)">return</span> e.second==s; }), U.end());
         std::make_heap(U.begin(), U.end(), std::greater&lt;&gt;());
     }
-
     <span style="color:var(--accent)">void</span> uInsert(Cell s, Key k) {
-        U.push_back({k, s});
+        U.push_back({k,s});
         std::push_heap(U.begin(), U.end(), std::greater&lt;&gt;());
     }
 
@@ -635,10 +631,10 @@ ComputeShortestPath()</pre>
     }
 
     <span style="color:var(--accent)">void</span> updateVertex(Cell u) {
-        <span style="color:var(--accent)">if</span> (!(u == start)) {
+        <span style="color:var(--accent)">if</span> (!(u==start)) {
             <span style="color:var(--accent)">double</span> mn = INF;
-            <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; nb : neighbors(u))
-                mn = std::min(mn, g(nb) + 1.0);
+            <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; [nb,cost] : neighbors(u))
+                mn = std::min(mn, g(nb) + cost);
             rhs_val[u] = mn;
         }
         uRemove(u);
@@ -648,18 +644,18 @@ ComputeShortestPath()</pre>
 
     <span style="color:var(--accent)">void</span> computeShortestPath() {
         <span style="color:var(--accent)">while</span> (!U.empty() &amp;&amp;
-               (U.front().first &lt; calcKey(goal) || rhs(goal) != g(goal))) {
+               (U.front().first &lt; calcKey(goal) || rhs(goal)!=g(goal))) {
             std::pop_heap(U.begin(), U.end(), std::greater&lt;&gt;());
             <span style="color:var(--accent)">auto</span> [key, u] = U.back(); U.pop_back();
 
-            <span style="color:var(--accent)">if</span> (g(u) &gt; rhs(u)) {
-                g_val[u] = rhs(u);              <span style="color:var(--green)">// overconsistent</span>
-                <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; s : neighbors(u))
+            <span style="color:var(--accent)">if</span> (g(u) &gt; rhs(u)) {                <span style="color:var(--green)">// overconsistent</span>
+                g_val[u] = rhs(u);
+                <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; [s,c] : neighbors(u))
                     updateVertex(s);
-            } <span style="color:var(--accent)">else</span> {
-                g_val[u] = INF;                  <span style="color:var(--green)">// underconsistent</span>
+            } <span style="color:var(--accent)">else</span> {                           <span style="color:var(--green)">// underconsistent</span>
+                g_val[u] = INF;
                 updateVertex(u);
-                <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; s : neighbors(u))
+                <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; [s,c] : neighbors(u))
                     updateVertex(s);
             }
         }
@@ -668,8 +664,9 @@ ComputeShortestPath()</pre>
     <span style="color:var(--green)">// Вызови при изменении карты</span>
     <span style="color:var(--accent)">void</span> setWall(<span style="color:var(--accent)">int</span> x, <span style="color:var(--accent)">int</span> y) {
         grid[y][x] = <span style="color:var(--accent)">true</span>;
-        Cell w = {x, y};
-        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; nb : neighbors(w))
+        Cell w={x,y};
+        <span style="color:var(--green)">// Обновить всех 8 соседей стены</span>
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent)">auto</span>&amp; [nb,c] : neighbors(w))
             updateVertex(nb);
         computeShortestPath();
     }
@@ -703,9 +700,10 @@ ComputeShortestPath()</pre>
             <tr><th>Критерий</th><th>A*</th><th>LPA*</th><th>D* Lite</th><th style="white-space:nowrap">Что это значит</th></tr>
             <tr><td>Первый поиск</td><td>Быстрый</td><td>Как A*</td><td>Как A*</td><td>Первый раз — одинаково</td></tr>
             <tr><td>Повторный поиск</td><td>С нуля</td><td><b>Инкрементальный</b></td><td><b>Инкрементальный</b></td><td>LPA* и D* Lite не начинают заново</td></tr>
-            <tr><td>Направление</td><td>S → G</td><td>S → G</td><td>G → S</td><td>D* Lite ищет от цели — удобнее для робота</td></tr>
+            <tr><td>Движение</td><td colspan="3" style="text-align:center">8 направлений (кардинальные + диагональные)</td><td>Диагонали дают более естественные пути</td></tr>
+            <tr><td>Направление поиска</td><td>S → G</td><td>S → G</td><td>G → S</td><td>D* Lite ищет от цели — удобнее для робота</td></tr>
             <tr><td>Робот движется?</td><td>Нет</td><td><b>Нет</b></td><td>Да</td><td>LPA* для статичного старта, D* Lite — для движущегося</td></tr>
-            <tr><td>Память</td><td>$O(V)$</td><td>$O(V)$ × 2</td><td>$O(V)$ × 2</td><td>LPA* хранит g и rhs</td></tr>
+            <tr><td>Память</td><td>$O(V)$</td><td>$O(V) \times 2$</td><td>$O(V) \times 2$</td><td>LPA* хранит g и rhs</td></tr>
             <tr><td>Применение</td><td>Одиночный запрос</td><td>Мониторинг</td><td>Навигация</td><td>LPA* = наблюдатель, D* Lite = водитель</td></tr>
         </table>
 

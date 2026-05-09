@@ -322,7 +322,148 @@
             <span><span class="dot" style="opacity:.45;border-color:var(--border)"></span> Не посещён</span>
         </div>
 
-        <!-- ============ ПОЧЕМУ JUMP POINTS ============ -->
+        <!-- ============ АНИМАЦИЯ ============ -->
+        <h2>Анимация: как думает JPS</h2>
+        <p>Жми <b>▶</b> или листай шаги вручную. Оранжевый — текущий узел, пунктир — лучи сканирования, зелёный — найденный jump point.</p>
+
+        <div class="card" style="padding:28px 20px">
+            <!-- controls -->
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+                <button id="jps-prev" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">◀</button>
+                <button id="jps-play" style="background:rgba(108,158,255,.15);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶ Play</button>
+                <button id="jps-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
+                <span id="jps-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 1 / 6</span>
+            </div>
+            <!-- grid container -->
+            <div style="position:relative;max-width:340px;margin:0 auto 16px">
+                <div id="jps-anim-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
+                <svg id="jps-anim-svg" viewBox="0 0 100 100" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" preserveAspectRatio="none"></svg>
+            </div>
+            <!-- description -->
+            <div id="jps-desc" class="card highlight" style="margin-top:8px;font-size:.95em;min-height:60px"></div>
+        </div>
+
+        <script>
+        (function(){
+            const W=[[2,1],[2,2]];
+            const isWall=(c,r)=>W.some(w=>w[0]===c&&w[1]===r);
+
+            const steps=[
+                {expand:[0,0],rays:[[1,0],[2,0],[3,0],[4,0],[0,1],[0,2],[0,3],[0,4],[1,1]],found:[1,1],jp:[[0,0]],path:[],open:[[1,1]],
+                 desc:'<b>Шаг 1.</b> Начинаем с S(0,0). Сканируем 8 направлений. Вправо — чисто до края. Вниз — чисто до края. По диагонали ↘ на (1,1) замечаем: справа (2,1) стена! Это <b>forced neighbor</b> → (1,1) становится jump point.'},
+                {expand:[1,1],rays:[[2,1],[1,0],[1,2]],found:[1,2],jp:[[0,0],[1,1]],path:[[0,0],[1,1]],open:[[1,2]],
+                 desc:'<b>Шаг 2.</b> Раскрываем JP(1,1). Вправо → (2,1) стена, тупик. Вверх → (1,0) край. Вниз → на (1,2) справа (2,2) стена, а дальше (2,3) свободна — forced neighbor! (1,2) = jump point.'},
+                {expand:[1,2],rays:[[1,3],[1,4],[2,3]],found:[2,3],jp:[[0,0],[1,1],[1,2]],path:[[0,0],[1,1],[1,2]],open:[[2,3]],
+                 desc:'<b>Шаг 3.</b> Раскрываем JP(1,2). Вниз → (1,3),(1,4) край, ничего. По диагонали ↘ → (2,3): стена (2,2) сзади кончилась, путь вправо открылся. Forced neighbor → (2,3) = jump point.'},
+                {expand:[2,3],rays:[[3,3],[4,3],[2,4],[3,4]],found:[3,4],jp:[[0,0],[1,1],[1,2],[2,3]],path:[[0,0],[1,1],[1,2],[2,3]],open:[[3,4]],
+                 desc:'<b>Шаг 4.</b> Раскрываем JP(2,3). Вправо → (3,3),(4,3) чисто. Вниз → (2,4) край. По диагонали ↘ → (3,4): кардинальный луч вправо из (3,4) достигает G(4,4)! (3,4) = jump point.'},
+                {expand:[3,4],rays:[[4,4]],found:[4,4],jp:[[0,0],[1,1],[1,2],[2,3],[3,4]],path:[[0,0],[1,1],[1,2],[2,3],[3,4]],open:[[4,4]],
+                 desc:'<b>Шаг 5.</b> Раскрываем JP(3,4). Вправо → (4,4) = цель! Добавляем G в open list.'},
+                {expand:[4,4],rays:[],found:null,jp:[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]],path:[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]],open:[],
+                 desc:'<b>Шаг 6.</b> G(4,4) — лучший в open list. Цель достигнута! Путь: S→(1,1)→(1,2)→(2,3)→(3,4)→G. Всего <b>6 раскрытий</b> вместо ~20 у A*.'},
+            ];
+
+            const grid=document.getElementById('jps-anim-grid');
+            const svg=document.getElementById('jps-anim-svg');
+            const desc=document.getElementById('jps-desc');
+            const counter=document.getElementById('jps-counter');
+            let cur=0,timer=null;
+
+            function cid(c,r){return 'jac'+c+'_'+r}
+            function sp(c,r){return [10+c*20,10+r*20]}
+
+            for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+                const d=document.createElement('div');
+                d.id=cid(c,r);
+                d.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 2px;text-align:center;min-height:60px;display:flex;flex-direction:column;justify-content:center;font-size:.8em;transition:all .35s;position:relative';
+                if(isWall(c,r)){d.style.background='rgba(248,113,113,.15)';d.style.borderColor='rgba(248,113,113,.3)';d.innerHTML='<b style="color:var(--red)">▓</b>';}
+                else if(c===0&&r===0) d.innerHTML='<b style="color:var(--accent)">S</b>';
+                else if(c===4&&r===4) d.innerHTML='<b style="color:var(--accent2)">G</b>';
+                else d.innerHTML='<span style="color:var(--text2);font-size:.85em">('+c+','+r+')</span>';
+                grid.appendChild(d);
+            }
+
+            function render(i){
+                const s=steps[i];
+                counter.textContent='Шаг '+(i+1)+' / '+steps.length;
+                desc.innerHTML=s.desc;
+
+                for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+                    const el=document.getElementById(cid(c,r));
+                    if(isWall(c,r))continue;
+                    el.style.background='var(--card)';el.style.borderColor='var(--border)';el.style.boxShadow='none';el.style.borderWidth='1px';el.style.borderStyle='solid';
+                }
+
+                s.rays.forEach(([c,r])=>{
+                    if(isWall(c,r))return;
+                    const el=document.getElementById(cid(c,r));
+                    el.style.background='rgba(251,146,60,.08)';el.style.borderColor='rgba(251,146,60,.3)';el.style.borderStyle='dashed';
+                });
+
+                s.jp.forEach(([c,r])=>{
+                    const el=document.getElementById(cid(c,r));
+                    el.style.background='rgba(74,222,128,.12)';el.style.borderColor='rgba(74,222,128,.4)';el.style.borderWidth='2px';el.style.borderStyle='solid';
+                });
+
+                const se=document.getElementById(cid(0,0));
+                se.style.background='rgba(108,158,255,.2)';se.style.borderColor='var(--accent)';se.style.borderWidth='2px';
+                const ge=document.getElementById(cid(4,4));
+                ge.style.background='rgba(167,139,250,.2)';ge.style.borderColor='var(--accent2)';ge.style.borderWidth='2px';
+
+                if(s.expand){
+                    const el=document.getElementById(cid(s.expand[0],s.expand[1]));
+                    el.style.boxShadow='0 0 14px var(--orange)';
+                }
+
+                if(s.found){
+                    const el=document.getElementById(cid(s.found[0],s.found[1]));
+                    el.style.background='rgba(74,222,128,.25)';el.style.borderColor='var(--green)';el.style.borderWidth='2px';el.style.boxShadow='0 0 10px rgba(74,222,128,.4)';
+                }
+
+                let h='';
+                if(s.path.length>1){
+                    const pts=s.path.map(([c,r])=>sp(c,r).join(',')).join(' ');
+                    h+='<polyline points="'+pts+'" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>';
+                    s.path.forEach(([c,r])=>{const[x,y]=sp(c,r);h+='<circle cx="'+x+'" cy="'+y+'" r="2.5" fill="#4ade80" opacity=".8"/>';});
+                }
+                if(i===steps.length-1){
+                    const fp=[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]];
+                    const pts=fp.map(([c,r])=>sp(c,r).join(',')).join(' ');
+                    h+='<polyline points="'+pts+'" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+                    fp.forEach(([c,r])=>{const[x,y]=sp(c,r);h+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="#4ade80"/>';});
+                }
+                if(s.expand&&s.rays.length>0){
+                    const[ex,ey]=sp(s.expand[0],s.expand[1]);
+                    const dirs={};
+                    s.rays.forEach(([c,r])=>{
+                        const dc=Math.sign(c-s.expand[0]),dr=Math.sign(r-s.expand[1]);
+                        const k=dc+','+dr;if(!dirs[k])dirs[k]=[];dirs[k].push([c,r]);
+                    });
+                    Object.values(dirs).forEach(arr=>{
+                        const[lc,lr]=arr[arr.length-1];
+                        const[tx,ty]=sp(lc,lr);
+                        h+='<line x1="'+ex+'" y1="'+ey+'" x2="'+tx+'" y2="'+ty+'" stroke="#fb923c" stroke-width="1.2" stroke-dasharray="3,3" opacity=".5"/>';
+                        h+='<circle cx="'+tx+'" cy="'+ty+'" r="1.8" fill="#fb923c" opacity=".6"/>';
+                    });
+                }
+                svg.innerHTML=h;
+            }
+
+            render(0);
+
+            document.getElementById('jps-next').onclick=()=>{if(cur<steps.length-1){cur++;render(cur);}};
+            document.getElementById('jps-prev').onclick=()=>{if(cur>0){cur--;render(cur);}};
+            document.getElementById('jps-play').onclick=function(){
+                if(timer){clearInterval(timer);timer=null;this.textContent='▶ Play';return;}
+                this.textContent='⏸ Pause';cur=0;render(0);
+                timer=setInterval(()=>{
+                    if(cur<steps.length-1){cur++;render(cur);}
+                    else{clearInterval(timer);timer=null;document.getElementById('jps-play').textContent='▶ Play';}
+                },2200);
+            };
+        })();
+        </script>
+
         <h2>Почему именно эти точки — jump points?</h2>
 
         <p>Разберём каждый шаг. Для каждого — мини-карта: <span style="color:var(--orange)">●</span> текущая позиция, <span style="color:var(--orange);opacity:.5">⇢</span> направление лучей, <span style="color:var(--red)">▓</span> стена, которая всё меняет.</p>

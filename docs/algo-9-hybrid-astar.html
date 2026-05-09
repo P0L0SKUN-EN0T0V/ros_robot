@@ -257,14 +257,14 @@
                     <circle cx="450" cy="450" r="16" fill="rgba(167,139,250,.2)" stroke="var(--accent2)" stroke-width="1.5"/>
                     <text x="450" y="455" text-anchor="middle" fill="var(--accent2)" font-weight="700" font-size="13">G</text>
                     <!-- Hybrid A* smooth path -->
-                    <path d="M 50,50 C 60,100 90,180 140,270 C 170,320 200,350 260,355 C 330,360 390,400 430,440 Q 440,450 450,450" fill="none" stroke="var(--orange)" stroke-width="1" stroke-linecap="round" opacity=".85"/>
+                    <path d="M 50,50 Q 50,80 50,110 Q 70,130 120,150 Q 140,190 170,230 Q 190,280 220,320 Q 250,350 280,380 Q 350,400 400,430 Q 430,445 450,450" fill="none" stroke="var(--orange)" stroke-width="1" stroke-linecap="round" opacity=".85"/>
                     <!-- Orientation markers (small triangles along path) -->
-                    <polygon points="95,185 102,178 100,192" fill="var(--orange)" opacity=".5"/>
-                    <polygon points="200,348 210,342 207,356" fill="var(--orange)" opacity=".5"/>
-                    <polygon points="370,385 378,378 376,392" fill="var(--orange)" opacity=".5"/>
+                    <polygon points="115,145 125,140 120,155" fill="var(--orange)" opacity=".5"/>
+                    <polygon points="215,315 225,310 220,325" fill="var(--orange)" opacity=".5"/>
+                    <polygon points="345,395 355,390 350,405" fill="var(--orange)" opacity=".5"/>
                     <!-- Heading arrow at start -->
-                    <line x1="50" y1="50" x2="55" y2="72" stroke="var(--accent)" stroke-width="1.5"/>
-                    <polygon points="50,72 55,75 60,72 55,82" fill="var(--accent)" opacity=".7"/>
+                    <line x1="50" y1="50" x2="50" y2="72" stroke="var(--accent)" stroke-width="1.5"/>
+                    <polygon points="45,72 50,82 55,72" fill="var(--accent)" opacity=".7"/>
                 </svg>
                 <p style="text-align:center;font-size:.8em;color:var(--text2);margin-top:6px">Плавная кривая с учётом $R_{min}$. Робот проедет сразу.</p>
             </div>

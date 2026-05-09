@@ -43,9 +43,6 @@
         table{width:100%;border-collapse:collapse;margin:12px 0}
         th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
         th{color:var(--accent);font-weight:600}
-        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
-        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
-        .step-text{flex:1}
         .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
         .analogy::before{content:"💡 ";font-style:normal}
         .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
@@ -65,9 +62,11 @@
         .grid-viz .cell .vals b{color:var(--accent)}
         .grid-viz .cell .ord{position:absolute;top:2px;right:5px;font-size:.7em;color:var(--orange);font-weight:700}
         .grid-viz .cell.unvisited{opacity:.45}
-        .grid-viz .cell.changed{background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.4);border-width:2px}
-        .grid-viz .cell.newwall{background:rgba(248,113,113,.3);border-color:rgba(248,113,113,.6);border-width:2px;animation:pulse 1.5s ease-in-out infinite}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+        .grid-viz .cell.changed{background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.5);border-width:2px}
+        .grid-viz.clean{max-width:620px}
+        .grid-viz.clean .cell{min-height:72px}
+        .grid-overlay{position:relative;max-width:620px;margin:16px auto}
+        .grid-overlay svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
         .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
         .grid-legend span{display:flex;align-items:center;gap:6px}
         .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
@@ -92,593 +91,627 @@
     </nav>
 
     <div class="main">
-        <h1>D* Lite</h1>
-        <p class="subtitle">Алгоритм №6 — навигация в меняющемся мире</p>
+        <h1>D* Lite — Dynamic A*</h1>
+        <p class="subtitle">Алгоритм №6 — LPA*, вывернутый наизнанку для движущегося робота</p>
 
         <!-- ============ СУТЬ ============ -->
         <h2>О чём вообще речь</h2>
 
-        <p>Все алгоритмы до этого предполагали, что карта <strong>статична</strong> — нарисовали стены, запустили поиск, нашли путь, поехали. Но реальный мир так не работает. Робот едет по коридору и вдруг — <strong>дверь закрылась</strong>. Или человек встал на пути. Или обвалился потолок (ладно, это для марсоходов).</p>
+        <p>Все алгоритмы до этого предполагали, что карта <strong>статична</strong> — нарисовали стены, запустили поиск, нашли путь, поехали. Но реальный мир так не работает. Робот едет по коридору и вдруг — <strong>дверь закрылась</strong>. Или человек встал на пути.</p>
 
-        <p>Что делает A*? Весь путь — в мусорку, пересчитай заново. На маленькой карте это терпимо, но на карте 1000×1000 полный пересчёт занимает сотни миллисекунд. Робот стоит и ждёт.</p>
+        <p>Что делает A*? Весь путь — в мусорку, пересчитай заново. На карте 1000×1000 полный пересчёт — сотни миллисекунд. Робот стоит и ждёт.</p>
 
-        <p>D* Lite умеет <strong>пересчитывать путь инкрементально</strong> — обновляет только ту часть, которая затронута изменением. Дверь закрылась? Пересчитаем 20 клеток вокруг двери вместо 100 000 клеток всей карты.</p>
+        <div class="analogy">GPS-навигатор в машине. Ты едешь по маршруту, и вдруг дорога перекрыта. Навигатор не пересчитывает маршрут с нуля от дома — он перестраивает кусок пути от текущей позиции. D* Lite работает так же.</div>
 
-        <div class="analogy">Представь GPS-навигатор в машине. Ты едешь по маршруту, и вдруг дорога перекрыта. Навигатор не пересчитывает маршрут с нуля от дома — он только перестраивает кусок пути от текущей позиции. Это и есть D* Lite: «перепланируй минимум, используя то, что уже знаешь».</div>
+        <h3>А чем он отличается от LPA*?</h3>
+        <p>LPA* (алгоритм №8) тоже пересчитывает инкрементально, но у него <strong>старт фиксирован</strong>. Робот стоит на месте и наблюдает, как меняется карта. D* Lite — для ситуации, когда <strong>робот двигается</strong>. Старт каждый раз — текущая позиция робота.</p>
 
         <div class="card highlight">
-            <strong>Главная идея:</strong> D* Lite ищет путь <strong>от цели к роботу</strong> (задом наперёд). Когда карта меняется около робота — нужно обновить только несколько узлов рядом с роботом, а не весь путь.
+            <p>Если LPA* — это <em>наблюдатель</em> за экраном мониторинга, то D* Lite — это <em>водитель</em>, который едет и реагирует на изменения дороги.</p>
         </div>
 
-        <!-- ============ КЛЮЧЕВАЯ ИНВЕРСИЯ ============ -->
+        <!-- ============ ИНВЕРСИЯ ============ -->
         <h2>Почему «задом наперёд»?</h2>
 
-        <p>Это самый контринтуитивный момент D* Lite. A* ищет путь <strong>от робота к цели</strong>. D* Lite — <strong>от цели к роботу</strong>. Зачем?</p>
+        <p>Это самый контринтуитивный момент. A* ищет <strong>от робота к цели</strong>. D* Lite — <strong>от цели к роботу</strong>. Зачем?</p>
 
-        <p>Подумай: робот движется вперёд, и изменения на карте происходят <strong>рядом с роботом</strong> (он видит новые препятствия своими сенсорами). Если дерево поиска растёт от цели — то изменения затрагивают только «листья» дерева (рядом с роботом), а не «корень» (цель). Обновить листья дешёво. Обновить корень — дорого.</p>
+        <p>Робот движется вперёд, и новые препятствия появляются <strong>рядом с ним</strong> (он видит их сенсорами). Если дерево поиска растёт от цели — изменения затрагивают только «листья» (рядом с роботом), а не «корень» (цель). Обновить листья дешёво. Обновить корень — дорого.</p>
 
         <div class="card">
-            <strong>Аналогия:</strong> представь дерево (настоящее). Если ветер обломит пару веточек на краю кроны — дерево в целом не изменилось. Но если подрубить ствол (корень) — упадёт всё. D* Lite ставит «корень» на цель, а «веточки» — у робота. Изменения карты = обломанные веточки, а не подрубленный ствол.
+            <strong>Аналогия:</strong> представь дерево. Если ветер обломит пару веточек на краю кроны — дерево в целом стоит. Но если подрубить ствол — упадёт всё. D* Lite ставит «корень» на цель, а «веточки» — у робота. Новые препятствия = обломанные веточки, не подрубленный ствол.
         </div>
 
-        <!-- ============ МАТЕМАТИКА ============ -->
-        <h2>Математика</h2>
+        <!-- ============ ФОРМУЛЫ ============ -->
+        <h2>Формулы</h2>
 
-        <p>D* Lite основан на LPA* (алгоритм №8), который, в свою очередь, основан на Dijkstra. Здесь два ключевых значения для каждого узла:</p>
+        <h3>Движение</h3>
+        <p>8 направлений: кардинальные (стоимость 1), диагональные (стоимость $\sqrt{2} \approx 1.4$).</p>
 
-        <h3>1. Два типа стоимости: g и rhs</h3>
+        <h3>g и rhs (от цели!)</h3>
+        <p>Как в LPA*, но <strong>в обратном направлении</strong>. $g(s)$ = расстояние от $s$ <em>до цели</em>, а не от старта.</p>
 
         <div class="formula-block">
-            $$g(s) \text{ — текущая оценка расстояния от цели до } s$$
+            $rhs(s) = \begin{cases} 0 & \text{если } s = s_{goal} \\ \min_{s' \in succ(s)} \big(g(s') + c(s, s')\big) & \text{иначе} \end{cases}$
         </div>
+
+        <p>$g = rhs$ → consistent. $g \neq rhs$ → inconsistent → нужен пересчёт. Всё как в LPA*.</p>
+
+        <h3>Ключ приоритета</h3>
         <div class="formula-block">
-            $$\text{rhs}(s) = \begin{cases} 0 & \text{если } s = \text{goal} \\ \min_{s' \in \text{succ}(s)} \left[ g(s') + c(s, s') \right] & \text{иначе} \end{cases}$$
+            $key(s) = \big[\min(g(s), rhs(s)) + h(s_{robot}, s) + k_m,\;\; \min(g(s), rhs(s))\big]$
         </div>
+        <p>Отличие от LPA*: эвристика считается <strong>от текущей позиции робота</strong>, а не от фиксированного старта. $k_m$ — поправка, которая накапливается при каждом перемещении робота (чтобы не пересчитывать ключи всех узлов).</p>
 
-        <p>$g(s)$ — это то, что мы <em>думаем</em> о расстоянии. $\text{rhs}(s)$ (right-hand side) — это то, что расстояние <em>должно быть</em> на основе соседей. Когда $g(s) = \text{rhs}(s)$ — узел <strong>согласован</strong> (consistent). Когда не равны — узел нужно обновить.</p>
-
-        <div class="analogy">Представь бухгалтерию. g(s) — это «записано в журнале». rhs(s) — это «посчитано заново». Если совпадает — порядок. Если не совпадает — нужна ревизия. D* Lite делает ревизию только для «несовпадающих» записей, а не для всей бухгалтерии.</div>
-
-        <h3>2. Ключ приоритета</h3>
-
-        <p>Вместо простого $f(n)$ D* Lite использует двухкомпонентный ключ:</p>
-
+        <h3>Эвристика (octile)</h3>
         <div class="formula-block">
-            $$\text{key}(s) = \left[\; \min(g(s), \text{rhs}(s)) + h(s_\text{start}, s) + k_m, \;\; \min(g(s), \text{rhs}(s)) \;\right]$$
+            $h(a, b) = \max(\Delta x, \Delta y) + (\sqrt{2} - 1) \cdot \min(\Delta x, \Delta y)$
         </div>
 
-        <p>$k_m$ — накопленная поправка за перемещение робота. $h(s_\text{start}, s)$ — эвристика (расстояние от текущей позиции робота до $s$). Двухкомпонентный ключ нужен для корректного упорядочивания в priority queue.</p>
-
-        <h3>3. Состояния узлов</h3>
-
-        <table>
-            <tr><th>Состояние</th><th>Условие</th><th>Что это значит</th></tr>
-            <tr>
-                <td><span class="tag green">Consistent</span></td>
-                <td style="white-space:nowrap">$g(s) = \text{rhs}(s)$</td>
-                <td>Узел актуален, пересчёт не нужен</td>
-            </tr>
-            <tr>
-                <td><span class="tag orange">Overconsistent</span></td>
-                <td style="white-space:nowrap">$g(s) > \text{rhs}(s)$</td>
-                <td>Нашёлся более короткий путь — нужно уменьшить g(s)</td>
-            </tr>
-            <tr>
-                <td><span class="tag purple">Underconsistent</span></td>
-                <td style="white-space:nowrap">$g(s) < \text{rhs}(s)$</td>
-                <td>Путь стал длиннее (препятствие появилось) — нужно увеличить g(s)</td>
-            </tr>
-        </table>
-
-        <!-- ============ ПО ШАГАМ ============ -->
-        <h2>Как работает: пошагово</h2>
-
-        <h3>Фаза 1: Первоначальный поиск</h3>
-
-        <div class="step">
-            <div class="step-num">1</div>
-            <div class="step-text">Устанавливаем $g(\text{goal}) = \infty$, $\text{rhs}(\text{goal}) = 0$. Все остальные узлы: $g = \text{rhs} = \infty$.</div>
-        </div>
-
-        <div class="step">
-            <div class="step-num">2</div>
-            <div class="step-text">Добавляем цель в priority queue (она единственная «несогласованная» — $g \neq \text{rhs}$).</div>
-        </div>
-
-        <div class="step">
-            <div class="step-num">3</div>
-            <div class="step-text">Запускаем <code>ComputeShortestPath()</code> — обрабатываем узлы из очереди, пока стартовый узел не станет согласованным. Это похоже на обратный Dijkstra.</div>
-        </div>
-
-        <div class="step">
-            <div class="step-num">4</div>
-            <div class="step-text">Путь найден. Робот начинает движение по пути (от старта к цели, следуя по минимальным g-значениям соседей).</div>
-        </div>
-
-        <h3>Фаза 2: Обновление при изменении карты</h3>
-
-        <div class="step">
-            <div class="step-num">5</div>
-            <div class="step-text">Робот движется и сенсоры замечают изменение: новое препятствие или освободившаяся клетка.</div>
-        </div>
-
-        <div class="step">
-            <div class="step-num">6</div>
-            <div class="step-text">Для каждой изменённой клетки пересчитываем $\text{rhs}$ и, если $g \neq \text{rhs}$, добавляем в priority queue.</div>
-        </div>
-
-        <div class="step">
-            <div class="step-num">7</div>
-            <div class="step-text">Обновляем $k_m$ (поправку за перемещение робота).</div>
-        </div>
-
-        <div class="step">
-            <div class="step-num">8</div>
-            <div class="step-text">Снова запускаем <code>ComputeShortestPath()</code> — но теперь она обрабатывает <strong>только несогласованные узлы</strong> (обычно их мало). Возвращаемся к шагу 5.</div>
-        </div>
-
-        <!-- ============ ВИЗУАЛИЗАЦИЯ ============ -->
+        <!-- ============ ВИЗУАЛЬНЫЙ ПРИМЕР ============ -->
         <h2>Визуальный пример</h2>
+        <p>Карта 5×5, 8 направлений. S(0,0) — старт, G(4,4) — цель, стены: (2,1) и (2,2). D* Lite ищет от G к S, поэтому <strong>g = расстояние до цели</strong>.</p>
 
-        <p>Та же карта: S вверху-слева, G внизу-справа, стена в столбце 2. D* Lite ищет <strong>от цели к старту</strong>, поэтому g = расстояние до G.</p>
+        <h3>Фаза 1: первый поиск (от G к S)</h3>
+        <p>g-значения — расстояние от каждой клетки до G(4,4):</p>
 
-        <h3>Этап 1: Первоначальный путь</h3>
-
-        <div class="grid" style="align-items:start">
-            <div>
-                <div class="grid-viz">
-                    <!-- Row 0: g = dist to goal -->
-                    <div class="cell start path"><span class="lbl">S</span><span class="vals">g=8</span></div>
-                    <div class="cell explored path"><span class="vals">g=7</span></div>
-                    <div class="cell explored"><span class="vals">g=6</span></div>
-                    <div class="cell explored"><span class="vals">g=5</span></div>
-                    <div class="cell explored"><span class="vals">g=4</span></div>
-                    <!-- Row 1 -->
-                    <div class="cell explored"><span class="vals">g=7</span></div>
-                    <div class="cell explored path"><span class="vals">g=6</span></div>
-                    <div class="cell wall"><span class="lbl">▓</span></div>
-                    <div class="cell explored"><span class="vals">g=4</span></div>
-                    <div class="cell explored"><span class="vals">g=3</span></div>
-                    <!-- Row 2 -->
-                    <div class="cell explored"><span class="vals">g=6</span></div>
-                    <div class="cell explored path"><span class="vals">g=5</span></div>
-                    <div class="cell wall"><span class="lbl">▓</span></div>
-                    <div class="cell explored"><span class="vals">g=3</span></div>
-                    <div class="cell explored"><span class="vals">g=2</span></div>
-                    <!-- Row 3 -->
-                    <div class="cell explored"><span class="vals">g=5</span></div>
-                    <div class="cell explored path"><span class="vals">g=4</span></div>
-                    <div class="cell explored path"><span class="vals">g=3</span></div>
-                    <div class="cell explored path"><span class="vals">g=2</span></div>
-                    <div class="cell explored path"><span class="vals">g=1</span></div>
-                    <!-- Row 4 -->
-                    <div class="cell explored"><span class="vals">g=4</span></div>
-                    <div class="cell explored"><span class="vals">g=3</span></div>
-                    <div class="cell explored"><span class="vals">g=2</span></div>
-                    <div class="cell explored"><span class="vals">g=1</span></div>
-                    <div class="cell goal path"><span class="lbl">G</span><span class="vals">g=0</span></div>
-                </div>
-                <p style="text-align:center;color:var(--text2);font-size:.82em">Подробная карта: g = расстояние до G</p>
-            </div>
-            <div>
-                <div style="position:relative">
-                    <div class="grid-viz">
-                        <div class="cell start path"><span class="lbl">S</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell wall"><span class="lbl">▓</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell wall"><span class="lbl">▓</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell goal path"><span class="lbl">G</span></div>
-                    </div>
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <polyline points="10,10 10,30 30,30 30,50 30,70 50,70 70,70 70,90 90,90"
-                                  fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
-                    </svg>
-                </div>
-                <p style="text-align:center;color:var(--text2);font-size:.82em">Первоначальный путь (как A*)</p>
-            </div>
+        <div class="grid-viz">
+            <!-- Row 0: g from goal -->
+            <div class="cell start"><span class="lbl">S</span><span class="vals">g=6.2<br>rhs=6.2</span></div>
+            <div class="cell explored"><span class="vals">g=5.8<br>rhs=5.8</span></div>
+            <div class="cell explored"><span class="vals">g=4.8<br>rhs=4.8</span></div>
+            <div class="cell explored"><span class="vals">g=4.4<br>rhs=4.4</span></div>
+            <div class="cell explored"><span class="vals">g=4.0<br>rhs=4.0</span></div>
+            <!-- Row 1 -->
+            <div class="cell explored"><span class="vals">g=5.2<br>rhs=5.2</span></div>
+            <div class="cell path"><span class="vals">g=4.8<br>rhs=4.8</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="vals">g=3.4<br>rhs=3.4</span></div>
+            <div class="cell explored"><span class="vals">g=3.0<br>rhs=3.0</span></div>
+            <!-- Row 2 -->
+            <div class="cell explored"><span class="vals">g=4.8<br>rhs=4.8</span></div>
+            <div class="cell path"><span class="vals">g=3.8<br>rhs=3.8</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="vals">g=2.4<br>rhs=2.4</span></div>
+            <div class="cell explored"><span class="vals">g=2.0<br>rhs=2.0</span></div>
+            <!-- Row 3 -->
+            <div class="cell explored"><span class="vals">g=4.4<br>rhs=4.4</span></div>
+            <div class="cell explored"><span class="vals">g=3.4<br>rhs=3.4</span></div>
+            <div class="cell path"><span class="vals">g=2.4<br>rhs=2.4</span></div>
+            <div class="cell explored"><span class="vals">g=1.4<br>rhs=1.4</span></div>
+            <div class="cell explored"><span class="vals">g=1.0<br>rhs=1.0</span></div>
+            <!-- Row 4 -->
+            <div class="cell explored"><span class="vals">g=4.0<br>rhs=4.0</span></div>
+            <div class="cell explored"><span class="vals">g=3.0<br>rhs=3.0</span></div>
+            <div class="cell explored"><span class="vals">g=2.0<br>rhs=2.0</span></div>
+            <div class="cell path"><span class="vals">g=1.0<br>rhs=1.0</span></div>
+            <div class="cell goal"><span class="lbl">G</span><span class="vals">g=0<br>rhs=0</span></div>
         </div>
 
-        <h3>Этап 2: Новое препятствие — перепланирование!</h3>
+        <p>Робот строит путь <strong>от себя к цели</strong>, идя по соседям с минимальным g:</p>
 
-        <p>Робот дошёл до (0,1) и обнаружил, что (1,2) заблокирована. D* Lite пересчитывает <strong>только затронутые узлы</strong>:</p>
-
-        <div class="grid" style="align-items:start">
-            <div>
-                <div class="grid-viz">
-                    <!-- Row 0 -->
-                    <div class="cell start"><span class="lbl">S</span><span class="vals">g=8→<b>9</b></span></div>
-                    <div class="cell explored path"><span class="vals">g=7→<b>8</b></span></div>
-                    <div class="cell explored"><span class="vals">g=6</span></div>
-                    <div class="cell explored"><span class="vals">g=5</span></div>
-                    <div class="cell explored"><span class="vals">g=4</span></div>
-                    <!-- Row 1 -->
-                    <div class="cell explored"><span class="vals">g=7</span></div>
-                    <div class="cell changed"><span class="ord">fix</span><span class="vals">g=6→<b>7</b></span></div>
-                    <div class="cell wall"><span class="lbl">▓</span></div>
-                    <div class="cell explored"><span class="vals">g=4</span></div>
-                    <div class="cell explored"><span class="vals">g=3</span></div>
-                    <!-- Row 2 -->
-                    <div class="cell explored path"><span class="vals">g=6</span></div>
-                    <div class="cell newwall"><span class="lbl">▓ NEW</span></div>
-                    <div class="cell wall"><span class="lbl">▓</span></div>
-                    <div class="cell explored"><span class="vals">g=3</span></div>
-                    <div class="cell explored"><span class="vals">g=2</span></div>
-                    <!-- Row 3 -->
-                    <div class="cell explored path"><span class="vals">g=5</span></div>
-                    <div class="cell explored path"><span class="vals">g=4</span></div>
-                    <div class="cell explored path"><span class="vals">g=3</span></div>
-                    <div class="cell explored path"><span class="vals">g=2</span></div>
-                    <div class="cell explored path"><span class="vals">g=1</span></div>
-                    <!-- Row 4 -->
-                    <div class="cell explored"><span class="vals">g=4</span></div>
-                    <div class="cell explored"><span class="vals">g=3</span></div>
-                    <div class="cell explored"><span class="vals">g=2</span></div>
-                    <div class="cell explored"><span class="vals">g=1</span></div>
-                    <div class="cell goal path"><span class="lbl">G</span><span class="vals">g=0</span></div>
-                </div>
-                <p style="text-align:center;color:var(--text2);font-size:.82em">Обновились <strong>только 3 узла</strong> (оранжевые)</p>
+        <div class="grid-overlay">
+            <div class="grid-viz clean">
+                <div class="cell start"><span class="lbl">S</span></div>
+                <div class="cell"><span class="vals">(1,0)</span></div>
+                <div class="cell"><span class="vals">(2,0)</span></div>
+                <div class="cell"><span class="vals">(3,0)</span></div>
+                <div class="cell"><span class="vals">(4,0)</span></div>
+                <div class="cell"><span class="vals">(0,1)</span></div>
+                <div class="cell path"><span class="vals">(1,1)</span></div>
+                <div class="cell wall"><span class="lbl">▓</span></div>
+                <div class="cell"><span class="vals">(3,1)</span></div>
+                <div class="cell"><span class="vals">(4,1)</span></div>
+                <div class="cell"><span class="vals">(0,2)</span></div>
+                <div class="cell path"><span class="vals">(1,2)</span></div>
+                <div class="cell wall"><span class="lbl">▓</span></div>
+                <div class="cell"><span class="vals">(3,2)</span></div>
+                <div class="cell"><span class="vals">(4,2)</span></div>
+                <div class="cell"><span class="vals">(0,3)</span></div>
+                <div class="cell"><span class="vals">(1,3)</span></div>
+                <div class="cell path"><span class="vals">(2,3)</span></div>
+                <div class="cell"><span class="vals">(3,3)</span></div>
+                <div class="cell"><span class="vals">(4,3)</span></div>
+                <div class="cell"><span class="vals">(0,4)</span></div>
+                <div class="cell"><span class="vals">(1,4)</span></div>
+                <div class="cell"><span class="vals">(2,4)</span></div>
+                <div class="cell path"><span class="vals">(3,4)</span></div>
+                <div class="cell goal"><span class="lbl">G</span></div>
             </div>
-            <div>
-                <div style="position:relative">
-                    <div class="grid-viz">
-                        <div class="cell start"><span class="lbl">S</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell wall"><span class="lbl">▓</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell newwall"><span class="lbl">▓</span></div>
-                        <div class="cell wall"><span class="lbl">▓</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell goal path"><span class="lbl">G</span></div>
-                    </div>
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <polyline points="10,30 10,50 10,70 30,70 50,70 70,70 70,90 90,90"
-                                  fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
-                    </svg>
-                </div>
-                <p style="text-align:center;color:var(--text2);font-size:.82em">Новый путь — обход слева</p>
-            </div>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polyline points="10,10 30,30 30,50 50,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
         </div>
+        <p style="text-align:center;color:var(--text2);font-size:.9em">Путь: S→(1,1)→(1,2)→(2,3)→(3,4)→G &nbsp;|&nbsp; Стоимость: $2 + 3\sqrt{2} \approx 6.2$</p>
 
-        <div class="grid-legend">
-            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:#6c9eff"></span> Старт</span>
-            <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:#a78bfa"></span> Цель</span>
-            <span><span class="dot" style="background:rgba(74,222,128,.12);border-color:#4ade80"></span> Путь</span>
-            <span><span class="dot" style="background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.4)"></span> Обновлённые узлы</span>
-            <span><span class="dot" style="background:rgba(248,113,113,.3);border-color:rgba(248,113,113,.6)"></span> Новое препятствие</span>
-        </div>
+        <h3>Фаза 2: робот сделал шаг, увидел стену</h3>
+        <p>Робот переместился на (1,1). Сенсоры обнаружили: <strong>(2,3) заблокирована!</strong> Старый путь шёл через неё.</p>
 
-        <div class="card">
-            <strong>Что произошло:</strong>
+        <div class="card warn">
+            <p><strong>Что делает D* Lite:</strong></p>
             <ol>
-                <li>Этап 1: D* Lite нашёл путь (тот же, что и A*) — обход стены снизу</li>
-                <li>Робот начал движение и дошёл до (0,1). Сенсоры обнаружили: (1,2) заблокирована!</li>
-                <li>D* Lite пересчитал <strong>только 3 узла</strong>: (1,1), (0,1) и S. Их g-значения выросли</li>
-                <li>Новый путь: от (0,1) идём вниз по столбцу 0, потом вправо по строке 3 → G</li>
-                <li>Все остальные g-значения <strong>не изменились</strong> — в этом суть инкрементальности</li>
+                <li>Обновляет $k_m$ (поправка за перемещение робота из S в (1,1))</li>
+                <li>Помечает (2,3) как стену. Пересчитывает rhs у соседей (2,3)</li>
+                <li>Только (1,2) зависела от (2,3) — её rhs меняется: 3.8 → 4.4</li>
+                <li>Раскрывает 2–3 inconsistent клетки. Находит обход через (1,3)→(2,4)</li>
             </ol>
         </div>
 
-        <div class="card warn">
-            <strong>A* пересчитал бы все ~20 узлов заново.</strong> D* Lite — только 2. На карте 1000×1000 это разница между 1 мс и 500 мс. Для робота на скорости 1 м/с — плавный объезд vs резкая остановка.
+        <p><strong>Карта после пересчёта</strong> (оранжевым — пересчитанные клетки):</p>
+
+        <div class="grid-viz">
+            <div class="cell start" style="opacity:.4"><span class="lbl">S</span><span class="vals">g=6.2</span></div>
+            <div class="cell explored"><span class="vals">g=5.8</span></div>
+            <div class="cell explored"><span class="vals">g=4.8</span></div>
+            <div class="cell explored"><span class="vals">g=4.4</span></div>
+            <div class="cell explored"><span class="vals">g=4.0</span></div>
+            <div class="cell explored"><span class="vals">g=5.2</span></div>
+            <div class="cell" style="background:rgba(108,158,255,.2);border:2px solid var(--accent)"><span class="lbl" style="color:var(--accent)">🤖</span><span class="vals">robot</span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="vals">g=3.4</span></div>
+            <div class="cell explored"><span class="vals">g=3.0</span></div>
+            <div class="cell explored"><span class="vals">g=4.8</span></div>
+            <div class="cell changed"><span class="vals">g=4.4<br><b>было 3.8</b></span></div>
+            <div class="cell wall"><span class="lbl">▓</span></div>
+            <div class="cell explored"><span class="vals">g=2.4</span></div>
+            <div class="cell explored"><span class="vals">g=2.0</span></div>
+            <div class="cell explored"><span class="vals">g=4.4</span></div>
+            <div class="cell explored"><span class="vals">g=3.4</span></div>
+            <div class="cell wall" style="border-color:var(--red);border-width:2px"><span class="lbl" style="color:var(--red)">NEW ▓</span></div>
+            <div class="cell explored"><span class="vals">g=1.4</span></div>
+            <div class="cell explored"><span class="vals">g=1.0</span></div>
+            <div class="cell explored"><span class="vals">g=4.0</span></div>
+            <div class="cell explored"><span class="vals">g=3.0</span></div>
+            <div class="cell explored"><span class="vals">g=2.0</span></div>
+            <div class="cell explored"><span class="vals">g=1.0</span></div>
+            <div class="cell goal"><span class="lbl">G</span><span class="vals">g=0</span></div>
         </div>
+
+        <p><strong>Новый путь от текущей позиции робота:</strong></p>
+        <div class="grid-overlay">
+            <div class="grid-viz clean">
+                <div class="cell" style="opacity:.4"><span class="lbl">S</span></div>
+                <div class="cell"><span class="vals">(1,0)</span></div>
+                <div class="cell"><span class="vals">(2,0)</span></div>
+                <div class="cell"><span class="vals">(3,0)</span></div>
+                <div class="cell"><span class="vals">(4,0)</span></div>
+                <div class="cell"><span class="vals">(0,1)</span></div>
+                <div class="cell" style="background:rgba(108,158,255,.2);border:2px solid var(--accent)"><span class="lbl">🤖</span></div>
+                <div class="cell wall"><span class="lbl">▓</span></div>
+                <div class="cell"><span class="vals">(3,1)</span></div>
+                <div class="cell"><span class="vals">(4,1)</span></div>
+                <div class="cell"><span class="vals">(0,2)</span></div>
+                <div class="cell path"><span class="vals">(1,2)</span></div>
+                <div class="cell wall"><span class="lbl">▓</span></div>
+                <div class="cell"><span class="vals">(3,2)</span></div>
+                <div class="cell"><span class="vals">(4,2)</span></div>
+                <div class="cell"><span class="vals">(0,3)</span></div>
+                <div class="cell path"><span class="vals">(1,3)</span></div>
+                <div class="cell wall"><span class="lbl">▓</span></div>
+                <div class="cell"><span class="vals">(3,3)</span></div>
+                <div class="cell"><span class="vals">(4,3)</span></div>
+                <div class="cell"><span class="vals">(0,4)</span></div>
+                <div class="cell"><span class="vals">(1,4)</span></div>
+                <div class="cell path"><span class="vals">(2,4)</span></div>
+                <div class="cell path"><span class="vals">(3,4)</span></div>
+                <div class="cell goal"><span class="lbl">G</span></div>
+            </div>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polyline points="30,30 30,50 30,70 50,90 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <p style="text-align:center;color:var(--text2);font-size:.9em">Путь от 🤖: (1,1)→(1,2)→(1,3)→(2,4)→(3,4)→G &nbsp;|&nbsp; Стоимость: $3 + 2\sqrt{2} \approx 5.8$</p>
+
+        <div class="card success">
+            <p><strong>Итого:</strong> A* пересчитал бы ~20 клеток с нуля. D* Lite пересчитал <strong>1-2</strong>. И ему даже не надо «начинать заново» — он просто чинит кусочек дерева рядом с роботом.</p>
+        </div>
+
+        <div class="grid-legend">
+            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:var(--accent)"></span> Старт / Робот</span>
+            <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:var(--accent2)"></span> Цель</span>
+            <span><span class="dot" style="background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4)"></span> Путь</span>
+            <span><span class="dot" style="background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.5)"></span> Пересчитано</span>
+            <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
+        </div>
+
+        <!-- ============ АНИМАЦИЯ ============ -->
+        <h2>Анимация: как работает D* Lite</h2>
+        <p>Фаза 1: поиск от G к S. Фаза 2: робот шагает на (1,1), видит стену на (2,3), D* Lite чинит путь. В каждой клетке — g и rhs.</p>
+
+        <div class="card" style="padding:28px 20px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+                <button id="ds-prev" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">◀</button>
+                <button id="ds-play" style="background:rgba(108,158,255,.15);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶ Play</button>
+                <button id="ds-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
+                <span id="ds-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 1 / 8</span>
+            </div>
+            <div style="position:relative;max-width:380px;margin:0 auto 16px">
+                <div id="ds-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
+                <svg id="ds-svg" viewBox="0 0 100 100" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" preserveAspectRatio="none"></svg>
+            </div>
+            <div id="ds-desc" class="card highlight" style="margin-top:8px;font-size:.95em;min-height:60px"></div>
+        </div>
+
+        <script>
+        (function(){
+            const I='∞';const _=I;
+            // g values from GOAL (reversed). null = wall
+            const grids=[
+                // Step 0: init
+                {walls:[],robot:null,grs:[
+                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_}],
+                    [{g:_,r:_},{g:_,r:_},null,{g:_,r:_},{g:_,r:_}],
+                    [{g:_,r:_},{g:_,r:_},null,{g:_,r:_},{g:_,r:_}],
+                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_}],
+                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:0}]
+                ],path:[],desc:'<b>Инициализация.</b> rhs(G)=0, всё остальное ∞. Поиск идёт <b>от цели к старту</b>. g = расстояние до G.'},
+
+                // Step 1: expand G
+                {walls:[],robot:null,grs:[
+                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_}],
+                    [{g:_,r:_},{g:_,r:_},null,{g:_,r:_},{g:_,r:_}],
+                    [{g:_,r:_},{g:_,r:_},null,{g:_,r:2.4},{g:_,r:2}],
+                    [{g:_,r:_},{g:_,r:_},{g:_,r:2.4},{g:_,r:1.4},{g:_,r:1}],
+                    [{g:_,r:_},{g:_,r:_},{g:_,r:2},{g:_,r:1},{g:0,r:0}]
+                ],path:[],desc:'<b>Шаг 1.</b> Раскрываем G(4,4): g=rhs=0. Волна расходится: rhs(3,4)=1, rhs(4,3)=1, rhs(3,3)=1.4. Продолжаем расширять.'},
+
+                // Step 2: wave expands further
+                {walls:[],robot:null,grs:[
+                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:4}],
+                    [{g:_,r:_},{g:_,r:_},null,{g:3.4,r:3.4},{g:3,r:3}],
+                    [{g:_,r:_},{g:_,r:_},null,{g:2.4,r:2.4},{g:2,r:2}],
+                    [{g:_,r:_},{g:_,r:3.4},{g:2.4,r:2.4},{g:1.4,r:1.4},{g:1,r:1}],
+                    [{g:_,r:4},{g:_,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
+                ],path:[],desc:'<b>Шаг 2.</b> Волна расширяется от G. Правый нижний угол заполнен. (2,3)=2.4 — через диагональ от (3,4). Стены (2,1)/(2,2) блокируют прямой путь вверх.'},
+
+                // Step 3: wave reaches left side, wrapping around wall
+                {walls:[],robot:null,grs:[
+                    [{g:_,r:_},{g:_,r:5.8},{g:_,r:4.8},{g:_,r:4.4},{g:4,r:4}],
+                    [{g:_,r:5.2},{g:_,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
+                    [{g:_,r:4.8},{g:_,r:3.8},null,{g:2.4,r:2.4},{g:2,r:2}],
+                    [{g:_,r:4.4},{g:3.4,r:3.4},{g:2.4,r:2.4},{g:1.4,r:1.4},{g:1,r:1}],
+                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
+                ],path:[],desc:'<b>Шаг 3.</b> Волна обходит стены через (1,2)=3.8 (из (2,3)+√2). Левая сторона заполняется: rhs(0,2)=4.8, rhs(0,1)=5.2.'},
+
+                // Step 4: S reached, all consistent
+                {walls:[],robot:null,grs:[
+                    [{g:6.2,r:6.2},{g:5.8,r:5.8},{g:4.8,r:4.8},{g:4.4,r:4.4},{g:4,r:4}],
+                    [{g:5.2,r:5.2},{g:4.8,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
+                    [{g:4.8,r:4.8},{g:3.8,r:3.8},null,{g:2.4,r:2.4},{g:2,r:2}],
+                    [{g:4.4,r:4.4},{g:3.4,r:3.4},{g:2.4,r:2.4},{g:1.4,r:1.4},{g:1,r:1}],
+                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
+                ],path:[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]],desc:'<b>Фаза 1 завершена.</b> g(S)=6.2 — расстояние до G. Все consistent. Путь: S→(1,1)→(1,2)→(2,3)→(3,4)→G. Робот начинает движение.'},
+
+                // Step 5: robot moves to (1,1)
+                {walls:[],robot:[1,1],grs:[
+                    [{g:6.2,r:6.2},{g:5.8,r:5.8},{g:4.8,r:4.8},{g:4.4,r:4.4},{g:4,r:4}],
+                    [{g:5.2,r:5.2},{g:4.8,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
+                    [{g:4.8,r:4.8},{g:3.8,r:3.8},null,{g:2.4,r:2.4},{g:2,r:2}],
+                    [{g:4.4,r:4.4},{g:3.4,r:3.4},{g:2.4,r:2.4},{g:1.4,r:1.4},{g:1,r:1}],
+                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
+                ],path:[[1,1],[1,2],[2,3],[3,4],[4,4]],desc:'<b>Робот на (1,1).</b> Сделал первый шаг. k_m += h(S, (1,1)) = √2. Следующий шаг по плану — (1,2). Но сенсоры видят: <b>(2,3) заблокирована!</b>'},
+
+                // Step 6: wall at (2,3), rhs update
+                {walls:[[2,3]],robot:[1,1],grs:[
+                    [{g:6.2,r:6.2},{g:5.8,r:5.8},{g:4.8,r:4.8},{g:4.4,r:4.4},{g:4,r:4}],
+                    [{g:5.2,r:5.2},{g:4.8,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
+                    [{g:4.8,r:4.8},{g:3.8,r:4.4},null,{g:2.4,r:2.4},{g:2,r:2}],
+                    [{g:4.4,r:4.4},{g:3.4,r:3.4},null,{g:1.4,r:1.4},{g:1,r:1}],
+                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
+                ],path:[[1,1],[1,2],[2,3],[3,4],[4,4]],desc:'<b>Стена на (2,3)!</b> Пересчитываем rhs соседей. (1,2) зависела от (2,3)+√2=3.8 → теперь лучший путь через (1,3)+1=4.4. rhs(1,2) изменился: <span style="color:var(--orange)">3.8 → 4.4</span>. Inconsistent!'},
+
+                // Step 7: fix, new path
+                {walls:[[2,3]],robot:[1,1],grs:[
+                    [{g:6.2,r:6.2},{g:5.8,r:5.8},{g:4.8,r:4.8},{g:4.4,r:4.4},{g:4,r:4}],
+                    [{g:5.2,r:5.2},{g:4.8,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
+                    [{g:4.8,r:4.8},{g:4.4,r:4.4},null,{g:2.4,r:2.4},{g:2,r:2}],
+                    [{g:4.4,r:4.4},{g:3.4,r:3.4},null,{g:1.4,r:1.4},{g:1,r:1}],
+                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
+                ],path:[[1,1],[1,2],[1,3],[2,4],[3,4],[4,4]],desc:'<b>Готово!</b> D* Lite пересчитал <b>1 клетку</b> — (1,2). Новый путь от робота: (1,1)→(1,2)→(1,3)→(2,4)→(3,4)→G. Стоимость: 3+2√2 ≈ 5.8.'},
+            ];
+
+            const WALLS_INIT=[[2,1],[2,2]];
+            const grid=document.getElementById('ds-grid');
+            const svg=document.getElementById('ds-svg');
+            const desc=document.getElementById('ds-desc');
+            const counter=document.getElementById('ds-counter');
+            let cur=0,timer=null;
+            function cid(c,r){return 'dsc'+c+'_'+r}
+            function sp(c,r){return [10+c*20,10+r*20]}
+            function fmt(v){return v===I?'∞':v}
+
+            for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+                const d=document.createElement('div');
+                d.id=cid(c,r);
+                d.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 2px;text-align:center;min-height:68px;display:flex;flex-direction:column;justify-content:center;font-size:.7em;transition:all .35s;position:relative;line-height:1.4';
+                grid.appendChild(d);
+            }
+
+            function render(i){
+                const s=grids[i];
+                const allW=[...WALLS_INIT,...(s.walls||[])];
+                const isW=(c,r)=>allW.some(w=>w[0]===c&&w[1]===r);
+                counter.textContent='Шаг '+(i+1)+' / '+grids.length;
+                desc.innerHTML=s.desc;
+
+                for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+                    const el=document.getElementById(cid(c,r));
+                    el.style.boxShadow='none';el.style.borderWidth='1px';el.style.borderStyle='solid';el.style.opacity='1';
+
+                    if(isW(c,r)){
+                        const isNew=s.walls&&s.walls.some(w=>w[0]===c&&w[1]===r);
+                        el.style.background='rgba(248,113,113,.15)';el.style.borderColor='rgba(248,113,113,.3)';
+                        el.innerHTML=isNew?'<b style="color:var(--red);font-size:1.3em">NEW ▓</b>':'<b style="color:var(--red)">▓</b>';
+                        if(isNew){el.style.borderColor='var(--red)';el.style.borderWidth='2px';el.style.boxShadow='0 0 10px rgba(248,113,113,.4)';}
+                        continue;
+                    }
+
+                    const cell=s.grs[r][c];
+                    if(!cell){el.innerHTML='';el.style.background='var(--card)';el.style.borderColor='var(--border)';continue;}
+
+                    const gv=cell.g,rv=cell.r;
+                    const con=(gv===rv);
+                    const bothInf=(gv===I&&rv===I);
+                    const isRobot=s.robot&&s.robot[0]===c&&s.robot[1]===r;
+
+                    let lbl='';
+                    if(isRobot) lbl='<span style="font-size:1.2em">🤖</span>';
+                    else if(c===0&&r===0&&!s.robot) lbl='<b style="color:var(--accent);font-size:1.1em">S</b>';
+                    else if(c===4&&r===4) lbl='<b style="color:var(--accent2);font-size:1.1em">G</b>';
+
+                    let gC='',rC='';
+                    if(!con&&!bothInf){gC='color:var(--orange)';rC='color:var(--orange)';}
+
+                    let html=lbl;
+                    if(bothInf){
+                        html+='<span style="color:var(--text2);opacity:.5;font-size:.9em">g=∞<br>rhs=∞</span>';
+                        el.style.background='var(--card)';el.style.borderColor='var(--border)';el.style.opacity='.5';
+                    } else {
+                        html+='<span style="font-family:\'Courier New\',monospace;font-size:.9em">';
+                        html+='<span style="'+gC+'">g='+fmt(gv)+'</span><br>';
+                        html+='<span style="'+rC+'">rhs='+fmt(rv)+'</span></span>';
+                        el.style.opacity='1';
+                        if(con){el.style.background='rgba(108,158,255,.06)';el.style.borderColor='rgba(108,158,255,.2)';}
+                        else{el.style.background='rgba(251,146,60,.12)';el.style.borderColor='rgba(251,146,60,.4)';el.style.borderWidth='2px';}
+                    }
+                    el.innerHTML=html;
+
+                    if(isRobot){el.style.borderColor='var(--accent)';el.style.borderWidth='2px';el.style.opacity='1';el.style.background='rgba(108,158,255,.2)';}
+                    if(c===0&&r===0&&s.robot){el.style.opacity='.4';}
+                    if(c===4&&r===4){el.style.borderColor='var(--accent2)';el.style.borderWidth='2px';el.style.opacity='1';}
+                }
+
+                let h='';
+                if(s.path.length>1){
+                    const pts=s.path.map(([c,r])=>sp(c,r).join(',')).join(' ');
+                    h+='<polyline points="'+pts+'" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>';
+                    s.path.forEach(([c,r])=>{const[x,y]=sp(c,r);h+='<circle cx="'+x+'" cy="'+y+'" r="2.5" fill="#4ade80" opacity=".9"/>';});
+                }
+                svg.innerHTML=h;
+            }
+
+            render(0);
+            document.getElementById('ds-next').onclick=()=>{if(cur<grids.length-1){cur++;render(cur);}};
+            document.getElementById('ds-prev').onclick=()=>{if(cur>0){cur--;render(cur);}};
+            document.getElementById('ds-play').onclick=function(){
+                if(timer){clearInterval(timer);timer=null;this.textContent='▶ Play';return;}
+                this.textContent='⏸ Pause';cur=0;render(0);
+                timer=setInterval(()=>{
+                    if(cur<grids.length-1){cur++;render(cur);}
+                    else{clearInterval(timer);timer=null;document.getElementById('ds-play').textContent='▶ Play';}
+                },3000);
+            };
+        })();
+        </script>
 
         <!-- ============ ПСЕВДОКОД ============ -->
-        <h2>Псевдокод (упрощённый)</h2>
+        <h2>Псевдокод</h2>
 
-<pre>
-D_Star_Lite():
-    // Инициализация
-    for all s: g[s] = rhs[s] = INF
-    rhs[goal] = 0
-    U.insert(goal, calc_key(goal))
-    k_m = 0
-    s_last = s_start
+<pre><span style="color:var(--green)">// Инициализация</span>
+for all s: g(s) = rhs(s) = ∞
+rhs(goal) = 0
+U.Insert(goal, CalcKey(goal))
+k_m = 0; s_robot = s_start
 
-    ComputeShortestPath()              // первоначальный поиск
+<span style="color:var(--green)">// CalcKey(s)</span>
+return [min(g(s), rhs(s)) + h(s_robot, s) + k_m,
+        min(g(s), rhs(s))]
 
-    while s_start != goal:
-        s_start = move_robot()         // робот двигается
+<span style="color:var(--green)">// h — octile distance</span>
+h(a,b) = max(|dx|,|dy|) + (√2-1)·min(|dx|,|dy|)
 
-        if map_changed():
-            for each changed edge (u, v):
-                update_cost(u, v)      // обновить стоимость ребра
-                UpdateVertex(u)        // пересчитать rhs(u)
+<span style="color:var(--green)">// ComputeShortestPath()</span>
+while U.TopKey() &lt; CalcKey(s_robot) OR
+      rhs(s_robot) ≠ g(s_robot):
+    u = U.Pop()
+    if g(u) &gt; rhs(u):             <span style="color:var(--orange)">// overconsistent</span>
+        g(u) = rhs(u)
+        for all s ∈ neighbors(u):
+            UpdateVertex(s)
+    else:                          <span style="color:var(--orange)">// underconsistent</span>
+        g(u) = ∞
+        UpdateVertex(u)
+        for all s ∈ neighbors(u):
+            UpdateVertex(s)
 
-            k_m += h(s_last, s_start)  // поправка за перемещение
-            s_last = s_start
-            ComputeShortestPath()      // инкрементальный пересчёт
-
-
-ComputeShortestPath():
-    while U.top_key() < calc_key(s_start) OR rhs[s_start] != g[s_start]:
-        u = U.pop()
-
-        if g[u] > rhs[u]:             // overconsistent
-            g[u] = rhs[u]             // уменьшаем g
-            for each predecessor s of u:
-                UpdateVertex(s)
-
-        else:                          // underconsistent
-            g[u] = INF                // сбрасываем g
-            UpdateVertex(u)
-            for each predecessor s of u:
-                UpdateVertex(s)
-
-
-UpdateVertex(u):
-    if u != goal:
-        rhs[u] = min over successors s' of [g[s'] + cost(u, s')]
-
-    if u in U: U.remove(u)
-    if g[u] != rhs[u]: U.insert(u, calc_key(u))
-</pre>
+<span style="color:var(--green)">// Главный цикл</span>
+ComputeShortestPath()          <span style="color:var(--orange)">// первый поиск</span>
+while s_robot ≠ goal:
+    s_robot = argmin_{s'∈neighbors} g(s')+c(s_robot,s')
+    <span style="color:var(--orange)">// робот переместился</span>
+    if обнаружены изменения карты:
+        k_m += h(s_old, s_robot)
+        for each changed cell:
+            UpdateVertex(affected neighbors)
+        ComputeShortestPath()  <span style="color:var(--orange)">// инкрементальный!</span></pre>
 
         <div class="card highlight">
-            <strong>Ключевые идеи в коде:</strong>
-            <ul>
-                <li><code>ComputeShortestPath()</code> — обрабатывает только несогласованные узлы ($g \neq \text{rhs}$)</li>
-                <li>При первом вызове — полный поиск (как Dijkstra от цели)</li>
-                <li>При последующих вызовах — только обновление затронутых узлов</li>
-                <li><code>k_m</code> — компенсирует перемещение робота, чтобы не пересчитывать ключи всех узлов</li>
-                <li>Overconsistent ($g > \text{rhs}$) — путь стал короче, уменьшаем g</li>
-                <li>Underconsistent ($g < \text{rhs}$) — путь стал длиннее (новое препятствие), сбрасываем g</li>
-            </ul>
+            <p><strong>Ключевое отличие от LPA*:</strong> $k_m$ накапливается при каждом перемещении робота. Это позволяет не пересчитывать ключи всех узлов в очереди — вместо этого поправка добавляется в формулу ключа.</p>
         </div>
+
+        <!-- ============ C++ ROS2 ============ -->
+        <h2>Реализация в C++ (ROS2)</h2>
+
+<pre><span style="color:var(--accent2)">#include</span> &lt;queue&gt;
+<span style="color:var(--accent2)">#include</span> &lt;unordered_map&gt;
+<span style="color:var(--accent2)">#include</span> &lt;cmath&gt;
+
+<span style="color:var(--accent)">struct</span> Cell {
+    <span style="color:var(--accent)">int</span> x, y;
+    <span style="color:var(--accent)">bool</span> operator==(<span style="color:var(--accent)">const</span> Cell&amp; o) <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> x==o.x &amp;&amp; y==o.y; }
+};
+<span style="color:var(--accent)">struct</span> CellHash {
+    size_t operator()(<span style="color:var(--accent)">const</span> Cell&amp; c) <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> std::hash&lt;<span style="color:var(--accent)">int</span>&gt;()(c.x*10007+c.y); }
+};
+<span style="color:var(--accent)">using</span> Key = std::pair&lt;<span style="color:var(--accent)">double</span>,<span style="color:var(--accent)">double</span>&gt;;
+
+<span style="color:var(--accent)">class</span> DStarLite {
+    <span style="color:var(--accent)">int</span> W, H;
+    std::vector&lt;std::vector&lt;<span style="color:var(--accent)">bool</span>&gt;&gt; grid;
+    Cell goal, robot;
+    <span style="color:var(--accent)">double</span> km = 0;
+    std::unordered_map&lt;Cell,<span style="color:var(--accent)">double</span>,CellHash&gt; g_val, rhs_val;
+
+    <span style="color:var(--accent)">static constexpr double</span> INF = 1e18;
+    <span style="color:var(--accent)">static constexpr double</span> SQRT2 = 1.41421356;
+
+    <span style="color:var(--accent)">using</span> PQE = std::pair&lt;Key,Cell&gt;;
+    std::vector&lt;PQE&gt; U;
+
+    <span style="color:var(--green)">// Octile distance</span>
+    <span style="color:var(--accent)">double</span> h(Cell a, Cell b) {
+        <span style="color:var(--accent)">int</span> dx=std::abs(a.x-b.x), dy=std::abs(a.y-b.y);
+        <span style="color:var(--accent)">return</span> std::max(dx,dy)+(SQRT2-1)*std::min(dx,dy);
+    }
+    <span style="color:var(--accent)">double</span> g(Cell s){<span style="color:var(--accent)">auto</span> it=g_val.find(s);<span style="color:var(--accent)">return</span> it!=g_val.end()?it-&gt;second:INF;}
+    <span style="color:var(--accent)">double</span> rhs(Cell s){<span style="color:var(--accent)">auto</span> it=rhs_val.find(s);<span style="color:var(--accent)">return</span> it!=rhs_val.end()?it-&gt;second:INF;}
+
+    Key calcKey(Cell s){
+        <span style="color:var(--accent)">double</span> m=std::min(g(s),rhs(s));
+        <span style="color:var(--accent)">return</span> {m+h(robot,s)+km, m};
+    }
+
+    <span style="color:var(--green)">// 8 направлений</span>
+    std::vector&lt;std::pair&lt;Cell,<span style="color:var(--accent)">double</span>&gt;&gt; neighbors(Cell s){
+        std::vector&lt;std::pair&lt;Cell,<span style="color:var(--accent)">double</span>&gt;&gt; nb;
+        <span style="color:var(--accent)">int</span> dx[]={1,-1,0,0,1,1,-1,-1};
+        <span style="color:var(--accent)">int</span> dy[]={0,0,1,-1,1,-1,1,-1};
+        <span style="color:var(--accent)">for</span>(<span style="color:var(--accent)">int</span> i=0;i&lt;8;i++){
+            Cell n={s.x+dx[i],s.y+dy[i]};
+            <span style="color:var(--accent)">if</span>(n.x&gt;=0&amp;&amp;n.x&lt;W&amp;&amp;n.y&gt;=0&amp;&amp;n.y&lt;H&amp;&amp;!grid[n.y][n.x]){
+                <span style="color:var(--accent)">double</span> c=(dx[i]!=0&amp;&amp;dy[i]!=0)?SQRT2:1.0;
+                nb.push_back({n,c});
+            }
+        }
+        <span style="color:var(--accent)">return</span> nb;
+    }
+
+    <span style="color:var(--accent)">void</span> uRemove(Cell s){
+        U.erase(std::remove_if(U.begin(),U.end(),
+            [&amp;](<span style="color:var(--accent)">auto</span>&amp;e){<span style="color:var(--accent)">return</span> e.second==s;}),U.end());
+        std::make_heap(U.begin(),U.end(),std::greater&lt;&gt;());
+    }
+    <span style="color:var(--accent)">void</span> uInsert(Cell s,Key k){U.push_back({k,s});std::push_heap(U.begin(),U.end(),std::greater&lt;&gt;());}
+
+<span style="color:var(--accent)">public</span>:
+    <span style="color:var(--accent)">void</span> initialize(<span style="color:var(--accent)">int</span> w,<span style="color:var(--accent)">int</span> h_,Cell start,Cell g_){
+        W=w;H=h_;robot=start;goal=g_;km=0;
+        grid.assign(H,std::vector&lt;<span style="color:var(--accent)">bool</span>&gt;(W,<span style="color:var(--accent)">false</span>));
+        rhs_val[goal]=0;
+        uInsert(goal,calcKey(goal));
+    }
+
+    <span style="color:var(--accent)">void</span> updateVertex(Cell u){
+        <span style="color:var(--accent)">if</span>(!(u==goal)){
+            <span style="color:var(--accent)">double</span> mn=INF;
+            <span style="color:var(--accent)">for</span>(<span style="color:var(--accent)">auto</span>&amp;[nb,c]:neighbors(u))
+                mn=std::min(mn,g(nb)+c);
+            rhs_val[u]=mn;
+        }
+        uRemove(u);
+        <span style="color:var(--accent)">if</span>(g(u)!=rhs(u)) uInsert(u,calcKey(u));
+    }
+
+    <span style="color:var(--accent)">void</span> computeShortestPath(){
+        <span style="color:var(--accent)">while</span>(!U.empty()&amp;&amp;
+              (U.front().first&lt;calcKey(robot)||rhs(robot)!=g(robot))){
+            std::pop_heap(U.begin(),U.end(),std::greater&lt;&gt;());
+            <span style="color:var(--accent)">auto</span>[key,u]=U.back();U.pop_back();
+            <span style="color:var(--accent)">if</span>(g(u)&gt;rhs(u)){
+                g_val[u]=rhs(u);
+                <span style="color:var(--accent)">for</span>(<span style="color:var(--accent)">auto</span>&amp;[s,c]:neighbors(u)) updateVertex(s);
+            }<span style="color:var(--accent)">else</span>{
+                g_val[u]=INF;
+                updateVertex(u);
+                <span style="color:var(--accent)">for</span>(<span style="color:var(--accent)">auto</span>&amp;[s,c]:neighbors(u)) updateVertex(s);
+            }
+        }
+    }
+
+    <span style="color:var(--green)">// Робот делает шаг</span>
+    Cell moveRobot(){
+        Cell best=robot;<span style="color:var(--accent)">double</span> bestC=INF;
+        <span style="color:var(--accent)">for</span>(<span style="color:var(--accent)">auto</span>&amp;[nb,c]:neighbors(robot)){
+            <span style="color:var(--accent)">if</span>(g(nb)+c&lt;bestC){bestC=g(nb)+c;best=nb;}
+        }
+        km+=h(robot,best);
+        robot=best;
+        <span style="color:var(--accent)">return</span> robot;
+    }
+
+    <span style="color:var(--green)">// При обнаружении новой стены</span>
+    <span style="color:var(--accent)">void</span> setWall(<span style="color:var(--accent)">int</span> x,<span style="color:var(--accent)">int</span> y){
+        grid[y][x]=<span style="color:var(--accent)">true</span>;
+        Cell w={x,y};
+        <span style="color:var(--accent)">for</span>(<span style="color:var(--accent)">auto</span>&amp;[nb,c]:neighbors(w))
+            updateVertex(nb);
+        computeShortestPath();
+    }
+};</pre>
 
         <!-- ============ СЛОЖНОСТЬ ============ -->
         <h2>Сложность</h2>
 
-        <table>
-            <tr><th>Метрика</th><th style="white-space:nowrap">Значение</th><th>Пояснение</th></tr>
-            <tr>
-                <td>Первый поиск</td>
-                <td style="white-space:nowrap">$O(N \log N)$</td>
-                <td>Как Dijkstra/A* — полный обход графа</td>
-            </tr>
-            <tr>
-                <td>Перепланирование</td>
-                <td style="white-space:nowrap">$O(k \log k)$</td>
-                <td>$k$ — число затронутых узлов. Обычно $k \ll N$. Это главный выигрыш!</td>
-            </tr>
-            <tr>
-                <td>Память</td>
-                <td style="white-space:nowrap">$O(N)$</td>
-                <td>g, rhs, key для каждого узла + priority queue</td>
-            </tr>
-            <tr>
-                <td>Полнота</td>
-                <td><span class="tag green">Полный</span></td>
-                <td>Находит путь, если он существует</td>
-            </tr>
-            <tr>
-                <td>Оптимальность</td>
-                <td><span class="tag green">Оптимален</span></td>
-                <td>Кратчайший путь гарантирован (как Dijkstra)</td>
-            </tr>
-        </table>
-
-        <!-- ============ C++ ROS2 ============ -->
-        <h2>Интеграция с ROS2 (C++)</h2>
-
-        <p>D* Lite идеально вписывается в ROS2-архитектуру: нода подписана на <code>/map</code> и при каждом обновлении карты инкрементально пересчитывает путь:</p>
-
-<pre>
-#include &lt;rclcpp/rclcpp.hpp&gt;
-#include &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
-#include &lt;nav_msgs/msg/path.hpp&gt;
-#include &lt;queue&gt;
-#include &lt;unordered_map&gt;
-
-class DStarLitePlanner : public rclcpp::Node {
-public:
-    DStarLitePlanner() : Node("dstar_lite_planner") {
-        map_sub_ = this-&gt;create_subscription&lt;nav_msgs::msg::OccupancyGrid&gt;(
-            "/map", 10, [this](nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
-                if (!initialized_) {
-                    initialize(msg);
-                    compute_shortest_path();
-                    initialized_ = true;
-                } else {
-                    // Инкрементальное обновление!
-                    auto changes = detect_changes(old_map_, msg);
-                    if (!changes.empty()) {
-                        for (auto [x, y] : changes) {
-                            update_vertex(x, y);
-                            for (auto [nx, ny] : neighbors(x, y))
-                                update_vertex(nx, ny);
-                        }
-                        k_m_ += heuristic(s_last_, s_start_);
-                        s_last_ = s_start_;
-                        compute_shortest_path();  // пересчитает МАЛО
-                    }
-                    old_map_ = msg;
-                }
-                publish_path();
-            });
-
-        path_pub_ = this-&gt;create_publisher&lt;nav_msgs::msg::Path&gt;("/planned_path", 10);
-    }
-
-private:
-    void compute_shortest_path() {
-        while (!U_.empty() &amp;&amp;
-               (U_.top().key &lt; calc_key(s_start_) ||
-                rhs_[s_start_] != g_[s_start_])) {
-
-            auto u = U_.pop();
-
-            if (g_[u] &gt; rhs_[u]) {
-                g_[u] = rhs_[u];  // overconsistent → fix
-                for (auto s : predecessors(u))
-                    update_vertex(s);
-            } else {
-                g_[u] = INF;      // underconsistent → reset
-                update_vertex(u);
-                for (auto s : predecessors(u))
-                    update_vertex(s);
-            }
-        }
-    }
-
-    void update_vertex(int x, int y) {
-        auto id = cell_id(x, y);
-        if (id != goal_id_) {
-            double min_rhs = INF;
-            for (auto [nx, ny] : successors(x, y)) {
-                double val = g_[cell_id(nx,ny)] + cost(x,y,nx,ny);
-                if (val &lt; min_rhs) min_rhs = val;
-            }
-            rhs_[id] = min_rhs;
-        }
-        U_.remove(id);
-        if (g_[id] != rhs_[id])
-            U_.insert(id, calc_key(id));
-    }
-
-    // ... (initialize, detect_changes, publish_path, heuristic, etc.)
-
-    bool initialized_ = false;
-    double k_m_ = 0;
-    // g_, rhs_ — hash maps: cell_id → double
-    // U_ — priority queue с двухкомпонентным ключом
-};
-</pre>
-
-        <div class="card">
-            <strong>Главное в ROS2-интеграции:</strong> при <em>каждом</em> обновлении <code>/map</code> (а это ~1-10 раз в секунду от SLAM) нода запускает <strong>инкрементальный</strong> пересчёт. Не полный A* каждый раз, а обновление только затронутых клеток. На практике это 1–5 мс вместо 50–500 мс.
-        </div>
-
-        <!-- ============ ПЛЮСЫ/МИНУСЫ ============ -->
-        <h2>Плюсы и минусы</h2>
-
         <div class="grid">
-            <div class="card success">
-                <h3 style="margin-top:0;color:var(--green)">Плюсы</h3>
-                <ul>
-                    <li><strong>Быстрое перепланирование</strong> — обновляет только затронутые узлы</li>
-                    <li>Оптимальный путь гарантирован</li>
-                    <li>Идеален для <strong>динамических сред</strong> (люди, двери, мебель)</li>
-                    <li>Стандарт в nav2 (ROS2 Navigation Stack)</li>
-                    <li>Работает с реалтайм-обновлениями карты от SLAM</li>
-                </ul>
+            <div class="card">
+                <h3>Первый поиск</h3>
+                <p>$O(V \log V)$ — как A*. Выигрыша нет.</p>
             </div>
-            <div class="card warn">
-                <h3 style="margin-top:0;color:var(--orange)">Минусы</h3>
-                <ul>
-                    <li><strong>Сложная реализация</strong> — g/rhs, двухкомпонентный ключ, k_m, overconsistent/underconsistent</li>
-                    <li>Первый поиск не быстрее A* (выигрыш только при перепланировании)</li>
-                    <li>Больше памяти — хранит g И rhs для каждого узла</li>
-                    <li>Priority queue с удалением — стандартная <code>std::priority_queue</code> не подходит (нужна своя или <code>std::set</code>)</li>
-                    <li>Отладка — сложно, состояния узлов неинтуитивны</li>
-                </ul>
+            <div class="card">
+                <h3>Пересчёт после изменения</h3>
+                <p>$O(k \log k)$, где $k$ — inconsistent клетки. При локальном изменении (1–5 стен) $k$ обычно 2–10. <strong>На порядки быстрее</strong> полного A*.</p>
             </div>
         </div>
-
-        <!-- ============ СРАВНЕНИЕ ============ -->
-        <h2>Сравнение с другими алгоритмами</h2>
-
-        <table>
-            <tr>
-                <th>Критерий</th>
-                <th>Что это значит</th>
-                <th>A*</th>
-                <th>D* Lite</th>
-                <th>LPA*</th>
-            </tr>
-            <tr>
-                <td>Статическая карта</td>
-                <td style="font-size:.88em;color:var(--text2)">Карта не меняется после запуска</td>
-                <td><span class="tag green">Отлично</span></td>
-                <td><span class="tag blue">Так же</span></td>
-                <td><span class="tag blue">Так же</span></td>
-            </tr>
-            <tr>
-                <td>Динамическая карта</td>
-                <td style="font-size:.88em;color:var(--text2)">Карта меняется на ходу (препятствия появляются/исчезают)</td>
-                <td><span class="tag orange">Полный пересчёт</span></td>
-                <td><span class="tag green">Инкрементально</span></td>
-                <td><span class="tag green">Инкрементально</span></td>
-            </tr>
-            <tr>
-                <td>Робот движется</td>
-                <td style="font-size:.88em;color:var(--text2)">Робот перемещается и стартовая позиция меняется</td>
-                <td><span class="tag orange">Пересчёт</span></td>
-                <td><span class="tag green">Учитывает (k_m)</span></td>
-                <td><span class="tag orange">Не учитывает</span></td>
-            </tr>
-            <tr>
-                <td>Сложность кода</td>
-                <td style="font-size:.88em;color:var(--text2)">Насколько трудно реализовать корректно</td>
-                <td><span class="tag green">Простой</span></td>
-                <td><span class="tag orange">Сложный</span></td>
-                <td><span class="tag blue">Средний</span></td>
-            </tr>
-            <tr>
-                <td>Направление поиска</td>
-                <td style="font-size:.88em;color:var(--text2)">Откуда начинается обход графа</td>
-                <td><span class="tag blue">Старт → Цель</span></td>
-                <td><span class="tag purple">Цель → Старт</span></td>
-                <td><span class="tag blue">Старт → Цель</span></td>
-            </tr>
-        </table>
 
         <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
-        <h2>Когда использовать D* Lite</h2>
+        <h2>Когда использовать</h2>
+
+        <div class="card highlight">
+            <p><strong>Карта не меняется?</strong> → Бери <strong>A*</strong>. Проще, быстрее, меньше памяти.</p>
+        </div>
+        <div class="card warn">
+            <p><strong>Карта меняется, робот стоит?</strong> → Бери <strong>LPA*</strong>. Тот же принцип, но проще (без $k_m$).</p>
+        </div>
+        <div class="card success">
+            <p><strong>Карта меняется, робот едет?</strong> → Бери <strong>D* Lite</strong>. Стандарт в ROS2 nav2. Пересчёт за 1–5 мс вместо 50–500 мс у полного A*. Идеален для SLAM, людей, дверей, подвижных объектов.</p>
+        </div>
 
         <div class="grid">
             <div class="card success">
-                <h3 style="margin-top:0;color:var(--green)">Используй D* Lite, если:</h3>
+                <h3>Подходит</h3>
                 <ul>
-                    <li>Карта <strong>часто меняется</strong> во время движения робота</li>
-                    <li>Нужно реагировать на новые препятствия <strong>в реальном времени</strong></li>
+                    <li>Робот <strong>движется</strong> и обнаруживает препятствия сенсорами</li>
                     <li>SLAM обновляет карту несколько раз в секунду</li>
-                    <li>Робот работает в среде с людьми, дверями, подвижными объектами</li>
+                    <li>Среда с людьми, дверями, подвижными объектами</li>
+                    <li>Нужна гарантия оптимальности после каждого изменения</li>
                 </ul>
             </div>
-            <div class="card warn">
-                <h3 style="margin-top:0;color:var(--orange)">НЕ используй D* Lite, если:</h3>
+            <div class="card" style="border-left:4px solid var(--red)">
+                <h3>Не подходит</h3>
                 <ul>
-                    <li>Карта <strong>статична</strong> — A* проще и работает так же</li>
-                    <li>Нужен any-angle путь — D* Lite даёт сеточные пути (добавь Theta* поверх)</li>
-                    <li>Пространство многомерное — используй RRT/RRT*</li>
-                    <li>Сложность реализации пугает — начни с A* и добавляй по необходимости</li>
+                    <li>Карта <strong>статична</strong> → A* проще</li>
+                    <li>Нужен any-angle путь → добавь Theta* поверх</li>
+                    <li>Многомерное пространство → RRT/RRT*</li>
+                    <li>Карта меняется <strong>глобально</strong> (50%+) → A* с нуля дешевле</li>
                 </ul>
             </div>
         </div>

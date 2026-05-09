@@ -228,17 +228,13 @@
                         </pattern>
                     </defs>
                     <rect width="500" height="500" fill="url(#grid9)"/>
-                    <!-- Walls -->
                     <rect x="200" y="100" width="100" height="100" fill="rgba(248,113,113,.15)" stroke="rgba(248,113,113,.3)" rx="4"/>
                     <rect x="200" y="200" width="100" height="100" fill="rgba(248,113,113,.15)" stroke="rgba(248,113,113,.3)" rx="4"/>
-                    <!-- S and G -->
                     <circle cx="50" cy="50" r="16" fill="rgba(108,158,255,.2)" stroke="var(--accent)" stroke-width="1.5"/>
                     <text x="50" y="55" text-anchor="middle" fill="var(--accent)" font-weight="700" font-size="13">S</text>
                     <circle cx="450" cy="450" r="16" fill="rgba(167,139,250,.2)" stroke="var(--accent2)" stroke-width="1.5"/>
                     <text x="450" y="455" text-anchor="middle" fill="var(--accent2)" font-weight="700" font-size="13">G</text>
-                    <!-- A* path — ступеньки -->
                     <polyline points="50,50 150,150 150,350 250,350 350,450 450,450" fill="none" stroke="var(--green)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
-                    <!-- Direction arrows -->
                     <polygon points="145,240 155,240 150,255" fill="var(--green)" opacity=".4"/>
                     <polygon points="240,350 255,345 255,355" fill="var(--green)" opacity=".4"/>
                 </svg>
@@ -248,23 +244,22 @@
                 <h3 style="text-align:center;margin-bottom:8px">Hybrid A* — плавные дуги</h3>
                 <svg viewBox="0 0 500 500" style="width:100%;max-width:400px;margin:0 auto;display:block;background:var(--card);border-radius:12px;border:1px solid var(--border)">
                     <rect width="500" height="500" fill="url(#grid9)"/>
-                    <!-- Walls -->
                     <rect x="200" y="100" width="100" height="100" fill="rgba(248,113,113,.15)" stroke="rgba(248,113,113,.3)" rx="4"/>
                     <rect x="200" y="200" width="100" height="100" fill="rgba(248,113,113,.15)" stroke="rgba(248,113,113,.3)" rx="4"/>
-                    <!-- S and G -->
                     <circle cx="50" cy="50" r="16" fill="rgba(108,158,255,.2)" stroke="var(--accent)" stroke-width="1.5"/>
                     <text x="50" y="55" text-anchor="middle" fill="var(--accent)" font-weight="700" font-size="13">S</text>
                     <circle cx="450" cy="450" r="16" fill="rgba(167,139,250,.2)" stroke="var(--accent2)" stroke-width="1.5"/>
                     <text x="450" y="455" text-anchor="middle" fill="var(--accent2)" font-weight="700" font-size="13">G</text>
-                    <!-- Hybrid A* smooth path -->
-                    <path d="M 50,50 Q 50,80 50,110 Q 70,130 120,150 Q 140,190 170,230 Q 190,280 220,320 Q 250,350 280,380 Q 350,400 400,430 Q 430,445 450,450" fill="none" stroke="var(--orange)" stroke-width="1" stroke-linecap="round" opacity=".85"/>
-                    <!-- Orientation markers (small triangles along path) -->
-                    <polygon points="115,145 125,140 120,155" fill="var(--orange)" opacity=".5"/>
-                    <polygon points="215,315 225,310 220,325" fill="var(--orange)" opacity=".5"/>
-                    <polygon points="345,395 355,390 350,405" fill="var(--orange)" opacity=".5"/>
-                    <!-- Heading arrow at start -->
-                    <line x1="50" y1="50" x2="50" y2="72" stroke="var(--accent)" stroke-width="1.5"/>
-                    <polygon points="45,72 50,82 55,72" fill="var(--accent)" opacity=".7"/>
+                    <!-- Hybrid A* path: computed via bicycle model, L=80, ds=50, delta_max=0.55 -->
+                    <!-- Waypoints: (50,50)→(85,85)→(121,121)→(156,156)→(176,202)→(177,252)→(178,302)→(197,348)→(232,383)→(450,450) -->
+                    <path d="M 50,50 Q 85,85 103,103 Q 121,121 138,138 Q 156,156 166,179 Q 176,202 176,227 Q 177,252 177,277 Q 178,302 187,325 Q 197,348 214,365 Q 232,383 341,416 L 450,450" fill="none" stroke="var(--orange)" stroke-width="1" stroke-linecap="round" opacity=".85"/>
+                    <!-- Orientation markers along path -->
+                    <polygon points="100,98 108,92 106,106" fill="var(--orange)" opacity=".5"/>
+                    <polygon points="172,248 180,244 178,258" fill="var(--orange)" opacity=".5"/>
+                    <polygon points="225,378 235,374 230,388" fill="var(--orange)" opacity=".5"/>
+                    <!-- Heading arrow at start (SE direction) -->
+                    <line x1="50" y1="50" x2="65" y2="65" stroke="var(--accent)" stroke-width="1.5"/>
+                    <polygon points="60,68 65,75 70,68" fill="var(--accent)" opacity=".7"/>
                 </svg>
                 <p style="text-align:center;font-size:.8em;color:var(--text2);margin-top:6px">Плавная кривая с учётом $R_{min}$. Робот проедет сразу.</p>
             </div>
@@ -273,7 +268,7 @@
         <!-- ============ АНИМАЦИЯ ============ -->
         <h2>Интерактивная анимация</h2>
 
-        <p>Смотри, как Hybrid A* расширяет дуги шаг за шагом. Серые дуги — отброшенные маневры (коллизия или уже visited). Оранжевые — принятые. Зелёная — финальный путь.</p>
+        <p>Смотри, как Hybrid A* расширяет дуги шаг за шагом. Серые пунктирные — отброшенные маневры (коллизия). Оранжевые — принятые. Зелёная — финальный путь через analytic expansion.</p>
 
         <div class="anim-wrap">
             <svg id="anim-svg" viewBox="0 0 500 500" style="width:100%;max-width:500px;margin:0 auto;display:block;background:var(--bg);border-radius:8px">
@@ -281,15 +276,10 @@
                     <pattern id="grid9a" width="100" height="100" patternUnits="userSpaceOnUse">
                         <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(42,45,62,.5)" stroke-width="1"/>
                     </pattern>
-                    <marker id="arrowH" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-                        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--orange)"/>
-                    </marker>
                 </defs>
                 <rect width="500" height="500" fill="url(#grid9a)"/>
-                <!-- Walls -->
                 <rect x="200" y="100" width="100" height="100" fill="rgba(248,113,113,.12)" stroke="rgba(248,113,113,.25)" rx="4"/>
                 <rect x="200" y="200" width="100" height="100" fill="rgba(248,113,113,.12)" stroke="rgba(248,113,113,.25)" rx="4"/>
-                <!-- S and G labels -->
                 <circle cx="50" cy="50" r="14" fill="rgba(108,158,255,.15)" stroke="var(--accent)" stroke-width="1"/>
                 <text x="50" y="55" text-anchor="middle" fill="var(--accent)" font-weight="700" font-size="12">S</text>
                 <circle cx="450" cy="450" r="14" fill="rgba(167,139,250,.15)" stroke="var(--accent2)" stroke-width="1"/>
@@ -297,99 +287,107 @@
                 <g id="anim-arcs"></g>
             </svg>
             <div class="anim-controls">
-                <button onclick="haStep(-1)">◀</button>
-                <button onclick="haPlay()" id="ha-play">▶ Play</button>
-                <button onclick="haStep(1)">▶</button>
-                <span style="color:var(--text2);font-size:.85em;margin-left:8px" id="ha-counter">0 / 7</span>
+                <button onclick="haStep(-1)">&laquo;</button>
+                <button onclick="haPlay()" id="ha-play">&#9654; Play</button>
+                <button onclick="haStep(1)">&raquo;</button>
+                <span style="color:var(--text2);font-size:.85em;margin-left:8px" id="ha-counter">1 / 8</span>
             </div>
-            <div class="anim-desc" id="ha-desc">Нажми ▶ чтобы начать</div>
+            <div class="anim-desc" id="ha-desc">Нажми Play чтобы начать</div>
         </div>
 
         <script>
         (function(){
-            // Animation steps for Hybrid A* on 500x500 SVG
-            // Each step: expand from a node, show attempted arcs (some rejected), accepted arc
+            /* Bicycle model simulation: L=80, ds=50, delta_max=0.55
+               Waypoints computed in Python:
+               (50,50)→(85,85)→(121,121)→(156,156)→(176,202)→(177,252)→(178,302)→(197,348)→(232,383)→(450,450)
+               theta: 45°→45°→45°→67°→89°→89°→67°→45°→45°
+            */
+            var FINAL = 'M 50,50 Q 85,85 103,103 Q 121,121 138,138 Q 156,156 166,179 Q 176,202 176,227 Q 177,252 177,277 Q 178,302 187,325 Q 197,348 214,365 Q 232,383 341,416 L 450,450';
             var steps = [
                 {
-                    desc: 'Шаг 1: Стартуем из S(50,50), θ=90° (вниз). Пробуем 3 маневра: прямо, лево, право.',
+                    desc: 'Шаг 1: S(50,50), θ=45° (юго-восток). Прямо → (85,85). Лево и право тоже свободны, но f хуже.',
                     arcs: [
-                        {d:'M 50,50 Q 50,80 50,110', color:'var(--orange)', ok:true},
-                        {d:'M 50,50 Q 30,80 25,110', color:'rgba(255,255,255,.15)', ok:false},
-                        {d:'M 50,50 Q 70,80 85,105', color:'var(--orange)', ok:true}
+                        {d:'M 50,50 Q 67,67 85,85', color:'var(--orange)', ok:true},
+                        {d:'M 50,50 Q 50,70 40,90', color:'rgba(255,255,255,.15)', ok:false},
+                        {d:'M 50,50 Q 80,55 100,65', color:'rgba(255,255,255,.15)', ok:false}
                     ],
-                    robot: {x:50, y:110, theta:90},
-                    path: null
+                    robot: {x:85, y:85}
                 },
                 {
-                    desc: 'Шаг 2: Из (50,110). Прямо → (50,170). Право → (85,160). Лево → заблокировано стеной.',
+                    desc: 'Шаг 2: (85,85) → прямо SE → (121,121). Эвристика направляет к цели. Стена впереди!',
                     arcs: [
-                        {d:'M 50,110 Q 50,140 55,170', color:'var(--orange)', ok:true},
-                        {d:'M 85,105 Q 100,130 120,150', color:'var(--orange)', ok:true},
-                        {d:'M 50,110 Q 30,140 20,170', color:'rgba(255,255,255,.15)', ok:false}
+                        {d:'M 85,85 Q 103,103 121,121', color:'var(--orange)', ok:true},
+                        {d:'M 85,85 Q 75,105 65,125', color:'rgba(255,255,255,.15)', ok:false},
+                        {d:'M 85,85 Q 110,90 130,100', color:'rgba(255,255,255,.15)', ok:false}
                     ],
-                    robot: {x:55, y:170, theta:95},
-                    path: null
+                    robot: {x:121, y:121}
                 },
                 {
-                    desc: 'Шаг 3: Поворачиваем правее, обходя стену. Дуга вправо (120,150)→(170,230).',
+                    desc: 'Шаг 3: (121,121) → hard right (δ=+δmax), поворот на юг, чтобы обойти стену снизу.',
                     arcs: [
-                        {d:'M 120,150 Q 140,190 170,230', color:'var(--orange)', ok:true},
-                        {d:'M 55,170 Q 60,200 70,230', color:'rgba(255,255,255,.15)', ok:false},
-                        {d:'M 120,150 Q 150,170 190,175', color:'rgba(248,113,113,.2)', ok:false}
+                        {d:'M 121,121 Q 140,140 156,156', color:'var(--orange)', ok:true},
+                        {d:'M 121,121 Q 140,130 160,130', color:'rgba(248,113,113,.2)', ok:false},
+                        {d:'M 121,121 Q 115,145 105,165', color:'rgba(255,255,255,.15)', ok:false}
                     ],
-                    robot: {x:170, y:230, theta:120},
-                    path: null
+                    robot: {x:156, y:156}
                 },
                 {
-                    desc: 'Шаг 4: Из (170,230) продолжаем дугу вправо-вниз, огибая вторую стену.',
+                    desc: 'Шаг 4: (156,156) → ещё правее (δ=+δmax), θ=67°→89° — почти точно на юг, огибаем стену.',
                     arcs: [
-                        {d:'M 170,230 Q 190,280 220,320', color:'var(--orange)', ok:true},
-                        {d:'M 170,230 Q 160,270 155,310', color:'rgba(255,255,255,.15)', ok:false},
-                        {d:'M 170,230 Q 200,250 230,260', color:'rgba(248,113,113,.2)', ok:false}
+                        {d:'M 156,156 Q 168,180 176,202', color:'var(--orange)', ok:true},
+                        {d:'M 156,156 Q 175,170 195,175', color:'rgba(248,113,113,.25)', ok:false},
+                        {d:'M 156,156 Q 145,180 140,200', color:'rgba(255,255,255,.15)', ok:false}
                     ],
-                    robot: {x:220, y:320, theta:130},
-                    path: null
+                    robot: {x:176, y:202}
                 },
                 {
-                    desc: 'Шаг 5: Выходим из зоны стен. Прямо вниз-вправо → (280,380).',
+                    desc: 'Шаг 5: (176,202) → прямо на юг θ=89° → (177,252). Проходим мимо стены (x<200).',
                     arcs: [
-                        {d:'M 220,320 Q 250,350 280,380', color:'var(--orange)', ok:true},
-                        {d:'M 220,320 Q 230,360 235,400', color:'var(--orange)', ok:true},
-                        {d:'M 220,320 Q 260,330 300,335', color:'var(--orange)', ok:true}
+                        {d:'M 176,202 Q 177,227 177,252', color:'var(--orange)', ok:true},
+                        {d:'M 176,202 Q 195,225 210,245', color:'rgba(248,113,113,.25)', ok:false},
+                        {d:'M 176,202 Q 155,225 140,250', color:'rgba(255,255,255,.15)', ok:false}
                     ],
-                    robot: {x:280, y:380, theta:135},
-                    path: null
+                    robot: {x:177, y:252}
                 },
                 {
-                    desc: 'Шаг 6: Из (280,380) пробуем Analytic Expansion — Reeds-Shepp кривую к G(450,450).',
+                    desc: 'Шаг 6: (177,252) → прямо юг → (178,302). Миновали стену! Можно поворачивать к цели.',
                     arcs: [
-                        {d:'M 280,380 Q 350,400 400,430 Q 430,445 450,450', color:'var(--green)', ok:true}
+                        {d:'M 177,252 Q 178,277 178,302', color:'var(--orange)', ok:true},
+                        {d:'M 177,252 Q 195,275 210,295', color:'var(--orange)', ok:true},
+                        {d:'M 177,252 Q 155,275 140,300', color:'rgba(255,255,255,.15)', ok:false}
                     ],
-                    robot: {x:450, y:450, theta:160},
-                    path: 'M 50,50 Q 50,80 50,110 Q 70,130 120,150 Q 140,190 170,230 Q 190,280 220,320 Q 250,350 280,380 Q 350,400 400,430 Q 430,445 450,450'
+                    robot: {x:178, y:302}
                 },
                 {
-                    desc: 'Финальный путь найден! Analytic expansion сработал на шаге 6. Вся кривая проезжаема.',
-                    arcs: [],
-                    robot: null,
-                    path: 'M 50,50 Q 50,80 50,110 Q 70,130 120,150 Q 140,190 170,230 Q 190,280 220,320 Q 250,350 280,380 Q 350,400 400,430 Q 430,445 450,450'
+                    desc: 'Шаг 7: (178,302) → hard left (δ=-δmax), θ=89°→67°→45° — разворачиваемся к SE, к цели.',
+                    arcs: [
+                        {d:'M 178,302 Q 190,325 197,348', color:'var(--orange)', ok:true},
+                        {d:'M 178,302 Q 180,330 178,355', color:'rgba(255,255,255,.15)', ok:false}
+                    ],
+                    robot: {x:197, y:348}
+                },
+                {
+                    desc: 'Шаг 8: Analytic expansion! Из (232,383) Reeds-Shepp кривая к G(450,450) — проходит! Путь найден.',
+                    arcs: [
+                        {d:'M 197,348 Q 215,365 232,383', color:'var(--orange)', ok:true},
+                        {d:'M 232,383 Q 341,416 450,450', color:'var(--green)', ok:true}
+                    ],
+                    robot: {x:450, y:450},
+                    path: true
                 }
             ];
 
-            var cur = 0;
-            var playing = false;
-            var timer = null;
+            var cur = 0, playing = false, timer = null;
 
             function render(step) {
                 var g = document.getElementById('anim-arcs');
                 var h = '';
-                // Draw all arcs from previous steps (faded)
+                // Previous accepted arcs (faded)
                 for (var i = 0; i < step; i++) {
-                    var s = steps[i];
-                    for (var j = 0; j < s.arcs.length; j++) {
-                        var a = s.arcs[j];
+                    for (var j = 0; j < steps[i].arcs.length; j++) {
+                        var a = steps[i].arcs[j];
                         if (a.ok && a.color !== 'var(--green)') {
-                            h += '<path d="'+a.d+'" fill="none" stroke="var(--orange)" stroke-width="1" opacity=".2" stroke-linecap="round"/>';
+                            h += '<path d="'+a.d+'" fill="none" stroke="var(--orange)" stroke-width="1" opacity=".15" stroke-linecap="round"/>';
                         }
                     }
                 }
@@ -398,22 +396,17 @@
                 for (var j = 0; j < st.arcs.length; j++) {
                     var a = st.arcs[j];
                     var w = a.ok ? '1.5' : '1';
-                    var o = a.ok ? '.8' : '.4';
+                    var o = a.ok ? '.8' : '.35';
                     var dash = a.ok ? '' : ' stroke-dasharray="6,4"';
                     h += '<path d="'+a.d+'" fill="none" stroke="'+a.color+'" stroke-width="'+w+'" opacity="'+o+'" stroke-linecap="round"'+dash+'/>';
                 }
-                // Final path
+                // Final path overlay
                 if (st.path) {
-                    h += '<path d="'+st.path+'" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>';
+                    h += '<path d="'+FINAL+'" fill="none" stroke="var(--green)" stroke-width="1" stroke-linecap="round" opacity=".9"/>';
                 }
                 // Robot position
                 if (st.robot) {
-                    var r = st.robot;
-                    h += '<circle cx="'+r.x+'" cy="'+r.y+'" r="6" fill="var(--orange)" opacity=".9"/>';
-                    var rad = r.theta * Math.PI / 180;
-                    var dx = 12 * Math.cos(rad - Math.PI/2);
-                    var dy = 12 * Math.sin(rad - Math.PI/2);
-                    // heading line is subtle
+                    h += '<circle cx="'+st.robot.x+'" cy="'+st.robot.y+'" r="5" fill="var(--orange)" opacity=".9"/>';
                 }
                 g.innerHTML = h;
                 document.getElementById('ha-desc').textContent = st.desc;
@@ -425,26 +418,14 @@
                 render(cur);
             };
             window.haPlay = function() {
-                if (playing) {
-                    clearInterval(timer);
-                    playing = false;
-                    document.getElementById('ha-play').textContent = '▶ Play';
-                    return;
-                }
+                if (playing) { clearInterval(timer); playing=false; document.getElementById('ha-play').innerHTML='&#9654; Play'; return; }
                 playing = true;
-                document.getElementById('ha-play').textContent = '⏸ Pause';
+                document.getElementById('ha-play').innerHTML='&#9646;&#9646; Pause';
                 timer = setInterval(function(){
-                    if (cur >= steps.length-1) {
-                        clearInterval(timer);
-                        playing = false;
-                        document.getElementById('ha-play').textContent = '▶ Play';
-                        return;
-                    }
-                    cur++;
-                    render(cur);
-                }, 1200);
+                    if (cur >= steps.length-1) { clearInterval(timer); playing=false; document.getElementById('ha-play').innerHTML='&#9654; Play'; return; }
+                    cur++; render(cur);
+                }, 1400);
             };
-
             render(0);
         })();
         </script>
@@ -525,7 +506,7 @@ State3D simulate(<span style="color:var(--accent)">const</span> State3D&amp; s, 
     n.theta = s.theta + (DS / L) * tan(delta);
     <span style="color:var(--text2)">// Нормализуем угол в [0, 2&pi;)</span>
     n.theta = fmod(n.theta, 2*M_PI);
-    <span style="color:var(--accent)">if</span> (n.theta < 0) n.theta += 2*M_PI;
+    <span style="color:var(--accent)">if</span> (n.theta &lt; 0) n.theta += 2*M_PI;
     <span style="color:var(--accent)">return</span> n;
 }
 
@@ -547,7 +528,7 @@ State3D simulate(<span style="color:var(--accent)">const</span> State3D&amp; s, 
 </pre>
 
         <div class="card warn">
-            <p><strong>ROS2 Nav2:</strong> Hybrid A* уже реализован в <code>nav2_smac_planner</code> → плагин <code>SmacPlannerHybrid</code>. Ключевые параметры: <code>minimum_turning_radius</code>, <code>angle_quantization_bins</code> (= $N_\theta$), <code>analytic_expansion_ratio</code>.</p>
+            <p><strong>ROS2 Nav2:</strong> Hybrid A* уже реализован в <code>nav2_smac_planner</code> &rarr; плагин <code>SmacPlannerHybrid</code>. Ключевые параметры: <code>minimum_turning_radius</code>, <code>angle_quantization_bins</code> (= $N_\theta$), <code>analytic_expansion_ratio</code>.</p>
         </div>
 
         <!-- ============ DECISION CARDS ============ -->

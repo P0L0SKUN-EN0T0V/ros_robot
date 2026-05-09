@@ -53,6 +53,19 @@
         .nav-bottom a:hover{text-decoration:underline}
         .katex{font-size:1.1em}
         .katex-display{margin:12px 0}
+        .decision-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0}
+        @media(max-width:900px){.decision-cards{grid-template-columns:1fr}}
+        .decision-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;transition:border-color .2s}
+        .decision-card:hover{border-color:var(--accent)}
+        .decision-card h4{font-size:1.1em;margin-bottom:8px}
+        .decision-card .scenario{color:var(--text2);font-size:.85em;margin:8px 0}
+        .decision-card .verdict{font-weight:700;font-size:.95em;margin-top:12px;padding:8px;border-radius:8px}
+        .anim-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:20px 0}
+        .anim-controls{display:flex;gap:8px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+        .anim-controls button{background:rgba(108,158,255,.15);color:var(--accent);border:1px solid rgba(108,158,255,.3);border-radius:8px;padding:6px 16px;cursor:pointer;font-size:.9em;transition:all .2s}
+        .anim-controls button:hover{background:rgba(108,158,255,.25)}
+        .anim-controls button.active{background:var(--accent);color:#fff}
+        .anim-desc{text-align:center;color:var(--text2);font-size:.9em;min-height:40px;margin:8px 0}
         @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
     </style>
 </head>
@@ -77,20 +90,52 @@
         <h1>Hybrid A*</h1>
         <p class="subtitle">Алгоритм №9 — A* с учётом физики: руль, скорость, кинематика</p>
 
-        <!-- ============ СУТЬ ============ -->
-        <h2>О чём вообще речь</h2>
+        <!-- ============ ЗАЧЕМ ============ -->
+        <h2>Зачем это нужно</h2>
 
         <div class="analogy">
-            Обычный A* — это пешеход: может шагнуть в любую из 8 соседних клеток, развернуться на месте. Hybrid A* — это автомобиль: у него есть руль, минимальный радиус поворота, он не умеет ходить боком. Маршрут на сетке прокладывается не из клетки в клетку, а по плавным дугам, которые робот реально способен проехать.
+            Представь, что ты вызвал такси. Навигатор показывает маршрут — набор поворотов по улицам.
+            Теперь представь, что навигатор говорит: «поверни на 90° на месте, потом шаг вбок».
+            Водитель так не сможет — у машины есть <strong>руль с ограниченным углом</strong> и <strong>минимальный радиус разворота</strong>.
+            Hybrid A* — это навигатор, который знает, что ты за рулём, а не на своих двоих.
         </div>
 
         <div class="card highlight">
-            <p><strong>Hybrid A*</strong> — алгоритм планирования для неголономных роботов (машины, TurtleBot, вилочные погрузчики). Состояние — не просто $(x, y)$, а $(x, y, \theta)$, где $\theta$ — угол поворота. Переходы — реальные маневры с конечным радиусом поворота.</p>
-            <p style="margin-top:12px">Сетка используется только для дискретизации: в каждой ячейке хранится лучшее непрерывное состояние. Это гибрид дискретного поиска (A*) и непрерывной кинематики.</p>
+            <p>Все алгоритмы до этого (A*, D* Lite, JPS, LPA*) считают, что робот — <strong>точка</strong>, которая шагает по клеткам. Hybrid A* — первый алгоритм в нашем списке, который учитывает <strong>физику робота</strong>: угол поворота $\theta$, минимальный радиус $R_{min}$, длину колёсной базы $L$.</p>
+            <p style="margin-top:12px">Состояние — не $(x, y)$, а $(x, y, \theta)$. Переходы — не шаги по сетке, а <strong>реальные дуги</strong>, по которым робот может проехать.</p>
         </div>
 
-        <!-- ============ СОСТОЯНИЕ ============ -->
-        <h2>Пространство состояний</h2>
+        <!-- ============ BICYCLE MODEL ============ -->
+        <h2>Модель велосипеда (bicycle model)</h2>
+
+        <p>Неважно, четыре колеса у робота или два — кинематику можно упростить до <strong>двухколёсной модели</strong>. Переднее колесо рулит, заднее катится. Этого достаточно, чтобы описать и TurtleBot, и автомобиль, и погрузчик.</p>
+
+        <div class="formula-block">
+            $$\dot{x} = v \cos\theta, \quad \dot{y} = v \sin\theta, \quad \dot{\theta} = \frac{v}{L} \tan\delta$$
+        </div>
+
+        <p>Где:</p>
+        <table>
+            <tr><th>Символ</th><th>Что означает</th></tr>
+            <tr><td>$v$</td><td>Линейная скорость (вперёд/назад)</td></tr>
+            <tr><td>$\theta$</td><td>Текущий угол ориентации робота (heading)</td></tr>
+            <tr><td>$L$</td><td>Колёсная база — расстояние между осями</td></tr>
+            <tr><td>$\delta$</td><td>Угол поворота руля ($-\delta_{max}$ до $+\delta_{max}$)</td></tr>
+            <tr><td>$R_{min}$</td><td>Минимальный радиус поворота = $L / \tan(\delta_{max})$</td></tr>
+        </table>
+
+        <p>Дискретизация (один шаг длиной $\Delta s$):</p>
+
+        <div class="formula-block">
+            $$x' = x + \Delta s \cdot \cos\theta, \quad y' = y + \Delta s \cdot \sin\theta, \quad \theta' = \theta + \frac{\Delta s}{L} \tan\delta$$
+        </div>
+
+        <div class="card warn">
+            <p><strong>Ключевое ограничение:</strong> робот не может двигаться вбок. Если цель сбоку — приходится объезжать дугой. Это и есть <em>неголономность</em> (nonholonomic constraint).</p>
+        </div>
+
+        <!-- ============ ПРОСТРАНСТВО СОСТОЯНИЙ ============ -->
+        <h2>Пространство состояний: 2D → 3D</h2>
 
         <div class="grid">
             <div class="card">
@@ -98,314 +143,467 @@
                 <p>Состояние: $(x, y) \in \mathbb{Z}^2$</p>
                 <p>8 соседей, шаг = 1 клетка</p>
                 <p>Разворот на месте — бесплатно</p>
+                <p style="margin-top:8px;color:var(--text2)">Пешеход: куда хочу, туда иду</p>
             </div>
             <div class="card">
                 <h3>Hybrid A*</h3>
                 <p>Состояние: $(x, y, \theta) \in \mathbb{R}^2 \times [0, 2\pi)$</p>
-                <p>3–7 управляющих входов (руль)</p>
+                <p>3–7 маневров (углы руля)</p>
                 <p>Минимальный радиус поворота $R_{min}$</p>
+                <p style="margin-top:8px;color:var(--text2)">Водитель: кручу руль, еду дугами</p>
             </div>
         </div>
 
-        <h3>Модель велосипеда (bicycle model)</h3>
-        <p>Кинематика TurtleBot3 и автомобилей описывается одинаково:</p>
-
-        <div class="formula-block">
-            $$\dot{x} = v \cos\theta, \quad \dot{y} = v \sin\theta, \quad \dot{\theta} = \frac{v}{L} \tan\delta$$
-        </div>
-
-        <p>Где $v$ — скорость, $L$ — колёсная база, $\delta$ — угол руля. Дискретизируем с шагом $\Delta t$:</p>
-
-        <div class="formula-block">
-            $$x' = x + \Delta s \cdot \cos\theta, \quad y' = y + \Delta s \cdot \sin\theta, \quad \theta' = \theta + \frac{\Delta s}{L} \tan\delta$$
-        </div>
+        <p>Сетка нужна только для <strong>дискретизации</strong>: в каждой ячейке $(i, j, k)$ хранится лучшее непрерывное состояние. $k$ — дискретный угол ($\theta$ делим на $N_\theta$ секторов, обычно 36–72).</p>
 
         <!-- ============ УПРАВЛЕНИЕ ============ -->
-        <h2>Управляющие входы</h2>
+        <h2>Маневры: что умеет робот</h2>
+
+        <p>На каждом шаге робот проезжает расстояние $\Delta s$ и крутит руль на один из фиксированных углов. Это и есть его «соседи» — только не клетки, а дуги.</p>
 
         <div class="card">
-            <p>На каждом шаге робот выбирает один из нескольких маневров:</p>
             <table>
-                <tr><th>Маневр</th><th>$\delta$ (руль)</th><th>Результат</th></tr>
-                <tr><td>Прямо</td><td>$0$</td><td>Едем по прямой на $\Delta s$</td></tr>
-                <tr><td>Лево</td><td>$+\delta_{max}$</td><td>Дуга влево с радиусом $R_{min}$</td></tr>
-                <tr><td>Право</td><td>$-\delta_{max}$</td><td>Дуга вправо с радиусом $R_{min}$</td></tr>
-                <tr><td>Лёгкий лево</td><td>$+\delta_{max}/2$</td><td>Плавная дуга влево</td></tr>
-                <tr><td>Лёгкий право</td><td>$-\delta_{max}/2$</td><td>Плавная дуга вправо</td></tr>
+                <tr><th>Маневр</th><th>Угол руля $\delta$</th><th>Что происходит</th></tr>
+                <tr><td>Прямо</td><td>$0$</td><td>Едет прямо на $\Delta s$</td></tr>
+                <tr><td>Лево макс.</td><td>$+\delta_{max}$</td><td>Крутая дуга влево (радиус $R_{min}$)</td></tr>
+                <tr><td>Право макс.</td><td>$-\delta_{max}$</td><td>Крутая дуга вправо (радиус $R_{min}$)</td></tr>
+                <tr><td>Лево плавно</td><td>$+\delta_{max}/2$</td><td>Плавная дуга влево (радиус $2R_{min}$)</td></tr>
+                <tr><td>Право плавно</td><td>$-\delta_{max}/2$</td><td>Плавная дуга вправо (радиус $2R_{min}$)</td></tr>
             </table>
-            <p style="margin-top:8px">Больше вариантов → плавнее путь, но медленнее поиск. Обычно 3–5 хватает.</p>
+            <p style="margin-top:12px;color:var(--text2)">Обычно 3–5 маневров. Больше → плавнее путь, но дольше поиск.</p>
         </div>
 
         <!-- ============ АЛГОРИТМ ============ -->
-        <h2>Как работает алгоритм</h2>
+        <h2>Как работает</h2>
 
-        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Дискретизация.</strong> Разбиваем $(x,y)$ на сетку (как OccupancyGrid), $\theta$ — на $N_\theta$ секторов (обычно 36–72, т.е. шаг 5°–10°).</div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Инициализация.</strong> Стартовое состояние $(x_0, y_0, \theta_0)$ в open list. Ячейка сетки = $(i, j, k)$ где $k = \lfloor\theta / \Delta\theta\rfloor$.</div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Expand.</strong> Для текущего состояния применяем каждый маневр → получаем 3–5 новых состояний $(x', y', \theta')$.</div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Collision check.</strong> Проверяем, что дуга от $(x,y)$ до $(x',y')$ не пересекает препятствия (с учётом footprint робота).</div></div>
-        <div class="step"><div class="step-num">5</div><div class="step-text"><strong>Discretize &amp; store.</strong> Вычисляем ячейку $(i', j', k')$. Если в ней уже есть состояние с меньшим $g$ — пропускаем. Иначе сохраняем.</div></div>
-        <div class="step"><div class="step-num">6</div><div class="step-text"><strong>Analytic expansion.</strong> Периодически пробуем Reeds-Shepp/Dubins кривую напрямую к цели. Если она проходима — нашли путь!</div></div>
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Дискретизация пространства.</strong> Карту разбиваем на сетку (как OccupancyGrid). Угол $\theta$ — на $N_\theta$ секторов (шаг 5°–10°). Каждая ячейка — тройка $(i, j, k)$.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Старт.</strong> Кладём $(x_0, y_0, \theta_0)$ в open list с $f = h(\text{start})$.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Expand.</strong> Берём лучший из open list, применяем все маневры → получаем 3–5 новых состояний.</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Collision check.</strong> Каждая дуга проверяется на столкновение с учётом <em>footprint</em> робота (не точка, а прямоугольник).</div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-text"><strong>Deduplicate.</strong> Вычисляем ячейку $(i', j', k')$. Если там уже есть состояние с меньшим $g$ — пропускаем.</div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-text"><strong>Analytic expansion.</strong> Каждые N шагов пробуем Reeds-Shepp / Dubins кривую напрямую к цели. Если проходит — <span style="color:var(--green)">нашли путь!</span></div></div>
 
         <div class="card success">
-            <p><strong>Analytic expansion</strong> — ключевая оптимизация. Вместо того чтобы ползти по сетке до самого конца, мы каждые N итераций пробуем аналитическую кривую к цели. Это ускоряет финальную часть пути в десятки раз.</p>
+            <p><strong>Analytic expansion — главная оптимизация.</strong> Вместо того чтобы ползти дугами до самого финиша, мы периодически пробуем аналитическую кривую напрямую к цели. Вблизи цели это срабатывает и ускоряет финал в десятки раз.</p>
         </div>
 
         <!-- ============ ЭВРИСТИКИ ============ -->
-        <h2>Эвристики</h2>
+        <h2>Двойная эвристика</h2>
 
-        <p>Hybrid A* использует <strong>две эвристики</strong> и берёт максимум:</p>
+        <p>Hybrid A* уникален тем, что использует <strong>две разных эвристики</strong> одновременно — и берёт максимум. Каждая «знает» то, чего не знает другая:</p>
 
         <div class="grid">
             <div class="card">
-                <h3>$h_1$: Non-holonomic без препятствий</h3>
-                <p>Длина кратчайшей Dubins/Reeds-Shepp кривой до цели, игнорируя стены. Учитывает кинематику, но не карту.</p>
-                <div class="formula-block" style="font-size:1em">$h_1 = \text{DubinsLength}(\text{state}, \text{goal})$</div>
+                <h3 style="color:var(--orange)">$h_1$: Кинематика без стен</h3>
+                <p>Длина Dubins/Reeds-Shepp кривой до цели, <strong>игнорируя препятствия</strong>.</p>
+                <p style="color:var(--text2);margin-top:8px">Знает про руль и радиус поворота, но не видит стены.</p>
+                <div class="formula-block" style="font-size:1em">$h_1 = \text{Dubins}(\text{state}, \text{goal})$</div>
             </div>
             <div class="card">
-                <h3>$h_2$: Holonomic с препятствиями</h3>
-                <p>Обычный A*/Dijkstra от цели по 2D сетке (без $\theta$). Учитывает стены, но не кинематику.</p>
-                <div class="formula-block" style="font-size:1em">$h_2 = \text{2D\_Dijkstra}(x, y, \text{goal})$</div>
+                <h3 style="color:var(--accent)">$h_2$: Стены без кинематики</h3>
+                <p>Обычный 2D A*/Dijkstra от позиции до цели, <strong>игнорируя угол $\theta$</strong>.</p>
+                <p style="color:var(--text2);margin-top:8px">Видит стены и обходит их, но не знает про руль.</p>
+                <div class="formula-block" style="font-size:1em">$h_2 = \text{2D\_Grid}(x, y, \text{goal})$</div>
             </div>
         </div>
 
         <div class="formula-block">
-            $$h(s) = \max(h_1(s),\; h_2(s))$$
+            $$h(s) = \max\big(h_1(s),\; h_2(s)\big)$$
         </div>
 
-        <p>Максимум двух допустимых эвристик — тоже допустимая эвристика, но более «тугая» (ближе к реальности).</p>
+        <p>Максимум двух допустимых эвристик — тоже допустимая эвристика, но более точная. Это отсекает больше бесполезных состояний.</p>
 
         <!-- ============ SVG ВИЗУАЛИЗАЦИЯ ============ -->
         <h2>Визуальный пример</h2>
 
-        <p>На нашей карте 5×5 Hybrid A* не просто прыгает по клеткам — он рисует плавные дуги с учётом ориентации робота.</p>
+        <p>Одна и та же карта, одни и те же препятствия — но два разных алгоритма рисуют принципиально разные пути:</p>
 
         <div class="grid">
             <div>
                 <h3 style="text-align:center;margin-bottom:8px">A* — ступенчатый путь</h3>
                 <svg viewBox="0 0 500 500" style="width:100%;max-width:400px;margin:0 auto;display:block;background:var(--card);border-radius:12px;border:1px solid var(--border)">
-                    <!-- Grid -->
-                    <defs><pattern id="grid9" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(42,45,62,.8)" stroke-width="1"/></pattern></defs>
+                    <defs>
+                        <pattern id="grid9" width="100" height="100" patternUnits="userSpaceOnUse">
+                            <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(42,45,62,.8)" stroke-width="1"/>
+                        </pattern>
+                    </defs>
                     <rect width="500" height="500" fill="url(#grid9)"/>
                     <!-- Walls -->
-                    <rect x="200" y="100" width="100" height="100" fill="rgba(248,113,113,.2)" stroke="rgba(248,113,113,.4)" rx="4"/>
-                    <rect x="200" y="200" width="100" height="100" fill="rgba(248,113,113,.2)" stroke="rgba(248,113,113,.4)" rx="4"/>
-                    <text x="250" y="160" text-anchor="middle" fill="var(--red)" font-size="14">▓</text>
-                    <text x="250" y="260" text-anchor="middle" fill="var(--red)" font-size="14">▓</text>
+                    <rect x="200" y="100" width="100" height="100" fill="rgba(248,113,113,.15)" stroke="rgba(248,113,113,.3)" rx="4"/>
+                    <rect x="200" y="200" width="100" height="100" fill="rgba(248,113,113,.15)" stroke="rgba(248,113,113,.3)" rx="4"/>
                     <!-- S and G -->
-                    <circle cx="50" cy="50" r="18" fill="rgba(108,158,255,.3)" stroke="var(--accent)" stroke-width="2"/>
-                    <text x="50" y="55" text-anchor="middle" fill="var(--accent)" font-weight="700" font-size="14">S</text>
-                    <circle cx="450" cy="450" r="18" fill="rgba(167,139,250,.3)" stroke="var(--accent2)" stroke-width="2"/>
-                    <text x="450" y="455" text-anchor="middle" fill="var(--accent2)" font-weight="700" font-size="14">G</text>
-                    <!-- A* staircase path -->
-                    <polyline points="50,50 50,150 150,150 150,250 150,350 250,350 350,350 350,450 450,450" fill="none" stroke="var(--green)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
+                    <circle cx="50" cy="50" r="16" fill="rgba(108,158,255,.2)" stroke="var(--accent)" stroke-width="1.5"/>
+                    <text x="50" y="55" text-anchor="middle" fill="var(--accent)" font-weight="700" font-size="13">S</text>
+                    <circle cx="450" cy="450" r="16" fill="rgba(167,139,250,.2)" stroke="var(--accent2)" stroke-width="1.5"/>
+                    <text x="450" y="455" text-anchor="middle" fill="var(--accent2)" font-weight="700" font-size="13">G</text>
+                    <!-- A* path — ступеньки -->
+                    <polyline points="50,50 150,150 150,350 250,350 350,450 450,450" fill="none" stroke="var(--green)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
+                    <!-- Direction arrows -->
+                    <polygon points="145,240 155,240 150,255" fill="var(--green)" opacity=".4"/>
+                    <polygon points="240,350 255,345 255,355" fill="var(--green)" opacity=".4"/>
                 </svg>
+                <p style="text-align:center;font-size:.8em;color:var(--text2);margin-top:6px">Резкие повороты на 90°. Робот так не проедет.</p>
             </div>
             <div>
                 <h3 style="text-align:center;margin-bottom:8px">Hybrid A* — плавные дуги</h3>
                 <svg viewBox="0 0 500 500" style="width:100%;max-width:400px;margin:0 auto;display:block;background:var(--card);border-radius:12px;border:1px solid var(--border)">
                     <rect width="500" height="500" fill="url(#grid9)"/>
                     <!-- Walls -->
-                    <rect x="200" y="100" width="100" height="100" fill="rgba(248,113,113,.2)" stroke="rgba(248,113,113,.4)" rx="4"/>
-                    <rect x="200" y="200" width="100" height="100" fill="rgba(248,113,113,.2)" stroke="rgba(248,113,113,.4)" rx="4"/>
-                    <text x="250" y="160" text-anchor="middle" fill="var(--red)" font-size="14">▓</text>
-                    <text x="250" y="260" text-anchor="middle" fill="var(--red)" font-size="14">▓</text>
+                    <rect x="200" y="100" width="100" height="100" fill="rgba(248,113,113,.15)" stroke="rgba(248,113,113,.3)" rx="4"/>
+                    <rect x="200" y="200" width="100" height="100" fill="rgba(248,113,113,.15)" stroke="rgba(248,113,113,.3)" rx="4"/>
                     <!-- S and G -->
-                    <circle cx="50" cy="50" r="18" fill="rgba(108,158,255,.3)" stroke="var(--accent)" stroke-width="2"/>
-                    <text x="50" y="55" text-anchor="middle" fill="var(--accent)" font-weight="700" font-size="14">S</text>
-                    <circle cx="450" cy="450" r="18" fill="rgba(167,139,250,.3)" stroke="var(--accent2)" stroke-width="2"/>
-                    <text x="450" y="455" text-anchor="middle" fill="var(--accent2)" font-weight="700" font-size="14">G</text>
-                    <!-- Hybrid A* smooth path with curves -->
-                    <path d="M 50,50 C 50,120 80,200 130,280 C 160,330 200,350 260,350 C 320,350 380,380 420,420 Q 440,440 450,450" fill="none" stroke="var(--orange)" stroke-width="1" stroke-linecap="round" opacity=".9"/>
-                    <!-- Orientation arrows along path -->
-                    <polygon points="90,190 100,185 95,195" fill="var(--orange)" opacity=".7"/>
-                    <polygon points="195,340 205,335 200,345" fill="var(--orange)" opacity=".7"/>
-                    <polygon points="350,370 358,363 355,375" fill="var(--orange)" opacity=".7"/>
-                    <polygon points="430,435 438,428 435,440" fill="var(--orange)" opacity=".7"/>
-                    <!-- Robot heading at start -->
-                    <line x1="50" y1="50" x2="50" y2="80" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrow9)"/>
-                    <defs><marker id="arrow9" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker></defs>
+                    <circle cx="50" cy="50" r="16" fill="rgba(108,158,255,.2)" stroke="var(--accent)" stroke-width="1.5"/>
+                    <text x="50" y="55" text-anchor="middle" fill="var(--accent)" font-weight="700" font-size="13">S</text>
+                    <circle cx="450" cy="450" r="16" fill="rgba(167,139,250,.2)" stroke="var(--accent2)" stroke-width="1.5"/>
+                    <text x="450" y="455" text-anchor="middle" fill="var(--accent2)" font-weight="700" font-size="13">G</text>
+                    <!-- Hybrid A* smooth path -->
+                    <path d="M 50,50 C 60,100 90,180 140,270 C 170,320 200,350 260,355 C 330,360 390,400 430,440 Q 440,450 450,450" fill="none" stroke="var(--orange)" stroke-width="1" stroke-linecap="round" opacity=".85"/>
+                    <!-- Orientation markers (small triangles along path) -->
+                    <polygon points="95,185 102,178 100,192" fill="var(--orange)" opacity=".5"/>
+                    <polygon points="200,348 210,342 207,356" fill="var(--orange)" opacity=".5"/>
+                    <polygon points="370,385 378,378 376,392" fill="var(--orange)" opacity=".5"/>
+                    <!-- Heading arrow at start -->
+                    <line x1="50" y1="50" x2="55" y2="72" stroke="var(--accent)" stroke-width="1.5"/>
+                    <polygon points="50,72 55,75 60,72 55,82" fill="var(--accent)" opacity=".7"/>
                 </svg>
+                <p style="text-align:center;font-size:.8em;color:var(--text2);margin-top:6px">Плавная кривая с учётом $R_{min}$. Робот проедет сразу.</p>
             </div>
         </div>
 
-        <p style="text-align:center;font-size:.85em;color:var(--text2)">Слева: A* — ступеньки, робот не может так ехать. Справа: Hybrid A* — плавная кривая, реальная траектория.</p>
+        <!-- ============ АНИМАЦИЯ ============ -->
+        <h2>Интерактивная анимация</h2>
+
+        <p>Смотри, как Hybrid A* расширяет дуги шаг за шагом. Серые дуги — отброшенные маневры (коллизия или уже visited). Оранжевые — принятые. Зелёная — финальный путь.</p>
+
+        <div class="anim-wrap">
+            <svg id="anim-svg" viewBox="0 0 500 500" style="width:100%;max-width:500px;margin:0 auto;display:block;background:var(--bg);border-radius:8px">
+                <defs>
+                    <pattern id="grid9a" width="100" height="100" patternUnits="userSpaceOnUse">
+                        <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(42,45,62,.5)" stroke-width="1"/>
+                    </pattern>
+                    <marker id="arrowH" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--orange)"/>
+                    </marker>
+                </defs>
+                <rect width="500" height="500" fill="url(#grid9a)"/>
+                <!-- Walls -->
+                <rect x="200" y="100" width="100" height="100" fill="rgba(248,113,113,.12)" stroke="rgba(248,113,113,.25)" rx="4"/>
+                <rect x="200" y="200" width="100" height="100" fill="rgba(248,113,113,.12)" stroke="rgba(248,113,113,.25)" rx="4"/>
+                <!-- S and G labels -->
+                <circle cx="50" cy="50" r="14" fill="rgba(108,158,255,.15)" stroke="var(--accent)" stroke-width="1"/>
+                <text x="50" y="55" text-anchor="middle" fill="var(--accent)" font-weight="700" font-size="12">S</text>
+                <circle cx="450" cy="450" r="14" fill="rgba(167,139,250,.15)" stroke="var(--accent2)" stroke-width="1"/>
+                <text x="450" y="455" text-anchor="middle" fill="var(--accent2)" font-weight="700" font-size="12">G</text>
+                <g id="anim-arcs"></g>
+            </svg>
+            <div class="anim-controls">
+                <button onclick="haStep(-1)">◀</button>
+                <button onclick="haPlay()" id="ha-play">▶ Play</button>
+                <button onclick="haStep(1)">▶</button>
+                <span style="color:var(--text2);font-size:.85em;margin-left:8px" id="ha-counter">0 / 7</span>
+            </div>
+            <div class="anim-desc" id="ha-desc">Нажми ▶ чтобы начать</div>
+        </div>
+
+        <script>
+        (function(){
+            // Animation steps for Hybrid A* on 500x500 SVG
+            // Each step: expand from a node, show attempted arcs (some rejected), accepted arc
+            var steps = [
+                {
+                    desc: 'Шаг 1: Стартуем из S(50,50), θ=90° (вниз). Пробуем 3 маневра: прямо, лево, право.',
+                    arcs: [
+                        {d:'M 50,50 Q 50,80 50,110', color:'var(--orange)', ok:true},
+                        {d:'M 50,50 Q 30,80 25,110', color:'rgba(255,255,255,.15)', ok:false},
+                        {d:'M 50,50 Q 70,80 85,105', color:'var(--orange)', ok:true}
+                    ],
+                    robot: {x:50, y:110, theta:90},
+                    path: null
+                },
+                {
+                    desc: 'Шаг 2: Из (50,110). Прямо → (50,170). Право → (85,160). Лево → заблокировано стеной.',
+                    arcs: [
+                        {d:'M 50,110 Q 50,140 55,170', color:'var(--orange)', ok:true},
+                        {d:'M 85,105 Q 100,130 120,150', color:'var(--orange)', ok:true},
+                        {d:'M 50,110 Q 30,140 20,170', color:'rgba(255,255,255,.15)', ok:false}
+                    ],
+                    robot: {x:55, y:170, theta:95},
+                    path: null
+                },
+                {
+                    desc: 'Шаг 3: Поворачиваем правее, обходя стену. Дуга вправо (120,150)→(170,230).',
+                    arcs: [
+                        {d:'M 120,150 Q 140,190 170,230', color:'var(--orange)', ok:true},
+                        {d:'M 55,170 Q 60,200 70,230', color:'rgba(255,255,255,.15)', ok:false},
+                        {d:'M 120,150 Q 150,170 190,175', color:'rgba(248,113,113,.2)', ok:false}
+                    ],
+                    robot: {x:170, y:230, theta:120},
+                    path: null
+                },
+                {
+                    desc: 'Шаг 4: Из (170,230) продолжаем дугу вправо-вниз, огибая вторую стену.',
+                    arcs: [
+                        {d:'M 170,230 Q 190,280 220,320', color:'var(--orange)', ok:true},
+                        {d:'M 170,230 Q 160,270 155,310', color:'rgba(255,255,255,.15)', ok:false},
+                        {d:'M 170,230 Q 200,250 230,260', color:'rgba(248,113,113,.2)', ok:false}
+                    ],
+                    robot: {x:220, y:320, theta:130},
+                    path: null
+                },
+                {
+                    desc: 'Шаг 5: Выходим из зоны стен. Прямо вниз-вправо → (280,380).',
+                    arcs: [
+                        {d:'M 220,320 Q 250,350 280,380', color:'var(--orange)', ok:true},
+                        {d:'M 220,320 Q 230,360 235,400', color:'var(--orange)', ok:true},
+                        {d:'M 220,320 Q 260,330 300,335', color:'var(--orange)', ok:true}
+                    ],
+                    robot: {x:280, y:380, theta:135},
+                    path: null
+                },
+                {
+                    desc: 'Шаг 6: Из (280,380) пробуем Analytic Expansion — Reeds-Shepp кривую к G(450,450).',
+                    arcs: [
+                        {d:'M 280,380 Q 350,400 400,430 Q 430,445 450,450', color:'var(--green)', ok:true}
+                    ],
+                    robot: {x:450, y:450, theta:160},
+                    path: 'M 50,50 Q 50,80 50,110 Q 70,130 120,150 Q 140,190 170,230 Q 190,280 220,320 Q 250,350 280,380 Q 350,400 400,430 Q 430,445 450,450'
+                },
+                {
+                    desc: 'Финальный путь найден! Analytic expansion сработал на шаге 6. Вся кривая проезжаема.',
+                    arcs: [],
+                    robot: null,
+                    path: 'M 50,50 Q 50,80 50,110 Q 70,130 120,150 Q 140,190 170,230 Q 190,280 220,320 Q 250,350 280,380 Q 350,400 400,430 Q 430,445 450,450'
+                }
+            ];
+
+            var cur = 0;
+            var playing = false;
+            var timer = null;
+
+            function render(step) {
+                var g = document.getElementById('anim-arcs');
+                var h = '';
+                // Draw all arcs from previous steps (faded)
+                for (var i = 0; i < step; i++) {
+                    var s = steps[i];
+                    for (var j = 0; j < s.arcs.length; j++) {
+                        var a = s.arcs[j];
+                        if (a.ok && a.color !== 'var(--green)') {
+                            h += '<path d="'+a.d+'" fill="none" stroke="var(--orange)" stroke-width="1" opacity=".2" stroke-linecap="round"/>';
+                        }
+                    }
+                }
+                // Current step arcs
+                var st = steps[step];
+                for (var j = 0; j < st.arcs.length; j++) {
+                    var a = st.arcs[j];
+                    var w = a.ok ? '1.5' : '1';
+                    var o = a.ok ? '.8' : '.4';
+                    var dash = a.ok ? '' : ' stroke-dasharray="6,4"';
+                    h += '<path d="'+a.d+'" fill="none" stroke="'+a.color+'" stroke-width="'+w+'" opacity="'+o+'" stroke-linecap="round"'+dash+'/>';
+                }
+                // Final path
+                if (st.path) {
+                    h += '<path d="'+st.path+'" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>';
+                }
+                // Robot position
+                if (st.robot) {
+                    var r = st.robot;
+                    h += '<circle cx="'+r.x+'" cy="'+r.y+'" r="6" fill="var(--orange)" opacity=".9"/>';
+                    var rad = r.theta * Math.PI / 180;
+                    var dx = 12 * Math.cos(rad - Math.PI/2);
+                    var dy = 12 * Math.sin(rad - Math.PI/2);
+                    // heading line is subtle
+                }
+                g.innerHTML = h;
+                document.getElementById('ha-desc').textContent = st.desc;
+                document.getElementById('ha-counter').textContent = (step+1) + ' / ' + steps.length;
+            }
+
+            window.haStep = function(d) {
+                cur = Math.max(0, Math.min(steps.length-1, cur+d));
+                render(cur);
+            };
+            window.haPlay = function() {
+                if (playing) {
+                    clearInterval(timer);
+                    playing = false;
+                    document.getElementById('ha-play').textContent = '▶ Play';
+                    return;
+                }
+                playing = true;
+                document.getElementById('ha-play').textContent = '⏸ Pause';
+                timer = setInterval(function(){
+                    if (cur >= steps.length-1) {
+                        clearInterval(timer);
+                        playing = false;
+                        document.getElementById('ha-play').textContent = '▶ Play';
+                        return;
+                    }
+                    cur++;
+                    render(cur);
+                }, 1200);
+            };
+
+            render(0);
+        })();
+        </script>
 
         <!-- ============ PSEUDOCODE ============ -->
         <h2>Псевдокод</h2>
 
 <pre>
 <span style="color:var(--accent)">function</span> HybridAStar(start, goal, grid):
-    open ← priority_queue()
+    open &larr; priority_queue()
     open.push(start, f = h(start))
-    visited[discretize(start)] ← start
+    visited[discretize(start)] &larr; start
 
     <span style="color:var(--accent)">while</span> open не пуст:
-        cur ← open.pop_min()
+        cur &larr; open.pop_min()
 
         <span style="color:var(--text2)">// Analytic expansion: пробуем кривую напрямую к цели</span>
-        <span style="color:var(--accent)">if</span> попытка % 5 == 0:
-            curve ← ReedsShepp(cur, goal)
+        <span style="color:var(--accent)">if</span> iteration % N == 0:
+            curve &larr; ReedsShepp(cur, goal)
             <span style="color:var(--accent)">if</span> collision_free(curve):
-                <span style="color:var(--accent)">return</span> path(cur) + curve
+                <span style="color:var(--accent)">return</span> reconstruct(cur) + curve
 
         <span style="color:var(--text2)">// Expand: применяем каждый маневр</span>
-        <span style="color:var(--accent)">for</span> δ ∈ {-δ_max, -δ_max/2, 0, +δ_max/2, +δ_max}:
-            next ← simulate(cur, δ, Δs)
-            cell ← discretize(next)  <span style="color:var(--text2)">// (i, j, k_θ)</span>
+        <span style="color:var(--accent)">for</span> &delta; &isin; {-&delta;<sub>max</sub>, -&delta;<sub>max</sub>/2, 0, +&delta;<sub>max</sub>/2, +&delta;<sub>max</sub>}:
+            next &larr; simulate(cur, &delta;, &Delta;s)
+            cell &larr; discretize(next)  <span style="color:var(--text2)">// (i, j, k<sub>&theta;</sub>)</span>
 
             <span style="color:var(--accent)">if</span> !collision_free(arc(cur, next)): <span style="color:var(--accent)">continue</span>
-            <span style="color:var(--accent)">if</span> cell ∈ visited <span style="color:var(--accent)">and</span> visited[cell].g ≤ next.g: <span style="color:var(--accent)">continue</span>
+            <span style="color:var(--accent)">if</span> cell &isin; visited <span style="color:var(--accent)">and</span> visited[cell].g &le; next.g: <span style="color:var(--accent)">continue</span>
 
-            next.g ← cur.g + arc_length
-            next.f ← next.g + max(h_dubins(next), h_2d(next))
-            next.parent ← cur
-            visited[cell] ← next
+            next.g &larr; cur.g + arc_length
+            next.f &larr; next.g + max(h<sub>dubins</sub>(next), h<sub>2d</sub>(next))
+            next.parent &larr; cur
+            visited[cell] &larr; next
             open.push(next)
 
-    <span style="color:var(--accent)">return</span> null
+    <span style="color:var(--accent)">return</span> null  <span style="color:var(--text2)">// путь не найден</span>
 </pre>
 
         <!-- ============ C++ ROS2 ============ -->
         <h2>Реализация в C++ (ROS2)</h2>
 
-        <p>Ключевые структуры: 3D-состояние, кинематическая модель, analytic expansion.</p>
+        <p>Ключевые компоненты: 3D-состояние, bicycle model, analytic expansion через OMPL.</p>
 
 <pre>
-<span style="color:var(--text2)">// --- hybrid_astar.hpp ---</span>
+<span style="color:var(--text2)">// hybrid_astar_planner.hpp</span>
 <span style="color:var(--accent)">#include</span> &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
 <span style="color:var(--accent)">#include</span> &lt;ompl/base/spaces/ReedsSheppStateSpace.h&gt;
+<span style="color:var(--accent)">#include</span> &lt;queue&gt;
+<span style="color:var(--accent)">#include</span> &lt;cmath&gt;
+
+<span style="color:var(--accent)">constexpr int</span> N_THETA = 72;            <span style="color:var(--text2)">// 5° шаг угла</span>
+<span style="color:var(--accent)">constexpr double</span> ANGLE_RES = 2*M_PI / N_THETA;
+<span style="color:var(--accent)">constexpr double</span> L = 0.3;              <span style="color:var(--text2)">// колёсная база [м]</span>
+<span style="color:var(--accent)">constexpr double</span> DS = 0.1;             <span style="color:var(--text2)">// шаг [м]</span>
+<span style="color:var(--accent)">constexpr double</span> DELTA_MAX = 0.5;      <span style="color:var(--text2)">// макс. угол руля [рад]</span>
+<span style="color:var(--accent)">constexpr double</span> R_MIN = L / tan(DELTA_MAX);
 
 <span style="color:var(--accent)">struct</span> State3D {
     <span style="color:var(--accent2)">double</span> x, y, theta;
     <span style="color:var(--accent2)">double</span> g = 0, f = 0;
-    State3D* parent = <span style="color:var(--accent)">nullptr</span>;
-    <span style="color:var(--accent2)">int</span> ix() <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> (<span style="color:var(--accent2)">int</span>)(x / resolution); }
-    <span style="color:var(--accent2)">int</span> iy() <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> (<span style="color:var(--accent2)">int</span>)(y / resolution); }
-    <span style="color:var(--accent2)">int</span> itheta() <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> (<span style="color:var(--accent2)">int</span>)(theta / angle_res) % N_THETA; }
+    <span style="color:var(--accent2)">int</span> parent_idx = -1;
+
+    <span style="color:var(--text2)">// Дискретизация для visited-массива</span>
+    <span style="color:var(--accent2)">int</span> ix(<span style="color:var(--accent2)">double</span> res) <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> (<span style="color:var(--accent2)">int</span>)(x / res); }
+    <span style="color:var(--accent2)">int</span> iy(<span style="color:var(--accent2)">double</span> res) <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> (<span style="color:var(--accent2)">int</span>)(y / res); }
+    <span style="color:var(--accent2)">int</span> itheta() <span style="color:var(--accent)">const</span> {
+        <span style="color:var(--accent2)">int</span> k = (<span style="color:var(--accent2)">int</span>)(theta / ANGLE_RES);
+        <span style="color:var(--accent)">return</span> ((k % N_THETA) + N_THETA) % N_THETA;
+    }
 };
 
 <span style="color:var(--text2)">// Кинематическая модель (bicycle)</span>
-State3D simulate(<span style="color:var(--accent)">const</span> State3D&amp; s, <span style="color:var(--accent2)">double</span> delta, <span style="color:var(--accent2)">double</span> ds) {
+State3D simulate(<span style="color:var(--accent)">const</span> State3D&amp; s, <span style="color:var(--accent2)">double</span> delta) {
     State3D n;
-    n.x = s.x + ds * cos(s.theta);
-    n.y = s.y + ds * sin(s.theta);
-    n.theta = normalize_angle(s.theta + ds / L * tan(delta));
+    n.x = s.x + DS * cos(s.theta);
+    n.y = s.y + DS * sin(s.theta);
+    n.theta = s.theta + (DS / L) * tan(delta);
+    <span style="color:var(--text2)">// Нормализуем угол в [0, 2&pi;)</span>
+    n.theta = fmod(n.theta, 2*M_PI);
+    <span style="color:var(--accent)">if</span> (n.theta < 0) n.theta += 2*M_PI;
     <span style="color:var(--accent)">return</span> n;
 }
 
 <span style="color:var(--text2)">// Analytic expansion: Reeds-Shepp кривая к цели</span>
-std::optional&lt;Path&gt; try_analytic(<span style="color:var(--accent)">const</span> State3D&amp; cur, <span style="color:var(--accent)">const</span> State3D&amp; goal) {
-    <span style="color:var(--accent2)">auto</span> rs = ompl::base::ReedsSheppStateSpace(R_min);
-    <span style="color:var(--accent2)">double</span> len = rs.distance(to_ompl(cur), to_ompl(goal));
-    Path path = rs.interpolate(to_ompl(cur), to_ompl(goal), len);
-    <span style="color:var(--accent)">if</span> (collision_free(path))
-        <span style="color:var(--accent)">return</span> path;
-    <span style="color:var(--accent)">return</span> std::nullopt;
+<span style="color:var(--accent)">bool</span> tryAnalytic(<span style="color:var(--accent)">const</span> State3D&amp; cur,
+                 <span style="color:var(--accent)">const</span> State3D&amp; goal,
+                 <span style="color:var(--accent)">const</span> nav_msgs::msg::OccupancyGrid&amp; grid,
+                 std::vector&lt;State3D&gt;&amp; result) {
+    ompl::base::ReedsSheppStateSpace rs(R_MIN);
+    <span style="color:var(--text2)">// ... проверяем кривую на коллизии ...</span>
+    <span style="color:var(--text2)">// Если проходит — заполняем result и return true</span>
+    <span style="color:var(--accent)">return</span> false;
 }
+
+<span style="color:var(--text2)">// Маневры: 5 углов руля</span>
+<span style="color:var(--accent)">const double</span> STEERS[] = {
+    -DELTA_MAX, -DELTA_MAX/2, 0, DELTA_MAX/2, DELTA_MAX
+};
 </pre>
 
         <div class="card warn">
-            <p><strong>ROS2 Nav2:</strong> Hybrid A* реализован в <code>nav2_smac_planner</code> (плагин <code>SmacPlannerHybrid</code>). Настраивается через параметры: <code>minimum_turning_radius</code>, <code>angle_quantization_bins</code>, <code>analytic_expansion_ratio</code>.</p>
+            <p><strong>ROS2 Nav2:</strong> Hybrid A* уже реализован в <code>nav2_smac_planner</code> → плагин <code>SmacPlannerHybrid</code>. Ключевые параметры: <code>minimum_turning_radius</code>, <code>angle_quantization_bins</code> (= $N_\theta$), <code>analytic_expansion_ratio</code>.</p>
         </div>
 
-        <!-- ============ СЛОЖНОСТЬ ============ -->
-        <h2>Сложность</h2>
+        <!-- ============ DECISION CARDS ============ -->
+        <h2>Какой планировщик выбрать</h2>
 
-        <table>
-            <tr><th>Метрика</th><th>Значение</th><th>Что это значит</th></tr>
-            <tr>
-                <td>Время</td>
-                <td style="white-space:nowrap">$O(N_\theta \cdot V \cdot B \cdot \log(N_\theta V))$</td>
-                <td>$V$ = клетки сетки, $N_\theta$ = дискретов угла, $B$ = число маневров</td>
-            </tr>
-            <tr>
-                <td>Память</td>
-                <td style="white-space:nowrap">$O(N_\theta \cdot V)$</td>
-                <td>3D массив visited: $(x, y, \theta)$</td>
-            </tr>
-            <tr>
-                <td>Analytic expansion</td>
-                <td style="white-space:nowrap">$O(1)$ per try</td>
-                <td>Dubins/Reeds-Shepp — аналитические формулы</td>
-            </tr>
-        </table>
-
-        <!-- ============ СРАВНЕНИЕ ============ -->
-        <h2>Сравнение</h2>
-
-        <table>
-            <tr><th>Критерий</th><th>Что это значит</th><th>A*</th><th>Hybrid A*</th><th>RRT</th></tr>
-            <tr>
-                <td>Оптимальность</td>
-                <td>Кратчайший путь гарантирован</td>
-                <td><span class="tag green">Да</span></td>
-                <td><span class="tag orange">~оптимально</span></td>
-                <td><span class="tag orange">Нет</span></td>
-            </tr>
-            <tr>
-                <td>Кинематика</td>
-                <td>Учитывает физику робота</td>
-                <td><span class="tag orange">Нет</span></td>
-                <td><span class="tag green">Да</span></td>
-                <td><span class="tag green">Да (с kin.)</span></td>
-            </tr>
-            <tr>
-                <td>Тип пространства</td>
-                <td>В каком пространстве ищет</td>
-                <td>2D сетка</td>
-                <td>3D: $(x,y,\theta)$</td>
-                <td>Непрерывное</td>
-            </tr>
-            <tr>
-                <td>Плавность пути</td>
-                <td>Можно ли ехать без пост-обработки</td>
-                <td><span class="tag orange">Ступеньки</span></td>
-                <td><span class="tag green">Плавные дуги</span></td>
-                <td><span class="tag orange">Ломаная</span></td>
-            </tr>
-            <tr>
-                <td>Скорость</td>
-                <td>Время планирования</td>
-                <td>Быстрый</td>
-                <td>Средний</td>
-                <td>Быстрый (но неоптим.)</td>
-            </tr>
-            <tr>
-                <td>Применение в ROS2</td>
-                <td>Какой плагин Nav2</td>
-                <td>SmacPlanner2D</td>
-                <td>SmacPlannerHybrid</td>
-                <td>Нет в стандарте</td>
-            </tr>
-        </table>
+        <div class="decision-cards">
+            <div class="decision-card">
+                <h4 style="color:var(--green)">A* / JPS</h4>
+                <div class="scenario">Робот omnidirectional (может ехать в любую сторону). Дроны, mecanum-колёса, дифф-привод без ограничений.</div>
+                <div class="verdict" style="background:rgba(74,222,128,.1);color:var(--green)">Точка на сетке, быстро, оптимально</div>
+                <p style="font-size:.8em;color:var(--text2);margin-top:8px">Nav2: <code>SmacPlanner2D</code></p>
+            </div>
+            <div class="decision-card" style="border-color:var(--orange)">
+                <h4 style="color:var(--orange)">Hybrid A*</h4>
+                <div class="scenario">Робот с рулём — автомобиль, Ackermann, вилочный погрузчик. Есть $R_{min}$, нужен сразу проезжаемый путь.</div>
+                <div class="verdict" style="background:rgba(251,146,60,.1);color:var(--orange)">Дуги в 3D, учёт кинематики, ~оптимально</div>
+                <p style="font-size:.8em;color:var(--text2);margin-top:8px">Nav2: <code>SmacPlannerHybrid</code></p>
+            </div>
+            <div class="decision-card">
+                <h4 style="color:var(--accent2)">Lattice Planner</h4>
+                <div class="scenario">Сложная кинематика, нужны предрассчитанные маневры (parallel parking, 3-point turn). Индустриальные AGV.</div>
+                <div class="verdict" style="background:rgba(167,139,250,.1);color:var(--accent2)">Таблица маневров, дорогой precompute</div>
+                <p style="font-size:.8em;color:var(--text2);margin-top:8px">Nav2: <code>SmacPlannerLattice</code></p>
+            </div>
+        </div>
 
         <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
         <h2>Когда использовать</h2>
 
         <div class="grid">
             <div class="card success">
-                <p><strong>Идеально для:</strong></p>
+                <h3 style="color:var(--green);margin-top:0">Подходит</h3>
                 <ul>
-                    <li>Автомобили, вилочные погрузчики, Ackermann-роботы</li>
-                    <li>Парковка и маневрирование в тесных пространствах</li>
-                    <li>Когда путь должен быть сразу проезжаемым (без smoothing)</li>
-                    <li>Nav2 <code>SmacPlannerHybrid</code></li>
+                    <li><strong>Ackermann-роботы</strong> (автомобили, вилочники) — путь сразу проезжаемый</li>
+                    <li><strong>Парковка</strong> в тесных пространствах — Reeds-Shepp включает задний ход</li>
+                    <li><strong>Outdoor навигация</strong> — крупная карта, робот с рулём</li>
                 </ul>
             </div>
             <div class="card warn">
-                <p><strong>Не подходит для:</strong></p>
+                <h3 style="color:var(--orange);margin-top:0">Не подходит</h3>
                 <ul>
-                    <li>Всенаправленные роботы (omnidirectional) — для них обычный A* лучше</li>
-                    <li>Очень большие карты без аналитического расширения (медленно)</li>
-                    <li>Дроны / манипуляторы (нужен 6-DOF, не 3-DOF)</li>
+                    <li><strong>Omnidirectional</strong> роботы — для них обычный A* проще и быстрее</li>
+                    <li><strong>Дроны / манипуляторы</strong> — им нужен 6-DOF, а не 3-DOF</li>
+                    <li><strong>Очень большие карты</strong> без analytic expansion — поиск будет медленным</li>
                 </ul>
             </div>
         </div>
 
+        <div class="card highlight">
+            <p><strong>Сложность:</strong> Время — $O(N_\theta \cdot V \cdot B \cdot \log(N_\theta V))$, где $V$ = клетки сетки, $B$ = число маневров, $N_\theta$ = секторы угла. Память — $O(N_\theta \cdot V)$ для 3D visited-массива. Analytic expansion — $O(1)$ на попытку (аналитические формулы Dubins/Reeds-Shepp).</p>
+        </div>
+
         <!-- ============ НАВИГАЦИЯ ============ -->
         <div class="nav-bottom">
-            <a href="algo-8-lpa-star.html">← 8. LPA*</a>
-            <a href="algo-10-prm.html">10. PRM →</a>
+            <a href="algo-8-lpa-star.html">&larr; 8. LPA*</a>
+            <a href="algo-10-prm.html">10. PRM &rarr;</a>
         </div>
     </div>
 </body>

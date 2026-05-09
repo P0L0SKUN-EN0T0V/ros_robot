@@ -343,6 +343,180 @@
             <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
         </div>
 
+
+        <!-- ============ АНИМАЦИЯ ============ -->
+        <h2>Анимация: как работает LPA*</h2>
+        <p>Два этапа: сначала первый поиск (Фаза 1), потом появляется новая стена и LPA* чинит путь (Фаза 2). Оранжевые — клетки, которые алгоритм обрабатывает прямо сейчас.</p>
+
+        <div class="card" style="padding:28px 20px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+                <button id="lpa-prev" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">◀</button>
+                <button id="lpa-play" style="background:rgba(108,158,255,.15);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶ Play</button>
+                <button id="lpa-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
+                <span id="lpa-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 1 / 10</span>
+            </div>
+            <div style="position:relative;max-width:380px;margin:0 auto 16px">
+                <div id="lpa-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
+                <svg id="lpa-svg" viewBox="0 0 100 100" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" preserveAspectRatio="none"></svg>
+            </div>
+            <div id="lpa-desc" class="card highlight" style="margin-top:8px;font-size:.95em;min-height:60px"></div>
+        </div>
+
+        <script>
+        (function(){
+            const WALLS_INIT=[[2,1],[2,2]];
+            let walls=[...WALLS_INIT];
+            const isW=(c,r)=>walls.some(w=>w[0]===c&&w[1]===r);
+
+            // g,rhs states per step
+            // Phase 1: first search (steps 0-6), Phase 2: wall appears + fix (steps 7-9)
+            const steps=[
+                // PHASE 1: First search
+                {phase:1, expand:null, processing:[], consistent:[], path:[],
+                 grs:{}, wallsExtra:[],
+                 desc:'<b>Фаза 1 — Первый поиск.</b> Все клетки: g=∞, rhs=∞. Только rhs(S)=0. S — inconsistent (g≠rhs), попадает в очередь.'},
+
+                {phase:1, expand:[0,0], processing:[[0,0]], consistent:[[0,0]], path:[],
+                 grs:{'0,0':'g=0'}, wallsExtra:[],
+                 desc:'<b>Шаг 1.</b> Раскрываем S(0,0). g>rhs (overconsistent) → ставим g(S)=rhs(S)=0. Обновляем соседей: rhs(1,0)=1, rhs(0,1)=1. Оба → в очередь.'},
+
+                {phase:1, expand:[1,0], processing:[[1,0],[0,1]], consistent:[[0,0],[1,0],[0,1]], path:[],
+                 grs:{'0,0':'g=0','1,0':'g=1','0,1':'g=1'}, wallsExtra:[],
+                 desc:'<b>Шаг 2.</b> Раскрываем (1,0) и (0,1) — оба overconsistent, g=rhs=1. Их соседи получают обновления: rhs(1,1)=2, rhs(0,2)=2, rhs(2,0)=2.'},
+
+                {phase:1, expand:[1,1], processing:[[1,1],[0,2],[2,0]], consistent:[[0,0],[1,0],[0,1],[1,1],[0,2],[2,0]], path:[],
+                 grs:{'0,0':'g=0','1,0':'g=1','0,1':'g=1','1,1':'g=2','0,2':'g=2','2,0':'g=2'}, wallsExtra:[],
+                 desc:'<b>Шаг 3.</b> Волна идёт дальше. (1,1), (0,2), (2,0) — все consistent. Обновляем rhs соседей: (1,2)=3, (3,0)=3, (0,3)=3.'},
+
+                {phase:1, expand:[1,2], processing:[[1,2],[1,3]], consistent:[[0,0],[1,0],[0,1],[1,1],[0,2],[2,0],[1,2],[1,3],[3,0],[0,3]], path:[],
+                 grs:{'0,0':'g=0','1,0':'g=1','0,1':'g=1','1,1':'g=2','0,2':'g=2','2,0':'g=2','1,2':'g=3','1,3':'g=4','3,0':'g=3','0,3':'g=3'}, wallsExtra:[],
+                 desc:'<b>Шаги 4-5.</b> Волна обходит стены (2,1)-(2,2). Через (1,2)→(1,3)→(2,3). Параллельно волна идёт по верху: (3,0)→(4,0)→(4,1).'},
+
+                {phase:1, expand:[2,3], processing:[[2,3],[3,3]], consistent:[], path:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3],[3,4],[4,4]],
+                 grs:{'2,3':'g=5','3,3':'g=6','3,4':'g=7','4,4':'g=8'}, wallsExtra:[],
+                 desc:'<b>Шаги 6-7.</b> Волна достигает G(4,4) через (2,3)→(3,3)→(3,4)→G. g(G)=rhs(G)=8. Первый поиск завершён! Путь стоимостью 8.'},
+
+                {phase:1, expand:null, processing:[], consistent:[], path:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3],[3,4],[4,4]],
+                 grs:{}, wallsExtra:[],
+                 desc:'<b>Результат Фазы 1.</b> Все клетки consistent (g=rhs). Путь: S→(0,1)→(1,1)→(1,2)→(1,3)→(2,3)→(3,3)→(3,4)→G. Стоимость: 8.'},
+
+                // PHASE 2: New wall at (1,3)
+                {phase:2, expand:null, processing:[[1,3]], consistent:[], path:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3],[3,4],[4,4]],
+                 grs:{}, wallsExtra:[[1,3]],
+                 desc:'<b>Фаза 2.</b> Появилась стена на (1,3)! Старый путь проходил через неё. LPA* обновляет rhs соседей (1,3): клетки (2,3) и (1,4) пересчитывают свои rhs.'},
+
+                {phase:2, expand:[2,3], processing:[[2,3],[1,4]], consistent:[], path:[[0,0],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3],[3,4],[4,4]],
+                 grs:{'2,3':'rhs↑','1,4':'rhs↑'}, wallsExtra:[[1,3]],
+                 desc:'<b>Пересчёт.</b> (2,3) раньше получала g=5 через (1,3). Теперь пересчитывает: лучший доступный сосед — (3,3) с g=6, или (2,4). rhs(2,3) меняется → inconsistent → в очередь. LPA* раскрывает только 3-4 узла.'},
+
+                {phase:2, expand:null, processing:[], consistent:[], path:[[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[2,4],[2,3],[3,3],[3,4],[4,4]],
+                 grs:{}, wallsExtra:[[1,3]],
+                 desc:'<b>Готово!</b> LPA* нашёл новый путь, пересчитав всего 3 клетки. A* пересчитал бы ~20. Новый путь: S→(0,1)→(0,2)→(0,3)→(0,4)→(1,4)→(2,4)→(2,3)→(3,3)→(3,4)→G. Стоимость: 10.'},
+            ];
+
+            const grid=document.getElementById('lpa-grid');
+            const svg=document.getElementById('lpa-svg');
+            const desc=document.getElementById('lpa-desc');
+            const counter=document.getElementById('lpa-counter');
+            let cur=0,timer=null;
+
+            function cid(c,r){return 'lac'+c+'_'+r}
+            function sp(c,r){return [10+c*20,10+r*20]}
+
+            for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+                const d=document.createElement('div');
+                d.id=cid(c,r);
+                d.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 2px;text-align:center;min-height:68px;display:flex;flex-direction:column;justify-content:center;font-size:.75em;transition:all .35s;position:relative';
+                grid.appendChild(d);
+            }
+
+            function render(i){
+                const s=steps[i];
+                walls=[...WALLS_INIT,...(s.wallsExtra||[])];
+                counter.textContent='Шаг '+(i+1)+' / '+steps.length;
+                desc.innerHTML=s.desc;
+
+                // reset
+                for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+                    const el=document.getElementById(cid(c,r));
+                    const w=isW(c,r);
+                    if(w){
+                        el.style.background='rgba(248,113,113,.15)';el.style.borderColor='rgba(248,113,113,.3)';
+                        el.style.boxShadow='none';el.style.borderWidth='1px';el.style.borderStyle='solid';
+                        const isNew=s.wallsExtra&&s.wallsExtra.some(e=>e[0]===c&&e[1]===r);
+                        el.innerHTML=isNew?'<b style="color:var(--red);font-size:1.1em">NEW ▓</b>':'<b style="color:var(--red)">▓</b>';
+                        if(isNew){el.style.borderColor='var(--red)';el.style.borderWidth='2px';el.style.boxShadow='0 0 10px rgba(248,113,113,.4)';}
+                        continue;
+                    }
+                    el.style.background='var(--card)';el.style.borderColor='var(--border)';el.style.boxShadow='none';el.style.borderWidth='1px';el.style.borderStyle='solid';
+                    if(c===0&&r===0) el.innerHTML='<b style="color:var(--accent)">S</b>';
+                    else if(c===4&&r===4) el.innerHTML='<b style="color:var(--accent2)">G</b>';
+                    else el.innerHTML='<span style="color:var(--text2);font-size:.85em">('+c+','+r+')</span>';
+                }
+
+                // processing (orange glow)
+                s.processing.forEach(([c,r])=>{
+                    if(isW(c,r))return;
+                    const el=document.getElementById(cid(c,r));
+                    el.style.background='rgba(251,146,60,.15)';el.style.borderColor='rgba(251,146,60,.5)';el.style.borderWidth='2px';
+                    el.style.boxShadow='0 0 10px rgba(251,146,60,.3)';
+                });
+
+                // consistent (subtle blue)
+                s.consistent.forEach(([c,r])=>{
+                    const el=document.getElementById(cid(c,r));
+                    el.style.background='rgba(108,158,255,.08)';el.style.borderColor='rgba(108,158,255,.25)';
+                });
+
+                // g/rhs labels
+                Object.entries(s.grs).forEach(([key,val])=>{
+                    const[c,r]=key.split(',').map(Number);
+                    if(isW(c,r))return;
+                    const el=document.getElementById(cid(c,r));
+                    let lbl='';
+                    if(c===0&&r===0) lbl='<b style="color:var(--accent)">S</b><br>';
+                    else if(c===4&&r===4) lbl='<b style="color:var(--accent2)">G</b><br>';
+                    el.innerHTML=lbl+'<span style="color:var(--text2);font-size:.85em">'+val+'</span>';
+                });
+
+                // expand node — bright glow
+                if(s.expand){
+                    const el=document.getElementById(cid(s.expand[0],s.expand[1]));
+                    el.style.boxShadow='0 0 14px var(--orange)';
+                    el.style.background='rgba(251,146,60,.2)';
+                }
+
+                // start/goal always visible
+                const se=document.getElementById(cid(0,0));
+                se.style.borderColor='var(--accent)';se.style.borderWidth='2px';
+                const ge=document.getElementById(cid(4,4));
+                ge.style.borderColor='var(--accent2)';ge.style.borderWidth='2px';
+
+                // SVG path
+                let h='';
+                if(s.path.length>1){
+                    const pts=s.path.map(([c,r])=>sp(c,r).join(',')).join(' ');
+                    h+='<polyline points="'+pts+'" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>';
+                    s.path.forEach(([c,r])=>{const[x,y]=sp(c,r);h+='<circle cx="'+x+'" cy="'+y+'" r="2.5" fill="#4ade80" opacity=".9"/>';});
+                }
+                svg.innerHTML=h;
+            }
+
+            render(0);
+
+            document.getElementById('lpa-next').onclick=()=>{if(cur<steps.length-1){cur++;render(cur);}};
+            document.getElementById('lpa-prev').onclick=()=>{if(cur>0){cur--;render(cur);}};
+            document.getElementById('lpa-play').onclick=function(){
+                if(timer){clearInterval(timer);timer=null;this.textContent='▶ Play';return;}
+                this.textContent='⏸ Pause';cur=0;render(0);
+                timer=setInterval(()=>{
+                    if(cur<steps.length-1){cur++;render(cur);}
+                    else{clearInterval(timer);timer=null;document.getElementById('lpa-play').textContent='▶ Play';}
+                },2500);
+            };
+        })();
+        </script>
+
         <!-- ============ ПСЕВДОКОД ============ -->
         <h2>Псевдокод</h2>
 

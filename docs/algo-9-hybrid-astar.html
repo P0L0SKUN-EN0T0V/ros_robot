@@ -105,34 +105,21 @@
             <p style="margin-top:12px">Состояние — не $(x, y)$, а $(x, y, \theta)$. Переходы — не шаги по сетке, а <strong>реальные дуги</strong>, по которым робот может проехать.</p>
         </div>
 
-        <!-- ============ BICYCLE MODEL ============ -->
+                <!-- ============ BICYCLE MODEL ============ -->
         <h2>Модель велосипеда (bicycle model)</h2>
 
-        <p>Неважно, четыре колеса у робота или два — кинематику можно упростить до <strong>двухколёсной модели</strong>. Переднее колесо рулит, заднее катится. Этого достаточно, чтобы описать и TurtleBot, и автомобиль, и погрузчик.</p>
+        <p>Кинематику любого колёсного робота (TurtleBot, автомобиль, погрузчик) можно упростить до двухколёсной модели: переднее колесо рулит, заднее катится.</p>
 
         <div class="formula-block">
-            $$\dot{x} = v \cos\theta, \quad \dot{y} = v \sin\theta, \quad \dot{\theta} = \frac{v}{L} \tan\delta$$
+            $$x' = x + \Delta s \cos\theta, \quad y' = y + \Delta s \sin\theta, \quad \theta' = \theta + \frac{\Delta s}{L} \tan\delta$$
         </div>
 
-        <p>Где:</p>
-        <table>
-            <tr><th>Символ</th><th>Что означает</th></tr>
-            <tr><td>$v$</td><td>Линейная скорость (вперёд/назад)</td></tr>
-            <tr><td>$\theta$</td><td>Текущий угол ориентации робота (heading)</td></tr>
-            <tr><td>$L$</td><td>Колёсная база — расстояние между осями</td></tr>
-            <tr><td>$\delta$</td><td>Угол поворота руля ($-\delta_{max}$ до $+\delta_{max}$)</td></tr>
-            <tr><td>$R_{min}$</td><td>Минимальный радиус поворота = $L / \tan(\delta_{max})$</td></tr>
-        </table>
-
-        <p>Дискретизация (один шаг длиной $\Delta s$):</p>
-
-        <div class="formula-block">
-            $$x' = x + \Delta s \cdot \cos\theta, \quad y' = y + \Delta s \cdot \sin\theta, \quad \theta' = \theta + \frac{\Delta s}{L} \tan\delta$$
-        </div>
+        <p>$\Delta s$ — длина шага, $L$ — колёсная база, $\delta$ — угол руля (от $-\delta_{max}$ до $+\delta_{max}$), $R_{min} = L / \tan\delta_{max}$ — минимальный радиус поворота.</p>
 
         <div class="card warn">
-            <p><strong>Ключевое ограничение:</strong> робот не может двигаться вбок. Если цель сбоку — приходится объезжать дугой. Это и есть <em>неголономность</em> (nonholonomic constraint).</p>
+            <p><strong>Неголономность:</strong> робот не может двигаться вбок. Чтобы сместиться в сторону — нужна дуга. Обычный A* этого не знает и рисует невозможные ступеньки.</p>
         </div>
+
 
         <!-- ============ ПРОСТРАНСТВО СОСТОЯНИЙ ============ -->
         <h2>Пространство состояний: 2D → 3D</h2>
@@ -173,19 +160,32 @@
             <p style="margin-top:12px;color:var(--text2)">Обычно 3–5 маневров. Больше → плавнее путь, но дольше поиск.</p>
         </div>
 
-        <!-- ============ АЛГОРИТМ ============ -->
+                <!-- ============ АЛГОРИТМ ============ -->
         <h2>Как работает</h2>
 
-        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Дискретизация пространства.</strong> Карту разбиваем на сетку (как OccupancyGrid). Угол $\theta$ — на $N_\theta$ секторов (шаг 5°–10°). Каждая ячейка — тройка $(i, j, k)$.</div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Старт.</strong> Кладём $(x_0, y_0, \theta_0)$ в open list с $f = h(\text{start})$.</div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Expand.</strong> Берём лучший из open list, применяем все маневры → получаем 3–5 новых состояний.</div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Collision check.</strong> Каждая дуга проверяется на столкновение с учётом <em>footprint</em> робота (не точка, а прямоугольник).</div></div>
-        <div class="step"><div class="step-num">5</div><div class="step-text"><strong>Deduplicate.</strong> Вычисляем ячейку $(i', j', k')$. Если там уже есть состояние с меньшим $g$ — пропускаем.</div></div>
-        <div class="step"><div class="step-num">6</div><div class="step-text"><strong>Analytic expansion.</strong> Каждые N шагов пробуем Reeds-Shepp / Dubins кривую напрямую к цели. Если проходит — <span style="color:var(--green)">нашли путь!</span></div></div>
+        <p>По сути это тот же A* — приоритетная очередь, $f = g + h$, visited-массив. Но с тремя ключевыми отличиями:</p>
 
-        <div class="card success">
-            <p><strong>Analytic expansion — главная оптимизация.</strong> Вместо того чтобы ползти дугами до самого финиша, мы периодически пробуем аналитическую кривую напрямую к цели. Вблизи цели это срабатывает и ускоряет финал в десятки раз.</p>
+        <h3>Отличие 1: 3D-ячейки вместо 2D</h3>
+        <p>В обычном A* ячейка — $(x, y)$. В Hybrid A* — $(x, y, \theta)$. Пространство $\theta$ делим на $N_\theta$ секторов (обычно 72, т.е. шаг 5°). Это значит, что робот в одной и той же клетке, но с разным углом — это <strong>разные состояния</strong>. Стоишь на перекрёстке лицом на север и лицом на юг — два разных мира для машины с рулём.</p>
+
+        <h3>Отличие 2: «соседи» — это дуги, а не клетки</h3>
+        <p>Вместо 8 соседних клеток мы применяем 3–5 маневров (углов руля) и получаем 3–5 дуг. Каждая дуга заканчивается в <strong>непрерывной</strong> точке $(x', y', \theta')$, которую мы потом «округляем» в 3D-ячейку. Если в этой ячейке уже есть вариант с меньшим $g$ — новый отбрасываем.</p>
+
+        <h3>Отличие 3: Analytic Expansion</h3>
+        <p>Каждые N итераций алгоритм пробует <strong>аналитическую кривую</strong> (Dubins или Reeds-Shepp) напрямую от текущего состояния к цели. Если кривая не проходит через стены — путь найден, поиск завершён. Это превращает долгий «ползущий» финал в мгновенный прыжок к цели.</p>
+
+        <div class="card highlight">
+            <p><strong>Почему «Hybrid»?</strong> Поиск идёт по <em>дискретной</em> 3D-сетке (как A*), но внутри каждой ячейки хранится <em>непрерывное</em> состояние. Гибрид дискретного графового поиска и непрерывной кинематики. Отсюда название.</p>
         </div>
+
+        <h3>Алгоритм по шагам</h3>
+        <div class="step"><div class="step-num">1</div><div class="step-text">Кладём стартовое $(x_0, y_0, \theta_0)$ в очередь с приоритетом $f = h(\text{start})$.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">Берём из очереди состояние с минимальным $f$.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Пробуем analytic expansion к цели. Если проходит — <span style="color:var(--green)">готово</span>.</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text">Применяем каждый маневр → получаем новые дуги. Каждую проверяем на коллизию с учётом footprint робота.</div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-text">Для каждой свободной дуги: дискретизируем конечную точку в 3D-ячейку, сравниваем $g$ с тем, что уже в visited. Если лучше — обновляем и кладём в очередь.</div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-text">Повторяем с шага 2.</div></div>
+
 
         <!-- ============ ЭВРИСТИКИ ============ -->
         <h2>Двойная эвристика</h2>
@@ -555,31 +555,46 @@ State3D simulate(<span style="color:var(--accent)">const</span> State3D&amp; s, 
             </div>
         </div>
 
-        <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
+                <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
         <h2>Когда использовать</h2>
 
-        <div class="grid">
-            <div class="card success">
-                <h3 style="color:var(--green);margin-top:0">Подходит</h3>
-                <ul>
-                    <li><strong>Ackermann-роботы</strong> (автомобили, вилочники) — путь сразу проезжаемый</li>
-                    <li><strong>Парковка</strong> в тесных пространствах — Reeds-Shepp включает задний ход</li>
-                    <li><strong>Outdoor навигация</strong> — крупная карта, робот с рулём</li>
-                </ul>
-            </div>
-            <div class="card warn">
-                <h3 style="color:var(--orange);margin-top:0">Не подходит</h3>
-                <ul>
-                    <li><strong>Omnidirectional</strong> роботы — для них обычный A* проще и быстрее</li>
-                    <li><strong>Дроны / манипуляторы</strong> — им нужен 6-DOF, а не 3-DOF</li>
-                    <li><strong>Очень большие карты</strong> без analytic expansion — поиск будет медленным</li>
-                </ul>
-            </div>
+        <div class="card highlight">
+            <p><strong>Простое правило:</strong> если твой робот не умеет разворачиваться на месте — тебе нужен Hybrid A*. Если умеет (omnidirectional, diff-drive) — обычного A* хватит.</p>
         </div>
 
-        <div class="card highlight">
-            <p><strong>Сложность:</strong> Время — $O(N_\theta \cdot V \cdot B \cdot \log(N_\theta V))$, где $V$ = клетки сетки, $B$ = число маневров, $N_\theta$ = секторы угла. Память — $O(N_\theta \cdot V)$ для 3D visited-массива. Analytic expansion — $O(1)$ на попытку (аналитические формулы Dubins/Reeds-Shepp).</p>
-        </div>
+        <table>
+            <tr><th>Робот</th><th>Планировщик</th><th>Почему</th></tr>
+            <tr>
+                <td>Автомобиль, вилочный погрузчик</td>
+                <td><span class="tag orange">Hybrid A*</span></td>
+                <td>Есть руль, минимальный радиус — путь должен быть сразу проезжаемый</td>
+            </tr>
+            <tr>
+                <td>TurtleBot, diff-drive</td>
+                <td><span class="tag green">A* / JPS</span></td>
+                <td>Может поворачиваться на месте — кинематика не ограничивает маршрут</td>
+            </tr>
+            <tr>
+                <td>Mecanum, omni-колёса</td>
+                <td><span class="tag green">A* / JPS</span></td>
+                <td>Едет в любую сторону — обычная 2D-сетка идеальна</td>
+            </tr>
+            <tr>
+                <td>Промышленный AGV с парковкой</td>
+                <td><span class="tag purple">Lattice</span></td>
+                <td>Нужны предрассчитанные манёвры (3-point turn, парковка задним ходом)</td>
+            </tr>
+            <tr>
+                <td>Дрон / манипулятор</td>
+                <td><span class="tag blue">RRT / PRM</span></td>
+                <td>6+ степеней свободы — сетка не подходит, нужен sampling</td>
+            </tr>
+        </table>
+
+        <h3>Цена за реализм</h3>
+        <p>Hybrid A* работает медленнее обычного A*, потому что пространство состояний больше в $N_\theta$ раз (обычно 72×). На практике analytic expansion компенсирует это — вблизи цели алгоритм «прыгает» аналитической кривой вместо того, чтобы ползти по ячейкам. На карте 200×200 с $N_\theta = 72$ планирование занимает десятки миллисекунд — вполне достаточно для реального времени.</p>
+
+
 
         <!-- ============ НАВИГАЦИЯ ============ -->
         <div class="nav-bottom">

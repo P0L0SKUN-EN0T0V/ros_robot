@@ -66,7 +66,6 @@
         .grid-viz .cell .ord{position:absolute;top:2px;right:5px;font-size:.7em;color:var(--orange);font-weight:700}
         .grid-viz .cell.unvisited{opacity:.45}
         .grid-viz .cell.jump{background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.5);border-width:2px}
-        .grid-viz .cell.pruned{opacity:.3}
         .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
         .grid-legend span{display:flex;align-items:center;gap:6px}
         .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
@@ -97,169 +96,193 @@
         <!-- ============ СУТЬ ============ -->
         <h2>О чём вообще речь</h2>
 
-        <div class="analogy">
-            Представь, что идёшь по длинному прямому коридору. Обычный A* останавливается на каждой плитке пола: «так, эта тоже проходима… и эта… и эта…». JPS не такой зануда — он пробегает весь коридор одним прыжком и останавливается только у поворота или у двери. Итог тот же — оптимальный путь, но без бесполезного перебора «скучных» клеток.
-        </div>
+        <p>A* — отличный алгоритм, но у него есть одна слабость: он честно перебирает <strong>каждую клетку</strong> сетки. Даже если перед тобой длинный пустой коридор — A* остановится на каждой плитке, добавит её в очередь, посмотрит на соседей. Все 50 плиток. Одну за другой. Это как проверять каждую ступеньку лестницы, хотя видно — она прямая, можно просто пролететь до конца.</p>
+
+        <p>JPS решает это одним трюком: вместо того чтобы добавлять каждого соседа в очередь, он <strong>«прыгает»</strong> по прямой, пока не наткнётся на что-то интересное — стену, развилку или цель. В очередь попадают только <strong>jump points</strong> (точки прыжка) — клетки у поворотов и углов препятствий.</p>
+
+        <div class="analogy">Представь длинный прямой коридор. Обычный A* — это охранник, который заглядывает в каждую дверь по пути: «закрыта… закрыта… закрыта…». JPS — это ты, который смотрит вдоль коридора и сразу идёт к первому повороту. Зачем проверять 20 одинаковых дверей, если интересное начинается только у угла?</div>
 
         <div class="card highlight">
-            <p><strong>Jump Point Search (JPS)</strong> — это оптимизация A* для uniform-cost сеток. Он не меняет сам алгоритм поиска, а радикально сокращает количество узлов в open list, «прыгая» через клетки, которые можно безопасно пропустить.</p>
-            <p style="margin-top:12px">Ключевая идея: если сосед доступен из родителя напрямую (без обхода препятствий) — его не надо добавлять в очередь. Мы добавляем только <strong>jump points</strong> — клетки у поворотов, рядом с препятствиями и на целевой позиции.</p>
+            <strong>JPS = A* + прунинг соседей + функция jump().</strong><br>
+            Путь гарантированно оптимальный — ровно такой же, как у A*. Разница только в скорости: вместо сотен клеток в open list — десятки jump points. На больших открытых картах JPS может быть в <strong>10–30× быстрее</strong>.
         </div>
 
-        <div class="grid" style="margin-top:20px">
-            <div class="card">
-                <span class="tag blue">A*</span>
-                <p>Раскрывает 15–20 узлов на карте 5×5</p>
-                <p>Добавляет каждого соседа в open list</p>
-            </div>
-            <div class="card">
-                <span class="tag orange">JPS</span>
-                <p>Раскрывает 3–5 jump points на той же карте</p>
-                <p>Пропускает все «скучные» клетки за один прыжок</p>
-            </div>
-        </div>
+        <p><strong>Важно:</strong> JPS работает только на <em>uniform-cost</em> сетках (все проходимые клетки стоят одинаково) и использует <strong>8 направлений</strong> движения — 4 кардинальных + 4 диагональных. Стоимость кардинального шага = 1, диагонального = $\sqrt{2} \approx 1.4$.</p>
 
-        <!-- ============ КОНЦЕПЦИИ ============ -->
+        <!-- ============ КЛЮЧЕВЫЕ ПОНЯТИЯ ============ -->
         <h2>Три ключевых понятия</h2>
 
-        <h3>1. Natural Neighbors (естественные соседи)</h3>
-        <p>Это те соседи узла $x$, до которых оптимальный путь <em>обязательно проходит через $x$</em>. Если мы пришли в $x$ горизонтально (слева), то естественный сосед — следующая клетка справа. Все остальные можно достичь не хуже через родителя $x$ напрямую.</p>
+        <h3>1. Natural neighbors — естественные соседи</h3>
 
-        <h3>2. Forced Neighbors (вынужденные соседи)</h3>
+        <p>Когда ты идёшь вправо по коридору, единственный «полезный» сосед — клетка справа. Все остальные направления (назад, вверх-назад, вниз-назад) твой родитель мог обработать не хуже тебя. Зачем дублировать работу?</p>
+
+        <div class="card">
+            <p><strong>Для кардинального движения</strong> (→): natural neighbor — только клетка впереди (→). Из 8 соседей оставляем 1.</p>
+            <p style="margin-top:8px"><strong>Для диагонального движения</strong> (↘): natural neighbors — клетка по диагонали (↘) и обе её компоненты (→ и ↓). Из 8 соседей оставляем 3.</p>
+        </div>
+
+        <h3>2. Forced neighbors — вынужденные соседи</h3>
+
+        <p>А что если рядом с коридором стена? Допустим, ты идёшь вправо <code>→</code>, а снизу — стена. Клетка <strong>справа-снизу ↘</strong> теперь не может быть достигнута «в обход» (через нижний ряд), потому что стена мешает. Единственный путь туда — через тебя. Эта клетка — <em>forced neighbor</em>. Она «заставляет» JPS остановиться и обратить внимание.</p>
+
         <div class="card warn">
-            <p><strong>Forced neighbor</strong> — сосед, до которого путь через $x$ <em>короче</em>, чем обход мимо $x$. Это происходит, когда рядом с $x$ стоит стена и «заставляет» нас повернуть.</p>
-            <p style="margin-top:8px">Формально: сосед $n$ узла $x$ является forced, если:</p>
+            <p>Формально: сосед $n$ узла $x$ является <strong>forced</strong>, если:</p>
             <ul>
-                <li>$n$ не является natural neighbor для $x$</li>
-                <li>$\text{len}(p(x) \to x \to n) < \text{len}(p(x) \to n)$ без прохода через $x$ (т.е. прямой путь заблокирован стеной)</li>
+                <li>$n$ — не natural neighbor (обычно его бы пропустили)</li>
+                <li>Но прямой путь к $n$, минуя $x$, заблокирован стеной</li>
             </ul>
+            <p style="margin-top:8px">Простым языком: forced neighbor появляется, когда стена ломает симметрию и заставляет тебя «свернуть». Это сигнал: <strong>здесь — jump point</strong>.</p>
         </div>
 
-        <h3>3. Jump Point (точка прыжка)</h3>
-        <p>Узел $y$ является jump point от $x$ в направлении $\vec{d}$, если:</p>
+        <h3>3. Jump point — точка прыжка</h3>
+
+        <p>Jump point — клетка, где происходит что-то интересное. Формально:</p>
+
         <div class="formula-block">
-            $$y = \text{jump}(x, \vec{d}) \iff y = G \;\lor\; \exists \text{ forced neighbor}(y)$$
-        </div>
-        <p>Иными словами: прыгаем в направлении $\vec{d}$ пока не встретим цель, forced neighbor или стену. Для диагональных прыжков дополнительно проверяем горизонтальный и вертикальный «лучи» на каждом шаге.</p>
-
-        <!-- ============ АЛГОРИТМ ============ -->
-        <h2>Как работает алгоритм</h2>
-
-        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Инициализация.</strong> Добавляем старт $S$ в open list (как обычный A*).</div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Выбираем.</strong> Достаём узел $x$ с минимальным $f = g + h$ из open list.</div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Pruning.</strong> Вместо всех 8 соседей оставляем только natural + forced neighbors (обычно 1–3 направления вместо 8).</div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Jump.</strong> Для каждого оставшегося направления $\vec{d}$ вызываем $\text{jump}(x, \vec{d})$. Функция «летит» по прямой, пока не найдёт jump point, стену или выход за границу.</div></div>
-        <div class="step"><div class="step-num">5</div><div class="step-text"><strong>Добавляем.</strong> Каждый найденный jump point добавляем в open list с корректным $g$.</div></div>
-        <div class="step"><div class="step-num">6</div><div class="step-text"><strong>Повторяем</strong> шаги 2–5 пока не достигнем $G$ или open list пуст.</div></div>
-
-        <div class="card success">
-            <p><strong>Результат</strong> — гарантированно оптимальный путь, как у A*. Но open list в разы меньше: на больших картах JPS может быть в 10× быстрее обычного A*.</p>
+            $$y = \text{jump}(x, \vec{d}) \iff y = G \;\;\lor\;\; \exists\; \text{forced neighbor}(y)$$
         </div>
 
-        <!-- ============ PRUNING RULES ============ -->
+        <p>Простым языком: прыгаем из $x$ в направлении $\vec{d}$, пока не случится одно из трёх — нашли цель, нашли forced neighbor или упёрлись в стену. Первые два — jump point, третий — тупик.</p>
+
+        <div class="card">
+            <p><strong>Для диагонального прыжка</strong> есть дополнительное правило: на каждом шаге по диагонали мы пускаем «лучи» по горизонтали и вертикали. Если хоть один луч нашёл jump point — текущая позиция тоже jump point. Так диагональ «подхватывает» интересные точки с боков.</p>
+        </div>
+
+        <!-- ============ ПРУНИНГ ============ -->
         <h2>Правила прунинга</h2>
 
-        <h3>Горизонтальный/вертикальный прыжок</h3>
+        <h3>Кардинальный прыжок (→ ← ↑ ↓)</h3>
         <div class="card">
             <p>Если пришли в $x$ горизонтально вправо <code>→</code>:</p>
             <ul>
-                <li><strong>Natural:</strong> продолжаем вправо <code>→</code></li>
-                <li><strong>Forced:</strong> если стена сверху-слева от $x$ → forced neighbor сверху-справа ↗. Аналогично снизу.</li>
-                <li><strong>Pruned:</strong> все остальные 5 направлений — до них родитель $x$ дойдёт не хуже</li>
+                <li><strong>Natural:</strong> продолжаем вправо → (1 направление)</li>
+                <li><strong>Forced:</strong> если стена снизу-слева → forced сосед снизу-справа ↘. Аналогично сверху</li>
+                <li><strong>Pruned:</strong> все остальные 5–6 направлений — родитель достигнет их не хуже</li>
             </ul>
         </div>
 
-        <h3>Диагональный прыжок</h3>
+        <h3>Диагональный прыжок (↘ ↗ ↙ ↖)</h3>
         <div class="card">
-            <p>Если пришли по диагонали ↘:</p>
+            <p>Если пришли по диагонали ↘ (dx=+1, dy=+1):</p>
             <ul>
-                <li><strong>Natural:</strong> ↘, → и ↓ (диагональ + обе компоненты)</li>
-                <li><strong>Forced:</strong> если стена слева → ↙ forced; если стена сверху → ↗ forced</li>
-                <li><strong>Pruned:</strong> ←, ↑, ↖ (уже были достижимы из родителя)</li>
+                <li><strong>Natural:</strong> ↘, → и ↓ (диагональ + обе компоненты = 3 направления)</li>
+                <li><strong>Forced:</strong> если стена слева (x−1, y) → forced ↙; если стена сверху (x, y−1) → forced ↗</li>
+                <li><strong>Pruned:</strong> ←, ↑, ↖ (достижимы из родителя)</li>
             </ul>
-            <p style="margin-top:8px">На каждом шаге диагонального прыжка сначала пускаем горизонтальный и вертикальный «лучи». Если хоть один из них нашёл jump point — текущая позиция тоже jump point.</p>
+            <p style="margin-top:8px"><strong>Ключевое:</strong> на каждом шаге диагонального прыжка сначала пускаем горизонтальный и вертикальный «лучи». Если хоть один нашёл jump point — текущая клетка тоже становится jump point.</p>
         </div>
+
+        <!-- ============ АЛГОРИТМ ============ -->
+        <h2>Как работает: пошагово</h2>
+
+        <p>JPS — это тот же A*, но с другой функцией получения соседей. Вместо «все 8 соседей» — «только jump points в нужных направлениях».</p>
+
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Старт.</strong> Помещаем $S$ в open list с $g=0$, $f = h(S)$. Из старта рассматриваем все 8 направлений.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Выбираем.</strong> Достаём узел $x$ с минимальным $f = g + h$ из open list.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Pruning.</strong> Определяем направление, из которого пришли в $x$. Оставляем только natural + forced neighbors (1–5 направлений вместо 8).</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Jump.</strong> Для каждого оставшегося направления $\vec{d}$ вызываем <code>jump(x, d)</code>. Функция «летит» по прямой, пока не найдёт jump point, стену или край карты.</div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-text"><strong>Добавляем.</strong> Каждый найденный jump point добавляем в open list: $g_{\text{new}} = g(x) + \text{dist}(x, \text{jp})$.</div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-text"><strong>Повтор.</strong> Возвращаемся к шагу 2, пока не достигнем $G$ или open list пуст.</div></div>
 
         <!-- ============ ВИЗУАЛЬНЫЙ ПРИМЕР ============ -->
         <h2>Визуальный пример</h2>
 
-        <p>Карта 5×5. Старт <strong>S(0,0)</strong>, цель <strong>G(4,4)</strong>, стена на (2,1) и (2,2). Сравним, какие узлы раскрывает A* и какие — JPS.</p>
+        <p>Наша стандартная карта 5×5: старт <strong>S(0,0)</strong>, цель <strong>G(4,4)</strong>, стена на (2,1) и (2,2). Движение — 8 направлений. Стоимость: кардинальный шаг = 1, диагональный = $\sqrt{2} \approx 1.4$. Эвристика — octile distance.</p>
 
-        <div class="grid">
-            <!-- LEFT: A* expanded nodes -->
+        <div class="grid" style="margin:20px 0">
+            <div class="card">
+                <span class="tag blue">A* (8 направлений)</span>
+                <p>Раскрывает <strong>~15–18 узлов</strong> на этой карте</p>
+                <p>Добавляет каждого соседа в open list</p>
+            </div>
+            <div class="card">
+                <span class="tag orange">JPS</span>
+                <p>Раскрывает <strong>5 jump points</strong> — и находит тот же путь</p>
+                <p>Всё остальное пропускает за один прыжок</p>
+            </div>
+        </div>
+
+        <h3>Трассировка JPS</h3>
+        <p>Слева — узлы, которые JPS добавил в open list (оранжевые = jump points, с g/h/f). Справа — итоговый путь.</p>
+
+        <div class="grid" style="align-items:start">
+            <!-- LEFT: JPS detailed grid -->
             <div>
-                <h3 style="text-align:center;margin-bottom:8px">A* — раскрытые узлы</h3>
                 <div class="grid-viz">
                     <!-- Row 0 -->
-                    <div class="cell start path"><div class="lbl">S</div><div class="vals">g=0</div><div class="ord">#1</div></div>
-                    <div class="cell explored path"><div class="vals">g=1</div><div class="ord">#2</div></div>
-                    <div class="cell explored"><div class="vals">g=2</div><div class="ord">#5</div></div>
-                    <div class="cell explored"><div class="vals">g=3</div><div class="ord">#9</div></div>
-                    <div class="cell explored"><div class="vals">g=4</div><div class="ord">#13</div></div>
+                    <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0 h=5.6<br><b>f=5.6</b></span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
                     <!-- Row 1 -->
-                    <div class="cell explored path"><div class="vals">g=1</div><div class="ord">#3</div></div>
-                    <div class="cell explored path"><div class="vals">g=2</div><div class="ord">#6</div></div>
-                    <div class="cell wall"><div class="lbl">▓</div></div>
-                    <div class="cell explored"><div class="vals">g=4</div><div class="ord">#11</div></div>
-                    <div class="cell explored"><div class="vals">g=5</div><div class="ord">#15</div></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell jump path"><span class="ord">#2</span><span class="lbl">JP</span><span class="vals">g=1.4 h=4.2<br><b>f=5.6</b></span></div>
+                    <div class="cell wall"><span class="lbl">▓</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
                     <!-- Row 2 -->
-                    <div class="cell explored"><div class="vals">g=2</div><div class="ord">#7</div></div>
-                    <div class="cell explored"><div class="vals">g=3</div><div class="ord">#10</div></div>
-                    <div class="cell wall"><div class="lbl">▓</div></div>
-                    <div class="cell explored path"><div class="vals">g=4</div><div class="ord">#12</div></div>
-                    <div class="cell explored"><div class="vals">g=5</div><div class="ord">#16</div></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell jump path"><span class="ord">#3</span><span class="lbl">JP</span><span class="vals">g=2.4 h=3.8<br><b>f=6.2</b></span></div>
+                    <div class="cell wall"><span class="lbl">▓</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
                     <!-- Row 3 -->
-                    <div class="cell explored"><div class="vals">g=3</div><div class="ord">#8</div></div>
-                    <div class="cell explored"><div class="vals">g=4</div><div class="ord">#14</div></div>
-                    <div class="cell explored path"><div class="vals">g=3</div><div class="ord">#4</div></div>
-                    <div class="cell explored path"><div class="vals">g=4</div><div class="ord">#17</div></div>
-                    <div class="cell explored"><div class="vals">g=5</div><div class="ord">#18</div></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell jump path"><span class="ord">#4</span><span class="lbl">JP</span><span class="vals">g=3.8 h=2.4<br><b>f=6.2</b></span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
                     <!-- Row 4 -->
-                    <div class="cell explored"><div class="vals">g=4</div></div>
-                    <div class="cell explored"><div class="vals">g=5</div></div>
-                    <div class="cell explored"><div class="vals">g=4</div></div>
-                    <div class="cell explored path"><div class="vals">g=5</div><div class="ord">#19</div></div>
-                    <div class="cell goal path"><div class="lbl">G</div><div class="vals">g=6</div><div class="ord">#20</div></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell jump path"><span class="ord">#5</span><span class="lbl">JP</span><span class="vals">g=5.2 h=1<br><b>f=6.2</b></span></div>
+                    <div class="cell goal path"><span class="ord">#6</span><span class="lbl">G</span><span class="vals">g=6.2 h=0<br><b>f=6.2</b></span></div>
                 </div>
-                <p style="text-align:center;font-size:.85em;color:var(--text2)">A* раскрывает ~20 узлов, все помечены номерами</p>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">JPS: всего 5 jump points + цель в open list</p>
             </div>
 
-            <!-- RIGHT: JPS expanded nodes -->
+            <!-- RIGHT: clean path + SVG -->
             <div>
-                <h3 style="text-align:center;margin-bottom:8px">JPS — только jump points</h3>
-                <div class="grid-viz">
-                    <!-- Row 0 -->
-                    <div class="cell start path"><div class="lbl">S</div><div class="vals">g=0</div><div class="ord">#1</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <!-- Row 1 -->
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell jump path"><div class="vals">g=2</div><div class="ord">#2</div></div>
-                    <div class="cell wall"><div class="lbl">▓</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <!-- Row 2 -->
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell wall"><div class="lbl">▓</div></div>
-                    <div class="cell jump path"><div class="vals">g=4</div><div class="ord">#3</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <!-- Row 3 -->
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell jump"><div class="vals">g=3</div><div class="ord">#2b</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <!-- Row 4 -->
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell pruned"><div class="vals">skip</div></div>
-                    <div class="cell goal path"><div class="lbl">G</div><div class="vals">g=8</div><div class="ord">#4</div></div>
+                <div style="position:relative;max-width:620px;margin:16px auto">
+                    <div class="grid-viz">
+                        <!-- Row 0 -->
+                        <div class="cell start path"><span class="lbl">S</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <!-- Row 1 -->
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell path"><span class="lbl">·</span></div>
+                        <div class="cell wall"><span class="lbl">▓</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <!-- Row 2 -->
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell path"><span class="lbl">·</span></div>
+                        <div class="cell wall"><span class="lbl">▓</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <!-- Row 3 -->
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell path"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <!-- Row 4 -->
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell path"><span class="lbl">·</span></div>
+                        <div class="cell goal path"><span class="lbl">G</span></div>
+                    </div>
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
+                        <polyline points="10,10 30,30 30,50 50,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+                    </svg>
                 </div>
-                <p style="text-align:center;font-size:.85em;color:var(--text2)">JPS раскрывает только 4 узла (оранжевые = jump points)</p>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">Путь: S → (1,1) → (1,2) → (2,3) → (3,4) → G — длина ≈ 6.2</p>
             </div>
         </div>
 
@@ -267,133 +290,62 @@
             <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:var(--accent)"></span> Старт</span>
             <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:var(--accent2)"></span> Цель</span>
             <span><span class="dot" style="background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.5)"></span> Jump Point</span>
-            <span><span class="dot" style="background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)"></span> A* explored</span>
             <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
-            <span><span class="dot" style="opacity:.3;border-color:var(--border)"></span> Пропущен (pruned)</span>
-        </div>
-
-        <!-- ============ ЧИСТЫЕ ПУТИ ============ -->
-        <h3>Итоговый путь (одинаковый!)</h3>
-        <p>JPS находит тот же оптимальный путь, что и A*. Разница — в количестве работы, а не в результате.</p>
-
-        <div class="grid">
-            <div>
-                <p style="text-align:center;font-size:.9em;color:var(--text2);margin-bottom:6px">A* путь (через 9 клеток)</p>
-                <div style="position:relative">
-                    <div class="grid-viz">
-                        <!-- Row 0 -->
-                        <div class="cell start path"><div class="lbl">S</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <!-- Row 1 -->
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell wall"><div class="lbl">▓</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <!-- Row 2 -->
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell wall"><div class="lbl">▓</div></div>
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <!-- Row 3 -->
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <!-- Row 4 -->
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell goal path"><div class="lbl">G</div></div>
-                    </div>
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <polyline points="10,10 10,30 30,30 30,50 30,70 50,70 70,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
-                    </svg>
-                </div>
-            </div>
-            <div>
-                <p style="text-align:center;font-size:.9em;color:var(--text2);margin-bottom:6px">JPS путь (тот же, но 4 jump points)</p>
-                <div style="position:relative">
-                    <div class="grid-viz">
-                        <!-- Row 0 -->
-                        <div class="cell start path"><div class="lbl">S</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <!-- Row 1 -->
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell path jump"><div class="vals">JP</div></div>
-                        <div class="cell wall"><div class="lbl">▓</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <!-- Row 2 -->
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell wall"><div class="lbl">▓</div></div>
-                        <div class="cell path jump"><div class="vals">JP</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <!-- Row 3 -->
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <!-- Row 4 -->
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell"><div class="vals">&nbsp;</div></div>
-                        <div class="cell path"><div class="vals">&nbsp;</div></div>
-                        <div class="cell goal path"><div class="lbl">G</div></div>
-                    </div>
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <polyline points="10,10 10,30 30,30 30,50 30,70 50,70 70,70 70,90 90,90" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
-                    </svg>
-                </div>
-            </div>
+            <span><span class="dot" style="opacity:.45;border-color:var(--border)"></span> Не посещён</span>
         </div>
 
         <!-- ============ ПОЧЕМУ JUMP POINTS ============ -->
         <h2>Почему именно эти точки — jump points?</h2>
 
+        <p>Пройдём трассировку шаг за шагом на нашей карте:</p>
+
         <div class="card highlight">
-            <p><strong>(1,1)</strong> — forced neighbor из-за стены (2,1). Прыгая из S вниз-вправо ↘, мы натыкаемся на то, что клетка (2,1) заблокирована. Значит (1,1) — jump point: здесь приходится менять направление.</p>
+            <p><strong>#1 — S(0,0):</strong> стартовый узел. Пробуем все 8 направлений. Лучи →, ↓, ↗, ↙, ←, ↑, ↖ упираются в стену или край карты и ничего не находят. Единственный продуктивный — диагональ <strong>↘</strong>.</p>
         </div>
+
         <div class="card highlight">
-            <p><strong>(2,3)</strong> — forced neighbor из-за стены (2,2). Прыгая вниз-вправо ↘ от (1,1), через (3,2), горизонтальный луч вправо из (2,3) обнаруживает, что слева стена. Это forced neighbor → jump point.</p>
+            <p><strong>#2 — (1,1), g=1.4:</strong> прыгаем ↘ из S. Оказавшись в (1,1), пускаем вертикальный луч ↓: в клетке (1,2) обнаруживаем, что справа стена <strong>(2,2)</strong>, но клетка (2,3) свободна — это forced neighbor. Вертикальный луч нашёл JP → значит и сама (1,1) — jump point.</p>
         </div>
+
         <div class="card highlight">
-            <p><strong>(3,2)</strong> — промежуточный jump point. Диагональный прыжок ↘ из (1,1): на шаге (3,2) горизонтальный луч → находит (2,3) как jump point. Поэтому (3,2) тоже маркируется.</p>
+            <p><strong>#3 — (1,2), g=2.4:</strong> из (1,1) прыгаем ↓ (natural direction). В (1,2) стена <strong>(2,2)</strong> справа, а (2,3) свободна → forced neighbor ↘. Значит (1,2) — jump point.</p>
         </div>
+
         <div class="card highlight">
-            <p><strong>G(4,4)</strong> — цель всегда является jump point по определению.</p>
+            <p><strong>#4 — (2,3), g=3.8:</strong> из (1,2) прыгаем ↘ (forced direction). В (2,3) стена <strong>(2,2)</strong> сверху, а (3,2) свободна → forced neighbor ↗. Значит (2,3) — jump point.</p>
+        </div>
+
+        <div class="card highlight">
+            <p><strong>#5 — (3,4), g=5.2:</strong> из (2,3) прыгаем ↘ (natural). В (3,4) пускаем горизонтальный луч →: он находит <strong>G(4,4)</strong> — цель! Значит (3,4) — jump point.</p>
+        </div>
+
+        <div class="card highlight">
+            <p><strong>#6 — G(4,4), g=6.2:</strong> из (3,4) прыгаем → и попадаем в цель. Готово!</p>
+        </div>
+
+        <div class="card success">
+            <p><strong>Итого:</strong> JPS раскрыл всего 5 узлов и нашёл оптимальный путь стоимостью $2 + 3\sqrt{2} \approx 6.2$. Обычный A* с 8 направлениями раскроет 15–18 узлов для того же результата.</p>
         </div>
 
         <!-- ============ PSEUDOCODE ============ -->
         <h2>Псевдокод</h2>
 
 <pre>
-<span style="color:var(--text2)">// Jump Point Search — отличие от A* только в identify_successors</span>
+<span style="color:var(--text2)">// JPS — отличие от A* только в получении соседей</span>
 <span style="color:var(--accent)">function</span> JPS(start, goal, grid):
     open ← priority_queue()
-    open.push(start, f=h(start))
+    open.push(start, f = h(start))
     g[start] ← 0
 
     <span style="color:var(--accent)">while</span> open не пуст:
         x ← open.pop_min()
         <span style="color:var(--accent)">if</span> x == goal: <span style="color:var(--accent)">return</span> reconstruct_path(x)
 
-        <span style="color:var(--accent)">for</span> каждого направления d ∈ pruned_neighbors(x):
+        <span style="color:var(--accent)">for</span> d ∈ pruned_directions(x):
             jp ← jump(x, d, goal, grid)
             <span style="color:var(--accent)">if</span> jp ≠ null:
                 new_g ← g[x] + dist(x, jp)
-                <span style="color:var(--accent)">if</span> new_g < g[jp]:
+                <span style="color:var(--accent)">if</span> new_g &lt; g[jp]:
                     g[jp] ← new_g
                     parent[jp] ← x
                     open.push(jp, f = new_g + h(jp))
@@ -402,81 +354,83 @@
 
 <span style="color:var(--accent)">function</span> jump(x, d, goal, grid):
     n ← x + d
-    <span style="color:var(--accent)">if</span> !grid.walkable(n): <span style="color:var(--accent)">return</span> null
+    <span style="color:var(--accent)">if</span> !walkable(n): <span style="color:var(--accent)">return</span> null
     <span style="color:var(--accent)">if</span> n == goal: <span style="color:var(--accent)">return</span> n
 
-    <span style="color:var(--text2)">// forced neighbor check</span>
+    <span style="color:var(--text2)">// есть forced neighbor? → это jump point</span>
     <span style="color:var(--accent)">if</span> has_forced_neighbor(n, d): <span style="color:var(--accent)">return</span> n
 
-    <span style="color:var(--text2)">// для диагонали: проверяем горизонтальный и вертикальный лучи</span>
+    <span style="color:var(--text2)">// диагональ: проверяем горизонтальный и вертикальный лучи</span>
     <span style="color:var(--accent)">if</span> d is diagonal:
         <span style="color:var(--accent)">if</span> jump(n, horizontal(d), goal) ≠ null: <span style="color:var(--accent)">return</span> n
         <span style="color:var(--accent)">if</span> jump(n, vertical(d), goal) ≠ null: <span style="color:var(--accent)">return</span> n
 
-    <span style="color:var(--accent)">return</span> jump(n, d, goal, grid)  <span style="color:var(--text2)">// рекурсия — продолжаем прыгать</span>
+    <span style="color:var(--accent)">return</span> jump(n, d, goal, grid)  <span style="color:var(--text2)">// продолжаем прыгать</span>
 </pre>
 
         <!-- ============ C++ ROS2 ============ -->
         <h2>Реализация в C++ (ROS2)</h2>
 
-        <p>JPS — надстройка над A*. Меняется только функция получения соседей. Ниже — ключевые функции, остальной код A* остаётся без изменений.</p>
+        <p>JPS — надстройка над A*. Меняется только способ получения соседей. Ниже — две ключевые функции: проверка forced neighbors и рекурсивный прыжок.</p>
 
 <pre>
 <span style="color:var(--text2)">// --- jump_point_search.hpp ---</span>
 <span style="color:var(--accent)">#include</span> &lt;queue&gt;
 <span style="color:var(--accent)">#include</span> &lt;vector&gt;
 <span style="color:var(--accent)">#include</span> &lt;cmath&gt;
+<span style="color:var(--accent)">#include</span> &lt;optional&gt;
 
-<span style="color:var(--accent)">struct</span> Node {
-    <span style="color:var(--accent2)">int</span> x, y;
-    <span style="color:var(--accent2)">double</span> g, f;
-    Node* parent = <span style="color:var(--accent)">nullptr</span>;
-    <span style="color:var(--accent2)">bool</span> operator&gt;(<span style="color:var(--accent)">const</span> Node&amp; o) <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> f &gt; o.f; }
-};
-
-<span style="color:var(--accent2)">bool</span> walkable(<span style="color:var(--accent)">const</span> nav_msgs::msg::OccupancyGrid&amp; grid, <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y) {
-    <span style="color:var(--accent)">if</span> (x &lt; 0 || y &lt; 0 || x &gt;= (<span style="color:var(--accent2)">int</span>)grid.info.width || y &gt;= (<span style="color:var(--accent2)">int</span>)grid.info.height)
+<span style="color:var(--accent2)">bool</span> walkable(<span style="color:var(--accent)">const</span> nav_msgs::msg::OccupancyGrid&amp; grid,
+              <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y) {
+    <span style="color:var(--accent)">if</span> (x &lt; 0 || y &lt; 0 ||
+        x &gt;= (<span style="color:var(--accent2)">int</span>)grid.info.width ||
+        y &gt;= (<span style="color:var(--accent2)">int</span>)grid.info.height)
         <span style="color:var(--accent)">return false</span>;
     <span style="color:var(--accent)">return</span> grid.data[y * grid.info.width + x] == 0;
 }
 
-<span style="color:var(--text2)">// Проверка forced neighbors для горизонтального/вертикального движения</span>
-<span style="color:var(--accent2)">bool</span> has_forced(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; g, <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y, <span style="color:var(--accent2)">int</span> dx, <span style="color:var(--accent2)">int</span> dy) {
-    <span style="color:var(--accent)">if</span> (dx != 0 &amp;&amp; dy == 0) {  <span style="color:var(--text2)">// горизонтально</span>
+<span style="color:var(--text2)">// Проверка forced neighbors</span>
+<span style="color:var(--accent2)">bool</span> has_forced(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; g,
+                <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y, <span style="color:var(--accent2)">int</span> dx, <span style="color:var(--accent2)">int</span> dy) {
+    <span style="color:var(--accent)">if</span> (dx != 0 &amp;&amp; dy == 0) {
+        <span style="color:var(--text2)">// горизонтальное движение</span>
         <span style="color:var(--accent)">return</span> (!walkable(g, x, y-1) &amp;&amp; walkable(g, x+dx, y-1)) ||
                (!walkable(g, x, y+1) &amp;&amp; walkable(g, x+dx, y+1));
     }
-    <span style="color:var(--accent)">if</span> (dx == 0 &amp;&amp; dy != 0) {  <span style="color:var(--text2)">// вертикально</span>
+    <span style="color:var(--accent)">if</span> (dx == 0 &amp;&amp; dy != 0) {
+        <span style="color:var(--text2)">// вертикальное движение</span>
         <span style="color:var(--accent)">return</span> (!walkable(g, x-1, y) &amp;&amp; walkable(g, x-1, y+dy)) ||
                (!walkable(g, x+1, y) &amp;&amp; walkable(g, x+1, y+dy));
     }
-    <span style="color:var(--text2)">// диагональ — forced если заблокирован «бок»</span>
+    <span style="color:var(--text2)">// диагональное движение</span>
     <span style="color:var(--accent)">return</span> (!walkable(g, x-dx, y) &amp;&amp; walkable(g, x-dx, y+dy)) ||
            (!walkable(g, x, y-dy) &amp;&amp; walkable(g, x+dx, y-dy));
 }
 
 <span style="color:var(--text2)">// Рекурсивный прыжок</span>
-Node* jump(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; grid, <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y,
-           <span style="color:var(--accent2)">int</span> dx, <span style="color:var(--accent2)">int</span> dy, <span style="color:var(--accent2)">int</span> gx, <span style="color:var(--accent2)">int</span> gy) {
+std::optional&lt;std::pair&lt;<span style="color:var(--accent2)">int</span>,<span style="color:var(--accent2)">int</span>&gt;&gt;
+jump(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; grid,
+     <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y, <span style="color:var(--accent2)">int</span> dx, <span style="color:var(--accent2)">int</span> dy,
+     <span style="color:var(--accent2)">int</span> gx, <span style="color:var(--accent2)">int</span> gy) {
     <span style="color:var(--accent2)">int</span> nx = x + dx, ny = y + dy;
-    <span style="color:var(--accent)">if</span> (!walkable(grid, nx, ny)) <span style="color:var(--accent)">return nullptr</span>;
-    <span style="color:var(--accent)">if</span> (nx == gx &amp;&amp; ny == gy) <span style="color:var(--accent)">return</span> make_node(nx, ny);
+    <span style="color:var(--accent)">if</span> (!walkable(grid, nx, ny)) <span style="color:var(--accent)">return</span> std::nullopt;
+    <span style="color:var(--accent)">if</span> (nx == gx &amp;&amp; ny == gy) <span style="color:var(--accent)">return</span> {{nx, ny}};
 
     <span style="color:var(--accent)">if</span> (has_forced(grid, nx, ny, dx, dy))
-        <span style="color:var(--accent)">return</span> make_node(nx, ny);
+        <span style="color:var(--accent)">return</span> {{nx, ny}};
 
     <span style="color:var(--text2)">// Диагональ: проверяем компоненты</span>
     <span style="color:var(--accent)">if</span> (dx != 0 &amp;&amp; dy != 0) {
         <span style="color:var(--accent)">if</span> (jump(grid, nx, ny, dx, 0, gx, gy) ||
             jump(grid, nx, ny, 0, dy, gx, gy))
-            <span style="color:var(--accent)">return</span> make_node(nx, ny);
+            <span style="color:var(--accent)">return</span> {{nx, ny}};
     }
     <span style="color:var(--accent)">return</span> jump(grid, nx, ny, dx, dy, gx, gy);
 }
 </pre>
 
         <div class="card warn">
-            <p><strong>ROS2-интеграция:</strong> JPS работает только на 2D uniform-cost grid, т.е. напрямую с <code>OccupancyGrid</code> из <code>/map</code>. Для взвешенных карт (costmap с inflation) используй обычный A* или JPS+ с предобработкой.</p>
+            <p><strong>ROS2-нюанс:</strong> JPS работает только с бинарной <code>OccupancyGrid</code> (свободно / занято). Для costmap с inflation (разная стоимость проезда) используй обычный A* или JPS+ с предобработкой.</p>
         </div>
 
         <!-- ============ СЛОЖНОСТЬ ============ -->
@@ -487,22 +441,22 @@ Node* jump(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; gri
             <tr>
                 <td>Время (worst case)</td>
                 <td style="white-space:nowrap">$O(V \log V)$</td>
-                <td>В худшем случае — как A* (лабиринт без длинных коридоров)</td>
+                <td>В худшем случае (лабиринт) — как обычный A*</td>
             </tr>
             <tr>
                 <td>Время (типичное)</td>
-                <td style="white-space:nowrap">$O(k \log k)$, $k \ll V$</td>
-                <td>$k$ = число jump points. На открытых картах $k$ может быть в 10–100× меньше $V$</td>
+                <td style="white-space:nowrap">$O(k \log k),\; k \ll V$</td>
+                <td>$k$ = число jump points. На открытых картах в 10–100× меньше $V$</td>
             </tr>
             <tr>
                 <td>Память</td>
                 <td style="white-space:nowrap">$O(V)$</td>
-                <td>Как A* — нужен массив visited и open list</td>
+                <td>Массив visited + open list — как у A*</td>
             </tr>
             <tr>
-                <td>Прыжок (jump)</td>
+                <td>Один прыжок</td>
                 <td style="white-space:nowrap">$O(\sqrt{V})$</td>
-                <td>Один прыжок проходит не более стороны карты</td>
+                <td>Максимум — длина стороны карты</td>
             </tr>
         </table>
 
@@ -525,33 +479,39 @@ Node* jump(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; gri
             </tr>
             <tr>
                 <td>Тип карты</td>
-                <td>На какой карте работает</td>
+                <td>На каких картах работает</td>
                 <td>Любая взвешенная сетка</td>
                 <td>Только uniform-cost grid</td>
             </tr>
             <tr>
+                <td>Направления</td>
+                <td>Сколько направлений движения</td>
+                <td>4 или 8</td>
+                <td>8 (кардинальные + диагонали)</td>
+            </tr>
+            <tr>
                 <td>Узлов в open list</td>
-                <td>Сколько узлов хранится в очереди</td>
+                <td>Сколько узлов хранит в очереди</td>
                 <td>Все раскрытые соседи</td>
                 <td>Только jump points (в разы меньше)</td>
             </tr>
             <tr>
                 <td>Скорость</td>
-                <td>Время поиска на открытых картах</td>
+                <td>На открытых картах</td>
                 <td>Базовая</td>
-                <td>В 5–30× быстрее</td>
+                <td><span class="tag green">5–30× быстрее</span></td>
             </tr>
             <tr>
                 <td>Динамическая среда</td>
-                <td>Поддерживает ли изменение карты «на лету»</td>
+                <td>Карта меняется «на лету»</td>
                 <td>Перезапуск</td>
-                <td>Перезапуск (нет инкрементального варианта)</td>
+                <td>Перезапуск (нет инкрементального)</td>
             </tr>
             <tr>
-                <td>Сложность реализации</td>
+                <td>Реализация</td>
                 <td>Насколько трудно закодить</td>
-                <td>Простая</td>
-                <td>Средняя (pruning rules + jump)</td>
+                <td><span class="tag green">Простая</span></td>
+                <td><span class="tag orange">Средняя</span></td>
             </tr>
         </table>
 
@@ -562,19 +522,19 @@ Node* jump(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; gri
             <div class="card success">
                 <p><strong>Идеально для:</strong></p>
                 <ul>
-                    <li>Большие uniform-cost карты (склады, open world)</li>
+                    <li>Большие uniform-cost карты (склады, open world, игры)</li>
                     <li>Статические или редко меняющиеся карты</li>
-                    <li>Когда A* слишком медленный, но нужна оптимальность</li>
-                    <li>Игровые NPC, массовый pathfinding для сотен агентов</li>
+                    <li>Когда A* слишком медленный, но нужна гарантия оптимальности</li>
+                    <li>Массовый pathfinding — сотни агентов на одной карте</li>
                 </ul>
             </div>
             <div class="card warn">
-                <p><strong>Не подходит для:</strong></p>
+                <p><strong>Не подходит:</strong></p>
                 <ul>
                     <li>Взвешенные карты (costmap с разной стоимостью проезда)</li>
-                    <li>Непрерывное пространство (нужен RRT/PRM)</li>
+                    <li>Непрерывное пространство (используй RRT/PRM)</li>
                     <li>Динамическая среда (лучше D* Lite)</li>
-                    <li>Карты с нецелочисленными координатами</li>
+                    <li>Нужно строго 4-направленное движение (JPS заточен под 8)</li>
                 </ul>
             </div>
         </div>
@@ -584,13 +544,12 @@ Node* jump(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; gri
 
         <div class="card">
             <h3>JPS+ (с предобработкой)</h3>
-            <p>Для каждой клетки заранее вычисляется расстояние до ближайшего jump point в каждом из 8 направлений. Это позволяет выполнить <code>jump()</code> за $O(1)$ вместо $O(\sqrt{V})$, но требует предобработки $O(V)$.</p>
-            <p style="margin-top:8px">Подходит для <strong>статических карт</strong>, где topology не меняется.</p>
+            <p>Для каждой клетки заранее вычисляется расстояние до ближайшего jump point в каждом из 8 направлений. Прыжок <code>jump()</code> становится $O(1)$ вместо $O(\sqrt{V})$, но нужна предобработка $O(V)$. Подходит для <strong>статических карт</strong>, где ничего не меняется.</p>
         </div>
 
         <div class="card">
-            <h3>JPS (B) — Block-based</h3>
-            <p>Разбивает карту на блоки, использует bitwise-операции для ускорения прыжков. Даёт ещё 2–4× ускорение поверх JPS+.</p>
+            <h3>JPS(B) — Block-based</h3>
+            <p>Разбивает карту на блоки, использует bitwise-операции для ускорения прыжков. Ещё 2–4× быстрее поверх JPS+. Для тех, кому мало «в 30 раз быстрее A*».</p>
         </div>
 
         <!-- ============ НАВИГАЦИЯ ============ -->

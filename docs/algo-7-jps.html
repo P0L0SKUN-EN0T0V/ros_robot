@@ -307,7 +307,7 @@
                         <div class="cell goal path"><span class="lbl">G</span></div>
                     </div>
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <polyline points="10,10 30,30 30,50 50,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+                        <polyline points="10,10 30,30 30,50 50,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
                     </svg>
                 </div>
                 <p style="text-align:center;color:var(--text2);font-size:.82em">Путь: S → (1,1) → (1,2) → (2,3) → (3,4) → G — длина ≈ 6.2</p>
@@ -429,7 +429,7 @@
                 if(i===steps.length-1){
                     const fp=[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]];
                     const pts=fp.map(([c,r])=>sp(c,r).join(',')).join(' ');
-                    h+='<polyline points="'+pts+'" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+                    h+='<polyline points="'+pts+'" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>';
                     fp.forEach(([c,r])=>{const[x,y]=sp(c,r);h+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="#4ade80"/>';});
                 }
                 if(s.expand&&s.rays.length>0){
@@ -550,7 +550,7 @@
                         <div class="cell goal"><span class="lbl">G</span></div>
                     </div>
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <line x1="10" y1="10" x2="28" y2="28" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="4,3" opacity=".6"/>
+                        <line x1="10" y1="10" x2="28" y2="28" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
                         <line x1="30" y1="32" x2="30" y2="48" stroke="#fb923c" stroke-width="2" stroke-linecap="round" opacity=".8"/>
                         <line x1="32" y1="30" x2="48" y2="30" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
                         <text x="52" y="33" fill="#f87171" font-size="7" opacity=".7">✕</text>
@@ -598,7 +598,7 @@
                         <div class="cell goal"><span class="lbl">G</span></div>
                     </div>
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <line x1="30" y1="30" x2="30" y2="48" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="4,3" opacity=".6"/>
+                        <line x1="30" y1="30" x2="30" y2="48" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
                         <line x1="32" y1="50" x2="48" y2="50" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
                         <text x="52" y="53" fill="#f87171" font-size="7" opacity=".7">✕</text>
                         <line x1="33" y1="52" x2="48" y2="67" stroke="#fb923c" stroke-width="2" stroke-linecap="round" opacity=".8"/>
@@ -646,7 +646,7 @@
                         <div class="cell goal"><span class="lbl">G</span></div>
                     </div>
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <line x1="30" y1="50" x2="48" y2="68" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="4,3" opacity=".6"/>
+                        <line x1="30" y1="50" x2="48" y2="68" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
                         <line x1="50" y1="68" x2="50" y2="52" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
                         <text x="52" y="49" fill="#f87171" font-size="7" opacity=".7">✕</text>
                         <line x1="52" y1="68" x2="68" y2="52" stroke="#fb923c" stroke-width="2" stroke-linecap="round" opacity=".8"/>
@@ -694,7 +694,7 @@
                         <div class="cell goal"><span class="lbl">G</span></div>
                     </div>
                     <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <line x1="50" y1="70" x2="68" y2="88" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="4,3" opacity=".6"/>
+                        <line x1="50" y1="70" x2="68" y2="88" stroke="#4ade80" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
                         <line x1="72" y1="90" x2="88" y2="90" stroke="#fb923c" stroke-width="2.5" stroke-linecap="round" opacity=".9"/>
                         <text x="89" y="87" fill="#a78bfa" font-size="8" font-weight="bold">★</text>
                     </svg>

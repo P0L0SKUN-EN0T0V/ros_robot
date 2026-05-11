@@ -68,6 +68,8 @@
         .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
         .grid-legend span{display:flex;align-items:center;gap:6px}
         .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
+        .grid-overlay{position:relative;max-width:620px;margin:16px auto}
+        .grid-overlay svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
         @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
     </style>
 </head>
@@ -232,6 +234,7 @@
             <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
         </div>
 
+        <div class="grid-overlay">
         <div class="grid-viz">
             <!-- Ряд 0 -->
             <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0 h=5.66<br><b>f=5.66</b></span></div>
@@ -268,6 +271,10 @@
             <div class="cell explored"><span class="ord">#8</span><span class="vals">g=5.24 h=1.0<br><b>f=6.24</b></span></div>
             <div class="cell goal path"><span class="ord">#9</span><span class="lbl">G</span><span class="vals">g=6.24 h=0<br><b>f=6.24</b></span></div>
         </div>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polyline points="10,10 30,30 30,50 50,70 70,70 90,90" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+            </svg>
+        </div>
 
         <h3>Что здесь видно</h3>
 
@@ -296,6 +303,121 @@
         <div class="card warn">
             <p><strong>Всего 9 клеток</strong> вместо 23. Клетки (0,1) и (1,0) были проверены (#3 и #4), но в путь не вошли — их $f = 6.24$ не лучше диагонального маршрута. A* убедился в этом и больше к ним не возвращался.</p>
         </div>
+
+
+        <!-- ============ АНИМАЦИЯ ============ -->
+        <h2>Анимация: A* шаг за шагом</h2>
+        <p>Смотри, как A* исследует сетку. Синие клетки — в OPEN (кандидаты), зелёные — обработаны (CLOSED), яркая рамка — текущая клетка.</p>
+
+        <div class="card" style="padding:28px 20px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+                <button id="as-prev" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">◀</button>
+                <button id="as-play" style="background:rgba(108,158,255,.15);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶ Play</button>
+                <button id="as-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
+                <span id="as-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 0 / 9</span>
+            </div>
+            <div style="position:relative;max-width:380px;margin:0 auto 16px">
+                <div id="as-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
+                <svg id="as-svg" viewBox="0 0 100 100" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" preserveAspectRatio="none"></svg>
+            </div>
+            <div id="as-desc" class="card highlight" style="margin-top:8px;font-size:.95em;min-height:60px"></div>
+        </div>
+
+        <script>
+        (function(){
+            const W=null; // wall
+            // Grid: 0=free, null=wall
+            // Each step: {current:[r,c], open:[[r,c],...], closed:[[r,c],...], desc:string}
+            // A* expansion order: #1:(0,0) #2:(1,1) #3:(0,1) #4:(1,0) #5:(2,1) #6:(3,2) #7:(3,3) #8:(4,3) #9:(4,4)
+            const walls=[[1,2],[2,2]];
+            const isWall=(r,c)=>walls.some(w=>w[0]===r&&w[1]===c);
+
+            // f values for display
+            const fvals={
+                '0,0':'f=5.66','0,1':'f=6.24','0,2':'f=6.83','0,3':'','0,4':'',
+                '1,0':'f=6.24','1,1':'f=5.66','1,2':'','1,3':'','1,4':'',
+                '2,0':'','2,1':'f=6.24','2,2':'','2,3':'','2,4':'',
+                '3,0':'','3,1':'','3,2':'f=6.24','3,3':'f=6.24','3,4':'',
+                '4,0':'','4,1':'','4,2':'','4,3':'f=6.24','4,4':'f=6.24'
+            };
+
+            const steps=[
+                {cur:null,open:[[0,0]],closed:[],
+                 desc:'<b>Инициализация.</b> Старт S(0,0) помещён в OPEN с f = 0 + 5.66 = 5.66.'},
+                {cur:[0,0],open:[[1,1],[0,1],[1,0]],closed:[[0,0]],
+                 desc:'<b>Шаг 1:</b> Раскрываем S(0,0). 8 соседей → 3 проходимых: (1,1) с f=5.66, (0,1) и (1,0) с f=6.24. Диагональный (1,1) — лучший кандидат.'},
+                {cur:[1,1],open:[[0,1],[1,0],[2,1],[2,0],[0,2]],closed:[[0,0],[1,1]],
+                 desc:'<b>Шаг 2:</b> Раскрываем (1,1), f=5.66. Стена справа (1,2) и (2,2). Новый сосед (2,1) с f=6.24 — единственный путь вниз.'},
+                {cur:[0,1],open:[[1,0],[2,1],[2,0],[0,2]],closed:[[0,0],[1,1],[0,1]],
+                 desc:'<b>Шаг 3:</b> Раскрываем (0,1), f=6.24. Все соседи уже известны или стены. Ничего нового — тупиковая ветка.'},
+                {cur:[1,0],open:[[2,1],[2,0],[0,2]],closed:[[0,0],[1,1],[0,1],[1,0]],
+                 desc:'<b>Шаг 4:</b> Раскрываем (1,0), f=6.24. Аналогично — ничего нового. A* проверил оба прямых соседа и убедился, что диагональ выгоднее.'},
+                {cur:[2,1],open:[[3,2],[2,0],[0,2],[3,1],[3,0]],closed:[[0,0],[1,1],[0,1],[1,0],[2,1]],
+                 desc:'<b>Шаг 5:</b> Раскрываем (2,1), f=6.24. Стена (2,2) блокирует путь вправо. Обходим снизу — сосед (3,2) с f=6.24.'},
+                {cur:[3,2],open:[[3,3],[2,0],[0,2],[3,1],[3,0],[4,3],[4,1]],closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2]],
+                 desc:'<b>Шаг 6:</b> Раскрываем (3,2), f=6.24. Стена обойдена! Появляется (3,3) с f=6.24 и (4,3) с f=6.24 — оба ведут к цели.'},
+                {cur:[3,3],open:[[2,0],[0,2],[3,1],[3,0],[4,3],[4,1],[4,4],[2,3]],closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3]],
+                 desc:'<b>Шаг 7:</b> Раскрываем (3,3), f=6.24. Появляется цель (4,4) с f=6.24! Она добавлена в OPEN.'},
+                {cur:[4,3],open:[[2,0],[0,2],[3,1],[3,0],[4,1],[4,4],[2,3]],closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3],[4,3]],
+                 desc:'<b>Шаг 8:</b> Раскрываем (4,3), f=6.24. (4,4) уже в OPEN — проверяем, не лучше ли путь через (4,3). Нет, стоимости равны.'},
+                {cur:[4,4],open:[],closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3],[4,3],[4,4]],
+                 desc:'<b>Шаг 9: ЦЕЛЬ НАЙДЕНА!</b> Извлекаем G(4,4) из OPEN. Восстанавливаем путь: S→(1,1)→(2,1)→(3,2)→(3,3)→G. Стоимость: 3√2 + 2 ≈ 6.24.'}
+            ];
+            // Path cells for final highlight
+            const pathCells=[[0,0],[1,1],[2,1],[3,2],[3,3],[4,4]];
+            const pathPts='10,10 30,30 30,50 50,70 70,70 90,90';
+
+            let cur=0,timer=null;
+            const grid=document.getElementById('as-grid');
+            const svg=document.getElementById('as-svg');
+            const desc=document.getElementById('as-desc');
+            const counter=document.getElementById('as-counter');
+
+            function render(step){
+                const s=steps[step];
+                let h='';
+                for(let r=0;r<5;r++)for(let c=0;c<5;c++){
+                    let cls='',label='',val='';
+                    if(isWall(r,c)){h+='<div style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);border-radius:6px;min-height:50px;display:flex;align-items:center;justify-content:center;font-size:.75em;color:var(--red)">▓</div>';continue;}
+                    const isCur=s.cur&&s.cur[0]===r&&s.cur[1]===c;
+                    const isClosed=s.closed.some(x=>x[0]===r&&x[1]===c);
+                    const isOpen=s.open.some(x=>x[0]===r&&x[1]===c);
+                    const isPath=step===steps.length-1&&pathCells.some(x=>x[0]===r&&x[1]===c);
+                    let bg='var(--card)',border='1px solid var(--border)';
+                    if(isPath){bg='rgba(74,222,128,.15)';border='2px solid rgba(74,222,128,.5)';}
+                    else if(isCur){bg='rgba(108,158,255,.3)';border='2px solid var(--accent)';}
+                    else if(isClosed){bg='rgba(108,158,255,.1)';border='1px solid rgba(108,158,255,.3)';}
+                    else if(isOpen){bg='rgba(167,139,250,.12)';border='1px solid rgba(167,139,250,.4)';}
+                    let lbl='';
+                    if(r===0&&c===0)lbl='<span style="font-weight:700;font-size:.9em">S</span>';
+                    else if(r===4&&c===4)lbl='<span style="font-weight:700;font-size:.9em">G</span>';
+                    const fv=fvals[r+','+c];
+                    const vt=(isClosed||isOpen||isCur)&&fv?'<span style="color:var(--text2);font-size:.7em">'+fv+'</span>':'';
+                    h+='<div style="background:'+bg+';border:'+border+';border-radius:6px;min-height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8em;color:var(--text)">'+lbl+vt+'</div>';
+                }
+                grid.innerHTML=h;
+                // SVG path on final step
+                let svgH='';
+                if(step===steps.length-1){
+                    svgH='<polyline points="'+pathPts+'" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>';
+                }
+                svg.innerHTML=svgH;
+                desc.innerHTML=s.desc;
+                counter.textContent='Шаг '+step+' / '+(steps.length-1);
+            }
+
+            render(0);
+            document.getElementById('as-prev').onclick=function(){if(cur>0){cur--;render(cur);}};
+            document.getElementById('as-next').onclick=function(){if(cur<steps.length-1){cur++;render(cur);}};
+            document.getElementById('as-play').onclick=function(){
+                if(timer){clearInterval(timer);timer=null;this.textContent='▶ Play';return;}
+                this.textContent='⏸ Pause';cur=0;render(0);
+                timer=setInterval(()=>{cur++;render(cur);
+                    if(cur>=steps.length-1){clearInterval(timer);timer=null;document.getElementById('as-play').textContent='▶ Play';}
+                },1200);
+            };
+        })();
+        </script>
 
         <!-- ============ ПСЕВДОКОД ============ -->
         <h2>Псевдокод</h2>

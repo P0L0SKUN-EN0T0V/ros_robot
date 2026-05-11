@@ -68,6 +68,8 @@
         .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
         .grid-legend span{display:flex;align-items:center;gap:6px}
         .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
+        .grid-overlay{position:relative;max-width:620px;margin:16px auto}
+        .grid-overlay svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
         @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
     </style>
 </head>
@@ -202,6 +204,7 @@
             <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
         </div>
 
+        <div class="grid-overlay">
         <div class="grid-viz">
             <!-- Ряд 0: Dijkstra расширяется кругами от старта -->
             <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals"><b>g=0</b></span></div>
@@ -238,6 +241,10 @@
             <div class="cell explored"><span class="ord">#21</span><span class="vals"><b>g=5.24</b></span></div>
             <div class="cell goal path"><span class="ord">#23</span><span class="lbl">G</span><span class="vals"><b>g=6.24</b></span></div>
         </div>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polyline points="10,10 30,30 30,50 50,70 70,70 90,90" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+            </svg>
+        </div>
 
         <h3>Что здесь видно — и чем это отличается от A*</h3>
 
@@ -260,6 +267,129 @@
         </div>
 
         <div class="analogy">Dijkstra — как искать ключи в тёмной комнате, ощупывая пол кругами от центра. A* — как искать ключи, зная, что они упали «где-то у двери». Оба найдут, но второй — быстрее.</div>
+
+
+        <!-- ============ АНИМАЦИЯ ============ -->
+        <h2>Анимация: волна Dijkstra</h2>
+        <p>Смотри, как Dijkstra расширяется <em>равномерно</em> от старта, не зная, где цель. Каждая «волна» — клетки с одинаковым (или близким) g. Сравни с A*, который сфокусирован на цели.</p>
+
+        <div class="card" style="padding:28px 20px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+                <button id="dj-prev" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">◀</button>
+                <button id="dj-play" style="background:rgba(108,158,255,.15);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶ Play</button>
+                <button id="dj-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
+                <span id="dj-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 0 / 23</span>
+            </div>
+            <div style="position:relative;max-width:380px;margin:0 auto 16px">
+                <div id="dj-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
+                <svg id="dj-svg" viewBox="0 0 100 100" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" preserveAspectRatio="none"></svg>
+            </div>
+            <div id="dj-desc" class="card highlight" style="margin-top:8px;font-size:.95em;min-height:60px"></div>
+        </div>
+
+        <script>
+        (function(){
+            const walls=[[1,2],[2,2]];
+            const isWall=(r,c)=>walls.some(w=>w[0]===r&&w[1]===c);
+
+            // g values for each cell
+            const gvals={
+                '0,0':0,'0,1':1,'0,2':2,'0,3':3,'0,4':4,
+                '1,0':1,'1,1':1.41,'1,3':3.41,'1,4':4.41,
+                '2,0':2,'2,1':2.41,'2,3':4.41,'2,4':4.83,
+                '3,0':3,'3,1':3.41,'3,2':3.83,'3,3':4.83,'3,4':5.83,
+                '4,0':4,'4,1':4.41,'4,2':4.83,'4,3':5.24,'4,4':6.24
+            };
+
+            // Expansion order: [row,col] for each step
+            const order=[
+                [0,0],[0,1],[1,0],[1,1],[0,2],[2,0],[2,1],
+                [0,3],[3,0],[1,3],[3,1],[3,2],
+                [0,4],[4,0],[1,4],[4,1],[2,3],
+                [2,4],[3,3],[4,2],[4,3],
+                [3,4],[4,4]
+            ];
+
+            const descriptions=[
+                '<b>Инициализация.</b> Старт S(0,0) помещён в очередь с g = 0.',
+                '<b>#1: (0,0)</b> g=0. Раскрываем старт. 3 соседа: (0,1) g=1, (1,0) g=1, (1,1) g=1.41.',
+                '<b>#2: (0,1)</b> g=1. Первое кольцо. Волна начинает расходиться вправо.',
+                '<b>#3: (1,0)</b> g=1. Первое кольцо. Волна расходится и вниз — равномерно.',
+                '<b>#4: (1,1)</b> g=1.41. Диагональный сосед старта. Видит стену (1,2) — путь вправо заблокирован.',
+                '<b>#5: (0,2)</b> g=2. Второе кольцо начинается. Dijkstra уходит вправо — хотя цель внизу-справа.',
+                '<b>#6: (2,0)</b> g=2. Второе кольцо. Волна идёт и вниз по левому краю — в стороне от цели.',
+                '<b>#7: (2,1)</b> g=2.41. Перед стеной. Дальше вправо нельзя — (2,2) стена.',
+                '<b>#8: (0,3)</b> g=3. Третье кольцо. Dijkstra упорно исследует верхний ряд — бесполезно, но он не знает.',
+                '<b>#9: (3,0)</b> g=3. Третье кольцо. Левый край — тоже бесполезно. Вот цена отсутствия эвристики.',
+                '<b>#10: (1,3)</b> g=3.41. Наконец-то правее стены! Но Dijkstra дошёл сюда через верх.',
+                '<b>#11: (3,1)</b> g=3.41. Волна обходит стену снизу.',
+                '<b>#12: (3,2)</b> g=3.83. Стена обойдена снизу. Путь к цели открывается.',
+                '<b>#13: (0,4)</b> g=4. Четвёртое кольцо. Правый верхний угол — максимально далеко от цели.',
+                '<b>#14: (4,0)</b> g=4. Левый нижний угол — тоже бесполезно.',
+                '<b>#15: (1,4)</b> g=4.41. Продолжаем заливать правый верх.',
+                '<b>#16: (4,1)</b> g=4.41. Нижний ряд заполняется.',
+                '<b>#17: (2,3)</b> g=4.41. Правее стены, но через верх — длинный обход.',
+                '<b>#18: (2,4)</b> g=4.83. Ещё правый край.',
+                '<b>#19: (3,3)</b> g=4.83. Наконец ближе к цели! Но мы уже проверили 19 клеток...',
+                '<b>#20: (4,2)</b> g=4.83. Нижний ряд.',
+                '<b>#21: (4,3)</b> g=5.24. Почти у цели.',
+                '<b>#22: (3,4)</b> g=5.83. Предпоследняя клетка.',
+                '<b>#23: ЦЕЛЬ НАЙДЕНА!</b> G(4,4) g=6.24. Путь: S→(1,1)→(2,1)→(3,2)→(3,3)→G. Тот же путь, что у A*, но проверено <b>все 23 клетки</b> вместо 9.'
+            ];
+
+            const pathCells=[[0,0],[1,1],[2,1],[3,2],[3,3],[4,4]];
+            const pathPts='10,10 30,30 30,50 50,70 70,70 90,90';
+
+            let cur=0,timer=null;
+            const grid=document.getElementById('dj-grid');
+            const svg=document.getElementById('dj-svg');
+            const desc=document.getElementById('dj-desc');
+            const counter=document.getElementById('dj-counter');
+
+            function render(step){
+                // closed = order[0..step-1], current = order[step-1] if step>0
+                const closed=order.slice(0,step);
+                const currentCell=step>0?order[step-1]:null;
+                const isFinal=step===order.length;
+                let h='';
+                for(let r=0;r<5;r++)for(let c=0;c<5;c++){
+                    if(isWall(r,c)){h+='<div style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);border-radius:6px;min-height:50px;display:flex;align-items:center;justify-content:center;font-size:.75em;color:var(--red)">▓</div>';continue;}
+                    const isCur=currentCell&&currentCell[0]===r&&currentCell[1]===c;
+                    const isClosed=closed.some(x=>x[0]===r&&x[1]===c);
+                    const isPath=isFinal&&pathCells.some(x=>x[0]===r&&x[1]===c);
+                    let bg='var(--card)',border='1px solid var(--border)';
+                    if(isPath){bg='rgba(74,222,128,.15)';border='2px solid rgba(74,222,128,.5)';}
+                    else if(isCur){bg='rgba(108,158,255,.3)';border='2px solid var(--accent)';}
+                    else if(isClosed){bg='rgba(108,158,255,.1)';border='1px solid rgba(108,158,255,.3)';}
+                    let lbl='';
+                    if(r===0&&c===0)lbl='<span style="font-weight:700;font-size:.9em">S</span>';
+                    else if(r===4&&c===4)lbl='<span style="font-weight:700;font-size:.9em">G</span>';
+                    const gv=gvals[r+','+c];
+                    const vt=isClosed&&gv!==undefined?'<span style="color:var(--text2);font-size:.7em">g='+gv+'</span>':'';
+                    h+='<div style="background:'+bg+';border:'+border+';border-radius:6px;min-height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8em;color:var(--text)">'+lbl+vt+'</div>';
+                }
+                grid.innerHTML=h;
+                let svgH='';
+                if(isFinal){
+                    svgH='<polyline points="'+pathPts+'" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>';
+                }
+                svg.innerHTML=svgH;
+                desc.innerHTML=descriptions[step];
+                counter.textContent='Шаг '+step+' / '+order.length;
+            }
+
+            render(0);
+            document.getElementById('dj-prev').onclick=function(){if(cur>0){cur--;render(cur);}};
+            document.getElementById('dj-next').onclick=function(){if(cur<order.length){cur++;render(cur);}};
+            document.getElementById('dj-play').onclick=function(){
+                if(timer){clearInterval(timer);timer=null;this.textContent='▶ Play';return;}
+                this.textContent='⏸ Pause';cur=0;render(0);
+                timer=setInterval(()=>{cur++;render(cur);
+                    if(cur>=order.length){clearInterval(timer);timer=null;document.getElementById('dj-play').textContent='▶ Play';}
+                },800);
+            };
+        })();
+        </script>
 
         <h2>Почему это гарантированно работает</h2>
 

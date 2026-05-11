@@ -72,6 +72,28 @@
         .grid-overlay{position:relative;max-width:620px;margin:16px auto}
         .grid-overlay svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
         @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
+
+        /* Animation controls */
+        .anim-wrap{max-width:620px;margin:24px auto}
+        .anim-controls{display:flex;gap:8px;justify-content:center;align-items:center;margin:12px 0;flex-wrap:wrap}
+        .anim-controls button{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:.9em;transition:all .2s}
+        .anim-controls button:hover{border-color:var(--accent);color:var(--accent)}
+        .anim-controls button.active{background:rgba(108,158,255,.15);border-color:var(--accent);color:var(--accent)}
+        .anim-step-label{color:var(--text2);font-size:.85em;min-width:100px;text-align:center}
+        .anim-desc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:10px 0;font-size:.88em;line-height:1.6;min-height:60px}
+        .anim-desc .los-yes{color:var(--green);font-weight:600}
+        .anim-desc .los-no{color:var(--red);font-weight:600}
+        .anim-open{background:rgba(108,158,255,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:.82em;color:var(--text2);font-family:'Courier New',monospace}
+        .anim-legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:10px 0;font-size:.82em;color:var(--text2)}
+        .anim-legend span{display:flex;align-items:center;gap:5px}
+        .anim-legend .swatch{width:12px;height:12px;border-radius:3px}
+        .anim-grid .cell.anim-current{background:rgba(251,146,60,.2)!important;border-color:var(--orange)!important;border-width:2px}
+        .anim-grid .cell.anim-open-cell{background:rgba(108,158,255,.12)!important;border-color:rgba(108,158,255,.4)!important}
+        .anim-grid .cell.anim-closed{background:rgba(108,158,255,.06)!important;border-color:rgba(108,158,255,.2)!important}
+        .anim-grid .cell.anim-path{background:rgba(74,222,128,.15)!important;border-color:rgba(74,222,128,.5)!important;border-width:2px}
+        .anim-grid .cell .anim-vals{color:var(--text2);font-family:'Courier New',monospace;font-size:.78em}
+        .anim-grid .cell .anim-parent{color:var(--accent2);font-size:.7em}
+        .anim-stats{display:flex;gap:16px;justify-content:center;margin:8px 0;font-size:.85em;color:var(--text2)}
     </style>
 </head>
 <body>
@@ -98,7 +120,7 @@
         <!-- ============ СУТЬ ============ -->
         <h2>О чём вообще речь</h2>
 
-        <p>У A* есть одна раздражающая проблема: путь всегда идёт <strong>по рёбрам сетки</strong> — горизонтально, вертикально или по диагонали (45°). Робот движется ступеньками, хотя мог бы просто пройти по прямой. Результат: путь длиннее, чем нужно, а робот делает кучу лишних поворотов.</p>
+        <p>У A* есть одна раздражающая проблема: путь ограничен <strong>8 фиксированными направлениями</strong> (0°, 45°, 90°, ...). Даже с диагональным движением робот идёт зигзагом из 45°-отрезков, хотя мог бы пройти по одной прямой линии. Результат: путь длиннее, чем нужно, а робот делает лишние повороты.</p>
 
         <p>Theta* решает это одним простым вопросом: <strong>«А видит ли родитель моего родителя меня напрямую?»</strong> Если да — зачем промежуточный узел? Рисуем прямую линию и срезаем угол.</p>
 
@@ -110,11 +132,11 @@
         </div>
 
         <!-- ============ ПРОБЛЕМА A* ============ -->
-        <h2>Проблема A*: путь по ступенькам</h2>
+        <h2>Проблема A*: фиксированные углы</h2>
 
-        <p>Посмотри на сетку 5×5 без препятствий. Нужно пройти от (0,0) до (4,4). A* пойдёт по диагонали — вроде неплохо. Но если цель не на диагонали — например, (0,0) → (4,2) — A* будет «лесенкой»: диагональ-диагональ-горизонталь-диагональ. Путь получается длиннее геометрически оптимального (прямой линии) на <strong>5–15%</strong>.</p>
+        <p>Даже с 8-направленным движением A* ограничен углами, кратными 45°. Если цель лежит под углом 30° — A* будет чередовать диагональ и кардинальный шаг, создавая «зубцы». Путь получается на <strong>3–8%</strong> длиннее геометрически оптимального (прямой линии).</p>
 
-        <p>Theta* устраняет эту проблему. Узлы пути могут соединяться <em>любыми</em> прямыми линиями (any-angle), а не только рёбрами сетки. Результат — путь, который выглядит так, как будто его прокладывал человек, а не робот.</p>
+        <p>Theta* устраняет эту проблему. Узлы пути могут соединяться <em>любыми</em> прямыми линиями (any-angle), а не только 8 фиксированными направлениями. Результат — путь, который выглядит так, как будто его прокладывал человек, а не робот.</p>
 
         <!-- ============ МАТЕМАТИКА ============ -->
         <h2>Математика</h2>
@@ -200,55 +222,50 @@
 
         <p>Одна и та же карта 5×5, стена посередине. Слева — подробная карта с g/f значениями, справа — чистый путь.</p>
 
-        <h3>A* — путь по рёбрам сетки</h3>
+        <h3>A* — путь по фиксированным углам (8-dir)</h3>
 
         <div class="grid" style="align-items:start">
             <!-- LEFT: detailed A* grid -->
             <div>
                 <div class="grid-viz">
-                    <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0 h=8<br><b>f=8</b></span></div>
-                    <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1 h=7<br><b>f=8</b></span></div>
+                    <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0 h=5.66<br><b>f=5.66</b></span></div>
+                    <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1 h=5.24<br><b>f=6.24</b></span></div>
+                    <div class="cell explored"><span class="ord">#7</span><span class="lbl">·</span><span class="vals">g=2 h=4.83<br><b>f=6.83</b></span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored path"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1 h=7<br><b>f=8</b></span></div>
-                    <div class="cell explored path"><span class="ord">#4</span><span class="lbl">·</span><span class="vals">g=2 h=6<br><b>f=8</b></span></div>
+                    <div class="cell explored"><span class="ord">#4</span><span class="lbl">·</span><span class="vals">g=1 h=5.24<br><b>f=6.24</b></span></div>
+                    <div class="cell explored path"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1.41 h=4.24<br><b>f=5.66</b></span></div>
                     <div class="cell wall"><span class="lbl">▓</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2 h=6<br><b>f=8</b></span></div>
-                    <div class="cell explored path"><span class="ord">#5</span><span class="lbl">·</span><span class="vals">g=3 h=5<br><b>f=8</b></span></div>
+                    <div class="cell explored"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=2 h=4.83<br><b>f=6.83</b></span></div>
+                    <div class="cell explored path"><span class="ord">#5</span><span class="lbl">·</span><span class="vals">g=2.41 h=3.83<br><b>f=6.24</b></span></div>
                     <div class="cell wall"><span class="lbl">▓</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored"><span class="ord">#10</span><span class="lbl">·</span><span class="vals">g=3 h=5<br><b>f=8</b></span></div>
-                    <div class="cell explored path"><span class="ord">#7</span><span class="lbl">·</span><span class="vals">g=4 h=4<br><b>f=8</b></span></div>
-                    <div class="cell explored path"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=5 h=3<br><b>f=8</b></span></div>
-                    <div class="cell explored path"><span class="ord">#9</span><span class="lbl">·</span><span class="vals">g=6 h=2<br><b>f=8</b></span></div>
-                    <div class="cell explored path"><span class="ord">#11</span><span class="lbl">·</span><span class="vals">g=7 h=1<br><b>f=8</b></span></div>
+                    <div class="cell explored"><span class="ord">#9</span><span class="lbl">·</span><span class="vals">g=3.83 h=4.41<br><b>f=8.24</b></span></div>
+                    <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=3.41 h=3.41<br><b>f=6.82</b></span></div>
+                    <div class="cell explored path"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=3.83 h=2.41<br><b>f=6.24</b></span></div>
+                    <div class="cell explored path"><span class="lbl">·</span><span class="vals">g=4.83 h=1.41<br><b>f=6.24</b></span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=5.83 h=1<br><b>f=6.83</b></span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored"><span class="ord">#12</span><span class="lbl">·</span><span class="vals">g=5 h=4<br><b>f=9</b></span></div>
-                    <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored"><span class="ord">#13</span><span class="lbl">·</span><span class="vals">g=7 h=1<br><b>f=8</b></span></div>
-                    <div class="cell goal path"><span class="ord">#14</span><span class="lbl">G</span><span class="vals">g=8 h=0<br><b>f=8</b></span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=5.24 h=3<br><b>f=8.24</b></span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4.83 h=2<br><b>f=6.83</b></span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=5.24 h=1<br><b>f=6.24</b></span></div>
+                    <div class="cell goal path"><span class="lbl">G</span><span class="vals">g=6.24 h=0<br><b>f=6.24</b></span></div>
                 </div>
-                <p style="text-align:center;color:var(--text2);font-size:.82em">Подробная карта с g/h/f</p>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">A*: обработано 9 клеток, путь ≈ 6.24</p>
             </div>
 
             <!-- RIGHT: clean A* path -->
             <div>
-                <div style="position:relative;max-width:620px;margin:16px auto">
+                <div class="grid-overlay">
                     <div class="grid-viz">
                         <div class="cell start path"><span class="lbl">S</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell wall"><span class="lbl">▓</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell path"><span class="lbl">·</span></div>
                         <div class="cell wall"><span class="lbl">▓</span></div>
@@ -256,21 +273,26 @@
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell path"><span class="lbl">·</span></div>
+                        <div class="cell wall"><span class="lbl">▓</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell path"><span class="lbl">·</span></div>
                         <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell path"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell goal path"><span class="lbl">G</span></div>
                     </div>
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <polyline points="10,10 10,30 30,30 30,50 30,70 50,70 70,70 90,70 90,90"
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <polyline points="10,10 30,30 30,50 50,70 70,70 90,90"
                                   fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
                     </svg>
                 </div>
-                <p style="text-align:center;color:var(--text2);font-size:.82em">Путь A*: <strong>ступеньки</strong> — длина = 8.0</p>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">Путь A*: <strong>5 отрезков под 45°/0°</strong> — длина ≈ 6.24</p>
             </div>
         </div>
 
@@ -281,37 +303,37 @@
             <div>
                 <div class="grid-viz">
                     <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0<br><b>⟋ корень</b></span></div>
-                    <div class="cell explored"><span class="ord">#3</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=1.0<br>parent=S</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=2.0<br>parent=S</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored"><span class="ord">#2</span><span class="lbl">·</span><span class="vals">g=1.0</span></div>
-                    <div class="cell explored"><span class="ord">#4</span><span class="lbl">⟋</span><span class="vals">g=1.41<br>parent=S</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=1.0<br>parent=S</span></div>
+                    <div class="cell explored"><span class="ord">#2</span><span class="lbl">⟋</span><span class="vals">g=1.41<br><b>parent=S</b></span></div>
                     <div class="cell wall"><span class="lbl">▓</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored"><span class="ord">#6</span><span class="lbl">·</span><span class="vals">g=2.0</span></div>
-                    <div class="cell explored"><span class="ord">#5</span><span class="lbl">⟋</span><span class="vals">g=2.24<br>parent=S</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=2.0<br>parent=S</span></div>
+                    <div class="cell explored"><span class="ord">#3</span><span class="lbl">⟋</span><span class="vals">g=2.24<br><b>parent=S</b></span></div>
                     <div class="cell wall"><span class="lbl">▓</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=5.02<br>parent=(3,2)</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=3.0<br>parent=S</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=3.16<br>parent=S</span></div>
+                    <div class="cell explored"><span class="ord">#4</span><span class="lbl">⟋</span><span class="vals">g=3.61<br><b>parent=S</b></span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4.61<br>parent=(3,2)</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=6.41<br>parent=(4,3)</span></div>
                     <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored path"><span class="ord">#7</span><span class="lbl">⟋</span><span class="vals">g=3.16<br><b>parent=S</b></span></div>
-                    <div class="cell explored"><span class="ord">#8</span><span class="lbl">·</span><span class="vals">g=4.16</span></div>
-                    <div class="cell explored"><span class="ord">#9</span><span class="lbl">⟋</span><span class="vals">g=5.16</span></div>
-                    <div class="cell explored"><span class="ord">#11</span><span class="lbl">·</span><span class="vals">g=6.16</span></div>
-                    <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell unvisited"><span class="lbl">·</span></div>
-                    <div class="cell explored"><span class="ord">#12</span><span class="lbl">·</span><span class="vals">g=6.16</span></div>
-                    <div class="cell goal path"><span class="ord">#10</span><span class="lbl">G</span><span class="vals">g=6.32<br><b>parent=(1,3)</b></span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4.12<br>parent=S</span></div>
+                    <div class="cell explored"><span class="lbl">·</span><span class="vals">g=4.47<br>parent=S</span></div>
+                    <div class="cell explored path"><span class="ord">#5</span><span class="lbl">⟋</span><span class="vals">g=5.0<br><b>parent=S</b></span></div>
+                    <div class="cell goal path"><span class="ord">#6</span><span class="lbl">G</span><span class="vals">g=6.0<br><b>parent=(4,3)</b></span></div>
                 </div>
-                <p style="text-align:center;color:var(--text2);font-size:.82em">Подробная карта с g и parent</p>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">Theta*: обработано 6 клеток, путь = 6.0</p>
             </div>
 
             <!-- RIGHT: clean Theta* path -->
             <div>
-                <div style="position:relative;max-width:620px;margin:16px auto">
+                <div class="grid-overlay">
                     <div class="grid-viz">
                         <div class="cell start path"><span class="lbl">S</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
@@ -329,22 +351,22 @@
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
+                        <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell path"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
-                        <div class="cell"><span class="lbl">·</span></div>
                         <div class="cell goal path"><span class="lbl">G</span></div>
                     </div>
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none">
-                        <polyline points="10,10 30,70 90,90"
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <polyline points="10,10 70,90 90,90"
                                   fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
                     </svg>
                 </div>
-                <p style="text-align:center;color:var(--text2);font-size:.82em">Путь Theta*: <strong>2 прямых отрезка</strong> — длина ≈ 6.32</p>
+                <p style="text-align:center;color:var(--text2);font-size:.82em">Путь Theta*: <strong>2 прямых отрезка</strong> — длина = 6.0</p>
             </div>
         </div>
 
@@ -359,16 +381,185 @@
         <div class="card">
             <strong>Сравни правые карты — разница очевидна:</strong>
             <ul>
-                <li><strong>A*</strong>: путь из 8 рёбер — ↓↘↓→→→↘ — лесенка вдоль стены и вдоль строки</li>
-                <li><strong>Theta*</strong>: всего 2 прямых отрезка — S⟋(1,3)⟋G. Зелёные линии показывают реальный путь робота</li>
-                <li>Theta* проверил line-of-sight: линия S→(1,3) не пересекает стену, линия (1,3)→G тоже свободна</li>
+                <li><strong>A*</strong>: 5 отрезков зигзагом под 45°/0° — S→(1,1)→(2,1)→(3,2)→(3,3)→G</li>
+                <li><strong>Theta*</strong>: всего 2 прямых отрезка — S⟋(4,3)⟋G. Линия S→(4,3) идёт под ~53°, обходя стену</li>
+                <li>Theta* проверил line-of-sight: линия S→(4,3) не пересекает стену, а S→G — пересекает (1,2)</li>
                 <li>Символ ⟋ = узел привязан не к соседу, а напрямую к дальнему предку через line-of-sight</li>
             </ul>
         </div>
 
         <div class="card warn">
-            <strong>Экономия ~21% на этой карте</strong> (6.32 vs 8.0). На больших картах — 10–15%. Для робота каждый лишний поворот — торможение, разворот, ускорение. Прямые линии = быстрее и экономичнее.
+            <strong>Экономия ~4% на этой карте</strong> (6.0 vs 6.24). На больших открытых картах — до 10–15%. Главный выигрыш — не в длине, а в <strong>плавности</strong>: 2 поворота вместо 4. Для робота каждый поворот — торможение, разворот, ускорение.
         </div>
+
+
+        <!-- ============ АНИМАЦИЯ ============ -->
+        <h2>Интерактивная анимация Theta*</h2>
+
+        <p>Пошаговая работа Theta* на нашей карте 5×5. Обрати внимание на <span style="color:var(--green)">line-of-sight проверки</span> — именно они отличают Theta* от A*.</p>
+
+        <div class="anim-legend">
+            <span><span class="swatch" style="background:rgba(251,146,60,.3)"></span> Текущий узел</span>
+            <span><span class="swatch" style="background:rgba(108,158,255,.2)"></span> В OPEN</span>
+            <span><span class="swatch" style="background:rgba(108,158,255,.08)"></span> Обработан (CLOSED)</span>
+            <span><span class="swatch" style="background:rgba(74,222,128,.2)"></span> Финальный путь</span>
+        </div>
+
+        <div class="anim-wrap">
+            <div class="anim-controls">
+                <button onclick="thetaAnim.prev()" id="ta-prev">◀</button>
+                <button onclick="thetaAnim.toggle()" id="ta-play">▶ Play</button>
+                <button onclick="thetaAnim.next()" id="ta-next">▶</button>
+                <span class="anim-step-label" id="ta-label">Шаг 0 / 6</span>
+            </div>
+            <div class="grid-overlay">
+                <div class="grid-viz anim-grid" id="ta-grid"></div>
+                <svg id="ta-svg" viewBox="0 0 100 100" preserveAspectRatio="none" style="pointer-events:none"></svg>
+            </div>
+            <div class="anim-desc" id="ta-desc"></div>
+            <div class="anim-open" id="ta-open"></div>
+            <div class="anim-stats" id="ta-stats"></div>
+        </div>
+
+        <script>
+        (function(){
+        const ROWS=5,COLS=5;
+        const WALLS=new Set(['1,2','2,2']);
+        // Cell data: g, h, f, parent, discovered at step, expanded at step
+        const D={
+            '0,0':{g:0,h:5.66,f:5.66,p:'0,0',disc:0,exp:1},
+            '0,1':{g:1,h:5.24,f:6.24,p:'0,0',disc:1,exp:0},
+            '1,0':{g:1,h:5.24,f:6.24,p:'0,0',disc:1,exp:0},
+            '1,1':{g:1.41,h:4.24,f:5.66,p:'0,0',disc:1,exp:2},
+            '0,2':{g:2,h:4.83,f:6.83,p:'0,0',disc:2,exp:0},
+            '2,0':{g:2,h:4.83,f:6.83,p:'0,0',disc:2,exp:0},
+            '2,1':{g:2.24,h:3.83,f:6.06,p:'0,0',disc:2,exp:3},
+            '3,0':{g:3,h:4.41,f:7.41,p:'0,0',disc:3,exp:0},
+            '3,1':{g:3.16,h:3.41,f:6.58,p:'0,0',disc:3,exp:0},
+            '3,2':{g:3.61,h:2.41,f:6.02,p:'0,0',disc:3,exp:4},
+            '2,3':{g:5.02,h:2.41,f:7.43,p:'3,2',disc:4,exp:0},
+            '3,3':{g:4.61,h:1.41,f:6.02,p:'3,2',disc:4,exp:0},
+            '4,1':{g:4.12,h:3,f:7.12,p:'0,0',disc:4,exp:0},
+            '4,2':{g:4.47,h:2,f:6.47,p:'0,0',disc:4,exp:0},
+            '4,3':{g:5,h:1,f:6,p:'0,0',disc:4,exp:5},
+            '3,4':{g:6.41,h:1,f:7.41,p:'4,3',disc:5,exp:0},
+            '4,4':{g:6,h:0,f:6,p:'4,3',disc:5,exp:6}
+        };
+        // Expansion order
+        const EXP=['0,0','1,1','2,1','3,2','4,3','4,4'];
+        const PATH=['0,0','4,3','4,4'];
+        // Steps data
+        const STEPS=[
+            {title:'Инициализация',desc:'Помещаем S(0,0) в OPEN с f=5.66. Theta* начинает работу — как A*, но с проверками line-of-sight.',open:['0,0 f=5.66'],expanded:0,closed:[]},
+            {title:'Шаг 1: раскрываем (0,0)',desc:'Извлекаем S(0,0), f=5.66 — минимум в OPEN. Соседи: (0,1), (1,0), (1,1). parent(S)=S, так что line-of-sight проверка тривиальна (от S к соседям). Все три получают <span class="los-yes">LOS=YES</span>, parent=S.',open:['(1,1) f=5.66','(0,1) f=6.24','(1,0) f=6.24'],expanded:1,closed:['0,0']},
+            {title:'Шаг 2: раскрываем (1,1)',desc:'Извлекаем (1,1), f=5.66. parent=(0,0)=S. Проверяем LOS от S к каждому соседу.<br><span class="los-yes">LOS S→(2,1): YES</span> — прямая линия свободна, parent=(0,0), g=2.24.<br><span class="los-yes">LOS S→(0,2): YES</span> — g=2.0. <span class="los-yes">LOS S→(2,0): YES</span> — g=2.0.<br>Все соседи привязаны к S напрямую!',open:['(2,1) f=6.06','(0,1) f=6.24','(1,0) f=6.24','(0,2) f=6.83','(2,0) f=6.83'],expanded:2,closed:['0,0','1,1']},
+            {title:'Шаг 3: раскрываем (2,1)',desc:'Извлекаем (2,1), f=6.06. parent=(0,0)=S. Проверяем LOS от S к соседям.<br><span class="los-yes">LOS S→(3,2): YES</span> — прямая S→(3,2) обходит стену! g=3.61, parent=S.<br><span class="los-yes">LOS S→(3,1): YES</span> — g=3.16. <span class="los-yes">LOS S→(3,0): YES</span> — g=3.0.<br>Ключевой момент: (3,2) привязана напрямую к S через 3 клетки!',open:['(3,2) f=6.02','(0,1) f=6.24','(1,0) f=6.24','(3,1) f=6.58','(0,2) f=6.83','(2,0) f=6.83','(3,0) f=7.41'],expanded:3,closed:['0,0','1,1','2,1']},
+            {title:'Шаг 4: раскрываем (3,2)',desc:'Извлекаем (3,2), f=6.02. parent=(0,0)=S. Проверяем LOS от S к соседям.<br><span class="los-yes">LOS S→(4,3): YES</span> — линия S→(4,3) проходит свободно! g=5.0, parent=S.<br><span class="los-no">LOS S→(3,3): NO</span> — линия пересекает стену (1,2)! Fallback: parent=(3,2), g=4.61.<br><span class="los-no">LOS S→(2,3): NO</span> — тоже blocked! parent=(3,2), g=5.02.<br>Видишь разницу: (4,3) привязана к S, а (3,3) — к (3,2).',open:['(4,3) f=6.0','(3,3) f=6.02','(0,1) f=6.24','(1,0) f=6.24','(4,2) f=6.47','(3,1) f=6.58','(0,2) f=6.83','(2,0) f=6.83'],expanded:4,closed:['0,0','1,1','2,1','3,2']},
+            {title:'Шаг 5: раскрываем (4,3)',desc:'Извлекаем (4,3), f=6.0. parent=(0,0)=S. Проверяем LOS от S к соседям.<br><span class="los-no">LOS S→(4,4): NO</span> — линия S→G пересекает стену (1,2)! Fallback: parent=(4,3), g=6.0.<br><span class="los-no">LOS S→(3,4): NO</span> — тоже blocked. parent=(4,3), g=6.41.<br>Цель обнаружена!',open:['(4,4) f=6.0','(3,3) f=6.02','(0,1) f=6.24','(1,0) f=6.24','(4,2) f=6.47','(3,1) f=6.58','(0,2) f=6.83','(2,0) f=6.83'],expanded:5,closed:['0,0','1,1','2,1','3,2','4,3']},
+            {title:'Шаг 6: раскрываем (4,4) — ЦЕЛЬ!',desc:'Извлекаем G(4,4), f=6.0 — это цель! Восстанавливаем путь по parent-ссылкам:<br>G(4,4) → parent=(4,3) → parent=S(0,0).<br><b>Путь: S→(4,3)→G, длина=6.0</b>. Всего 2 отрезка вместо 5 у A*.<br>Обработано <b>6 клеток</b> (A* обработал 9). Theta* быстрее И даёт более короткий путь.',open:[],expanded:6,closed:['0,0','1,1','2,1','3,2','4,3','4,4'],showPath:true}
+        ];
+
+        let step=0,timer=null;
+        function rc(key){return key.split(',').map(Number)}
+        function svgXY(r,c){return[c*20+10,r*20+10]}
+
+        function render(){
+            const s=STEPS[step];
+            const grid=document.getElementById('ta-grid');
+            const svg=document.getElementById('ta-svg');
+            const closedSet=new Set(s.closed||[]);
+            // Compute open set from D data
+            const openSet=new Set();
+            for(const item of s.open){
+                const m=item.match(/\(??(\d+,\d+)\)?/);
+                if(m)openSet.add(m[1]);
+            }
+
+            let html='';
+            for(let r=0;r<ROWS;r++){
+                for(let c=0;c<COLS;c++){
+                    const key=r+','+c;
+                    const isWall=WALLS.has(key);
+                    const d=D[key];
+                    const isStart=key==='0,0';
+                    const isGoal=key==='4,4';
+                    const isCurrent=step>0&&EXP[step-1]===key;
+                    const isClosed=closedSet.has(key);
+                    const isOpen=openSet.has(key);
+                    const isPath=s.showPath&&PATH.includes(key);
+                    const discovered=d&&d.disc<=step-1;
+
+                    let cls='cell';
+                    if(isWall)cls+=' wall';
+                    else if(isPath)cls+=' anim-path';
+                    else if(isCurrent)cls+=' anim-current';
+                    else if(isClosed&&!isCurrent)cls+=' anim-closed';
+                    else if(isOpen)cls+=' anim-open-cell';
+                    else if(!discovered)cls+=' unvisited';
+                    if(isStart)cls+=' start';
+                    if(isGoal)cls+=' goal';
+
+                    let inner='';
+                    if(isWall){inner='<span class="lbl">▓</span>';}
+                    else if(isStart){inner='<span class="lbl">S</span>';}
+                    else if(isGoal){inner='<span class="lbl">G</span>';}
+                    else{inner='<span class="lbl">·</span>';}
+
+                    if(!isWall&&discovered&&d){
+                        const pkey=d.p;
+                        const pLabel=pkey==='0,0'?'S':pkey==='4,4'?'G':'('+pkey+')';
+                        inner+='<span class="anim-vals">g='+d.g.toFixed(2)+'<br>f='+d.f.toFixed(2)+'</span>';
+                        inner+='<span class="anim-parent">↑'+pLabel+'</span>';
+                    }
+
+                    html+='<div class="'+cls+'">'+inner+'</div>';
+                }
+            }
+            grid.innerHTML=html;
+
+            // SVG: draw LOS lines and path
+            let svgHtml='';
+            if(s.showPath){
+                // Draw final path
+                const pts=PATH.map(k=>{const[r,c]=rc(k);return svgXY(r,c).join(',')}).join(' ');
+                svgHtml+='<polyline points="'+pts+'" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>';
+            }
+            svg.innerHTML=svgHtml;
+
+            // Controls
+            document.getElementById('ta-label').textContent='Шаг '+step+' / '+STEPS.length;
+            document.getElementById('ta-desc').innerHTML='<strong>'+s.title+'</strong><br>'+s.desc;
+            document.getElementById('ta-open').innerHTML='<strong>OPEN:</strong> '+(s.open.length?s.open.join(' · '):'пусто');
+            document.getElementById('ta-stats').innerHTML='Обработано: <b>'+s.expanded+'</b> из 23 клеток · Обнаружено: <b>'+(Object.keys(D).filter(k=>D[k].disc<step).length)+'</b>';
+
+            document.getElementById('ta-prev').disabled=step===0;
+            document.getElementById('ta-next').disabled=step===STEPS.length-1;
+        }
+
+        const thetaAnim={
+            prev(){if(step>0){step--;render();this.stopTimer();}},
+            next(){if(step<STEPS.length-1){step++;render();this.stopTimer();}},
+            toggle(){
+                if(timer){this.stopTimer();}
+                else{
+                    timer=setInterval(()=>{
+                        if(step<STEPS.length-1){step++;render();}
+                        else this.stopTimer();
+                    },2000);
+                    document.getElementById('ta-play').textContent='⏸ Pause';
+                    document.getElementById('ta-play').classList.add('active');
+                }
+            },
+            stopTimer(){
+                if(timer){clearInterval(timer);timer=null;}
+                document.getElementById('ta-play').textContent='▶ Play';
+                document.getElementById('ta-play').classList.remove('active');
+            }
+        };
+        window.thetaAnim=thetaAnim;
+        render();
+        })();
+        </script>
 
         <!-- ============ ПСЕВДОКОД ============ -->
         <h2>Псевдокод</h2>
@@ -617,7 +808,7 @@ for (auto [nx, ny] : neighbors(cx, cy)) {
             <tr>
                 <td>Плавность пути</td>
                 <td style="font-size:.88em;color:var(--text2)">Сколько поворотов делает робот — меньше = лучше</td>
-                <td><span class="tag orange">Ступеньки</span></td>
+                <td><span class="tag orange">8 углов</span></td>
                 <td><span class="tag green">Прямые</span></td>
                 <td><span class="tag orange">Ломаный</span></td>
             </tr>

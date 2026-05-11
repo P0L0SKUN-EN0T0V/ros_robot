@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A* — Подробный разбор</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8em;font-weight:600;margin:2px 4px 2px 0}
+        .tag.blue{background:rgba(108,158,255,.15);color:var(--accent)}
+        .tag.green{background:rgba(74,222,128,.15);color:var(--green)}
+        .tag.orange{background:rgba(251,146,60,.15);color:var(--orange)}
+        .tag.purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.15em}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media(max-width:700px){.grid{grid-template-columns:1fr}}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .katex{font-size:1.1em}
+        .katex-display{margin:12px 0}
+        .grid-viz{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:620px;margin:16px auto}
+        .grid-viz .cell{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;text-align:center;font-size:.75em;line-height:1.35;min-height:72px;display:flex;flex-direction:column;justify-content:center;position:relative}
+        .grid-viz .cell.wall{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)}
+        .grid-viz .cell.path{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);border-width:2px}
+        .grid-viz .cell.explored{background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)}
+        .grid-viz .cell.start{background:rgba(108,158,255,.2);border-color:var(--accent);border-width:2px}
+        .grid-viz .cell.goal{background:rgba(167,139,250,.2);border-color:var(--accent2);border-width:2px}
+        .grid-viz .cell .lbl{font-weight:700;font-size:1.05em;margin-bottom:2px}
+        .grid-viz .cell .vals{color:var(--text2);font-family:'Courier New',monospace;font-size:.82em}
+        .grid-viz .cell .vals b{color:var(--accent)}
+        .grid-viz .cell .ord{position:absolute;top:2px;right:5px;font-size:.7em;color:var(--orange);font-weight:700}
+        .grid-viz .cell.unvisited{opacity:.45}
+        .grid-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:12px 0;font-size:.85em;color:var(--text2)}
+        .grid-legend span{display:flex;align-items:center;gap:6px}
+        .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Основная документация</a>
+        <div class="sep"></div>
+        <a href="algo-1-astar.html" class="active">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>A* (A-Star)</h1>
+        <p class="subtitle">Алгоритм №1 — классический поиск кратчайшего пути</p>
+
+        <!-- ============ СУТЬ ============ -->
+        <h2>О чём вообще речь</h2>
+
+        <p>Представь, что ты стоишь в незнакомом городе и хочешь дойти до определённого адреса. У тебя нет навигатора, но есть карта, где видны все улицы и тупики. Как ты будешь искать путь?</p>
+
+        <p>Самый тупой способ — идти во все стороны сразу, как вода, которая растекается по полу. Рано или поздно «доберёшься», но проверишь кучу лишних улиц. Это алгоритм <strong>Dijkstra</strong>.</p>
+
+        <p>Способ поумнее — ты примерно знаешь, в какой стороне цель (видишь ориентир — башню или гору). Значит, можно проверять улицы <em>преимущественно в том направлении</em>, изредка отклоняясь, если упёрся в тупик. Это и есть <strong>A*</strong>.</p>
+
+        <div class="card highlight">
+            <p>A* берёт лучшее от двух миров: <strong>точность</strong> Dijkstra (гарантированно находит кратчайший путь) и <strong>скорость</strong> жадного поиска (сразу идёт в нужном направлении). Секрет — в формуле оценки, которая балансирует между «что я уже прошёл» и «сколько примерно осталось».</p>
+        </div>
+
+        <!-- ============ ГЛАВНАЯ ФОРМУЛА ============ -->
+        <h2>Главная формула</h2>
+
+        <p>Весь A* крутится вокруг одной идеи. Для каждой клетки на карте мы считаем оценку — насколько «перспективно» ехать через неё:</p>
+
+        <div class="formula-block">
+            $$f(n) = g(n) + h(n)$$
+        </div>
+
+        <p>Три буквы — три смысла:</p>
+
+        <div class="card">
+            <p><strong>$g(n)$</strong> — это <em>точная</em> стоимость пути, который мы уже прошли от старта до клетки $n$. Никаких приближений — мы знаем, сколько шагов сделали. Если шли прямо — это одно число, если петляли — другое (больше).</p>
+        </div>
+
+        <div class="card">
+            <p><strong>$h(n)$</strong> — это <em>оценка</em> (эвристика), сколько ещё осталось от клетки $n$ до цели. Мы не знаем точно, потому что впереди могут быть стены. Но мы можем прикинуть — например, по прямой.</p>
+        </div>
+
+        <div class="card">
+            <p><strong>$f(n)$</strong> — это сумма: «что уже потратили» + «что примерно потратим». Это и есть общая оценка стоимости маршрута через эту клетку. Алгоритм всегда выбирает клетку с <strong>наименьшим $f(n)$</strong> — то есть самый перспективный вариант.</p>
+        </div>
+
+        <div class="analogy">Аналогия: ты выбираешь маршрут в навигаторе. Один путь — 10 минут ехали + примерно 5 осталось = 15. Другой — 3 минуты ехали + примерно 20 осталось = 23. Навигатор выберет первый, потому что $f$ меньше. A* делает ровно то же самое.</div>
+
+        <!-- ============ ЭВРИСТИКИ ============ -->
+        <h2>Эвристики — как оценить «сколько осталось»</h2>
+
+        <p>Функция $h(n)$ — это самая интересная часть A*. От неё зависит, насколько умно алгоритм будет искать путь. Есть несколько стандартных вариантов:</p>
+
+        <h3>Манхэттенское расстояние</h3>
+        <p>Называется так потому, что в Манхэттене улицы идут строго по сетке — можно двигаться только вверх/вниз и влево/вправо. Мы считаем, сколько кварталов нужно пройти по горизонтали плюс сколько по вертикали:</p>
+
+        <div class="formula-block">
+            $$h(n) = |x_n - x_{goal}| + |y_n - y_{goal}|$$
+        </div>
+
+        <div class="card">
+            <p><strong>Пример:</strong> робот стоит в точке $(2, 3)$, а цель в $(5, 7)$. Тогда $h = |2-5| + |3-7| = 3 + 4 = 7$. Это значит, что в идеале (без стен) нужно минимум 7 шагов.</p>
+            <p style="color:var(--text2);margin-top:8px">Используй, если робот может двигаться только по 4 направлениям (вверх, вниз, влево, вправо).</p>
+        </div>
+
+        <h3>Евклидово расстояние</h3>
+        <p>Расстояние «по прямой» — как если бы мы могли лететь напрямую к цели, игнорируя все стены. Это обычная теорема Пифагора:</p>
+
+        <div class="formula-block">
+            $$h(n) = \sqrt{(x_n - x_{goal})^2 + (y_n - y_{goal})^2}$$
+        </div>
+
+        <div class="card">
+            <p><strong>Пример:</strong> те же координаты $(2, 3) \to (5, 7)$: $h = \sqrt{3^2 + 4^2} = \sqrt{9+16} = \sqrt{25} = 5.0$</p>
+            <p style="color:var(--text2);margin-top:8px">Используй, если робот может двигаться в любом направлении (8 направлений или свободно). Это самая «честная» оценка.</p>
+        </div>
+
+        <h3>Октильное (диагональное) расстояние</h3>
+        <p>Золотая середина для сеток с 8 направлениями. Идея: сначала идём по диагонали (это эффективнее), потом доходим остаток по прямой:</p>
+
+        <div class="formula-block">
+            $$h(n) = \max(|dx|, |dy|) + (\sqrt{2} - 1) \cdot \min(|dx|, |dy|)$$
+        </div>
+        <p style="text-align:center;color:var(--text2)">где $dx = x_n - x_{goal}$, $dy = y_n - y_{goal}$</p>
+
+        <div class="card warn">
+            <p><strong>Важное правило:</strong> эвристика должна быть <em>допустимой</em> (admissible). Это значит, что она <strong>никогда не должна переоценивать</strong> реальное расстояние. Можно недооценить (тогда алгоритм проверит чуть больше клеток), но если переоценить — A* может выдать не кратчайший путь.</p>
+            <p style="margin-top:8px">Простое правило: оценка «по прямой» всегда допустима, потому что прямая — это самый короткий путь. Любой реальный маршрут будет длиннее или равен.</p>
+        </div>
+
+        <div class="analogy">Если $h(n) = 0$ для всех клеток, A* превращается в Dijkstra — ищет во все стороны без подсказки. Чем точнее эвристика, тем меньше клеток проверяет алгоритм. Идеальная эвристика ($h = $ реальное расстояние) заставит A* идти строго по оптимальному пути, не проверяя ничего лишнего.</div>
+
+        <!-- ============ КАК РАБОТАЕТ ============ -->
+        <h2>Как это работает — пошагово</h2>
+
+        <p>A* использует два «списка» (на практике — структуры данных):</p>
+
+        <div class="grid">
+            <div class="card" style="border-left:4px solid var(--green)">
+                <strong style="color:var(--green)">OPEN — «надо проверить»</strong>
+                <p style="margin-top:8px">Сюда попадают клетки, которые мы «увидели», но ещё не обработали. Это приоритетная очередь — сверху всегда лежит клетка с наименьшим $f(n)$. Мы берём оттуда «самую перспективную» клетку каждый шаг.</p>
+            </div>
+            <div class="card" style="border-left:4px solid var(--red)">
+                <strong style="color:var(--red)">CLOSED — «уже проверили»</strong>
+                <p style="margin-top:8px">Клетки, которые мы полностью обработали (посмотрели всех соседей). Сюда не возвращаемся — если клетка в CLOSED, мы уже нашли к ней оптимальный путь.</p>
+            </div>
+        </div>
+
+        <p>Теперь сам алгоритм. Представь, что ты — картограф, и шаг за шагом исследуешь карту:</p>
+
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Начинаем со старта.</strong> Кладём стартовую клетку в OPEN. Её $g = 0$ (мы ещё никуда не шли), $h$ = оценка до цели, $f = g + h$.</div></div>
+
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Берём лучшую клетку.</strong> Достаём из OPEN клетку с наименьшим $f$. Это наш «текущий фронт исследования» — самое перспективное место на карте.</div></div>
+
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Проверяем — это цель?</strong> Если да — мы нашли путь! Восстанавливаем маршрут, идя по цепочке «родителей» обратно к старту (каждая клетка помнит, откуда мы в неё пришли).</div></div>
+
+        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Перемещаем в CLOSED.</strong> Эту клетку мы полностью обработали — больше к ней не вернёмся.</div></div>
+
+        <div class="step"><div class="step-num">5</div><div class="step-text"><strong>Смотрим соседей.</strong> Для каждого соседа текущей клетки (обычно 4 или 8 штук) делаем проверку — подробности ниже.</div></div>
+
+        <div class="card" style="margin-left:52px">
+            <p>Для каждого соседа:</p>
+            <ul>
+                <li>Если он <strong>в CLOSED</strong> — пропускаем (уже обработан)</li>
+                <li>Если он <strong>стена</strong> — пропускаем (непроходим)</li>
+                <li>Считаем «пробный» $g$: $g_{new} = g_{current} + cost$, где $cost$ — стоимость перехода (обычно 1 для прямого хода, $\sqrt{2} \approx 1.41$ для диагонального)</li>
+                <li>Если сосед <strong>не в OPEN</strong> — добавляем его, запоминаем $g$, $h$, $f$ и ставим текущую клетку как «родителя»</li>
+                <li>Если сосед <strong>уже в OPEN</strong>, но наш новый $g_{new}$ меньше его старого $g$ — обновляем! Мы нашли более короткий путь к этой клетке</li>
+            </ul>
+        </div>
+
+        <div class="step"><div class="step-num">6</div><div class="step-text"><strong>Повторяем с шага 2</strong>, пока не найдём цель или OPEN не опустеет (значит, путь не существует — цель заблокирована стенами).</div></div>
+
+        <div class="analogy">Представь, что ты заливаешь воду в лабиринт. Dijkstra заливает равномерно во все стороны. A* — как если бы лабиринт был наклонён в сторону цели: вода течёт преимущественно «туда», но при этом заполняет и боковые ходы, если путь прямо заблокирован.</div>
+
+        <!-- ============ ПРИМЕР ============ -->
+        <h2>Пример на сетке — разбор по шагам</h2>
+
+        <p>Разберём A* на конкретной сетке 5×5. Старт — левый верхний угол, цель — правый нижний. Посередине — стена. Используем <strong>октильное расстояние</strong> как эвристику, движение по 8 направлениям (стоимость прямого хода = 1, диагонального = $\sqrt{2} \approx 1.41$).</p>
+
+        <p>В каждой клетке показаны три числа: <code>g</code> (пройдено от старта), <code>h</code> (оценка до цели), <code>f = g + h</code> (общая оценка). Оранжевая цифра в углу — порядок, в котором алгоритм обрабатывал клетку.</p>
+
+        <div class="grid-legend">
+            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:var(--accent)"></span> Старт</span>
+            <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:var(--accent2)"></span> Цель</span>
+            <span><span class="dot" style="background:rgba(74,222,128,.12);border-color:var(--green)"></span> Итоговый путь</span>
+            <span><span class="dot" style="background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)"></span> Проверено</span>
+            <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
+        </div>
+
+        <div class="grid-viz">
+            <!-- Ряд 0 -->
+            <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals">g=0 h=5.66<br><b>f=5.66</b></span></div>
+            <div class="cell explored"><span class="ord">#3</span><span class="vals">g=1.0 h=5.24<br><b>f=6.24</b></span></div>
+            <div class="cell unvisited"><span class="vals">g=2.0 h=4.83<br><b>f=6.83</b></span></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+
+            <!-- Ряд 1 -->
+            <div class="cell explored"><span class="ord">#4</span><span class="vals">g=1.0 h=5.24<br><b>f=6.24</b></span></div>
+            <div class="cell path explored"><span class="ord">#2</span><span class="vals">g=1.41 h=4.24<br><b>f=5.66</b></span></div>
+            <div class="cell wall"></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+
+            <!-- Ряд 2 -->
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell path explored"><span class="ord">#5</span><span class="vals">g=2.41 h=3.83<br><b>f=6.24</b></span></div>
+            <div class="cell wall"></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+
+            <!-- Ряд 3 -->
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell path explored"><span class="ord">#6</span><span class="vals">g=3.83 h=2.41<br><b>f=6.24</b></span></div>
+            <div class="cell path explored"><span class="ord">#7</span><span class="vals">g=4.83 h=1.41<br><b>f=6.24</b></span></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+
+            <!-- Ряд 4 -->
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell unvisited"><span class="vals" style="opacity:.4">—</span></div>
+            <div class="cell explored"><span class="ord">#8</span><span class="vals">g=5.24 h=1.0<br><b>f=6.24</b></span></div>
+            <div class="cell goal path"><span class="ord">#9</span><span class="lbl">G</span><span class="vals">g=6.24 h=0<br><b>f=6.24</b></span></div>
+        </div>
+
+        <h3>Что здесь видно</h3>
+
+        <p>Обрати внимание: <strong>все клетки на оптимальном пути имеют $f \approx 6.24$</strong>. Это не совпадение — октильная эвристика точно предсказывает остаток пути, и $f = g + h$ на оптимальном маршруте остаётся постоянным.</p>
+
+        <p>Благодаря диагональным ходам путь стал короче: вместо 8 шагов по 4 направлениям — всего 5 шагов (3 диагональных + 2 прямых). А главное — A* проверил <strong>всего 9 клеток</strong>. Весь правый и нижний край карты даже не рассматривался.</p>
+
+        <div class="card success">
+            <p><strong>Итог:</strong> путь стоимостью <strong>$3\sqrt{2} + 2 \approx 6.24$</strong> (3 диагональных хода по $\sqrt{2}$ и 2 прямых). Проверено <strong>9 клеток</strong> из 23 проходимых (39%). Dijkstra проверил бы все 23 — разница в 2.5 раза. На карте 1000×1000 такая экономия — миллионы операций.</p>
+        </div>
+
+        <h3>Разбор ключевых моментов</h3>
+
+        <div class="card">
+            <p><strong>Шаг 1–2:</strong> Старт раскрывается. Диагональный сосед (1,1) получает $f = 1.41 + 4.24 = 5.66$ — лучше, чем прямые соседи (0,1) и (1,0) с $f = 6.24$. A* сразу идёт по диагонали к цели.</p>
+        </div>
+
+        <div class="card">
+            <p><strong>Шаг 2–5:</strong> Из (1,1) алгоритм видит стену на (1,2) и (2,2). Единственный путь вперёд — вниз через (2,1). Оттуда диагональный ход на (3,2) обходит стену снизу.</p>
+        </div>
+
+        <div class="card">
+            <p><strong>Шаг 6–9:</strong> После обхода стены A* снова устремляется по диагонали: (3,2) → (3,3) → (4,3) → (4,4). Заметь: $f$ остаётся $\approx 6.24$ на всём пути — эвристика точно компенсирует рост $g$.</p>
+        </div>
+
+        <div class="card warn">
+            <p><strong>Всего 9 клеток</strong> вместо 23. Клетки (0,1) и (1,0) были проверены (#3 и #4), но в путь не вошли — их $f = 6.24$ не лучше диагонального маршрута. A* убедился в этом и больше к ним не возвращался.</p>
+        </div>
+
+        <!-- ============ ПСЕВДОКОД ============ -->
+        <h2>Псевдокод</h2>
+
+        <p>Вот алгоритм целиком — можно почти дословно переписать на C++:</p>
+
+        <div class="card">
+<pre style="margin:0">function A_Star(start, goal, grid):
+    // Приоритетная очередь — наверху клетка с min f
+    open_set  = PriorityQueue()
+    closed_set = Set()
+
+    start.g = 0
+    start.h = heuristic(start, goal)
+    start.f = start.g + start.h
+    start.parent = null
+    open_set.push(start)
+
+    while open_set is not empty:
+        current = open_set.pop()       // берём клетку с min f
+
+        if current == goal:
+            return reconstruct_path(current)  // 🎉 нашли!
+
+        closed_set.add(current)
+
+        for each neighbor of current:
+            if neighbor in closed_set:  continue   // уже обработан
+            if neighbor is obstacle:    continue   // стена
+
+            // Считаем стоимость пути через current
+            tentative_g = current.g + cost(current, neighbor)
+
+            if neighbor not in open_set:
+                // Новая клетка — добавляем
+                neighbor.g = tentative_g
+                neighbor.h = heuristic(neighbor, goal)
+                neighbor.f = neighbor.g + neighbor.h
+                neighbor.parent = current
+                open_set.push(neighbor)
+
+            else if tentative_g < neighbor.g:
+                // Нашли более короткий путь к уже известной клетке
+                neighbor.g = tentative_g
+                neighbor.f = neighbor.g + neighbor.h
+                neighbor.parent = current
+                open_set.update(neighbor)    // обновить позицию в очереди
+
+    return null  // путь не существует
+
+
+function reconstruct_path(node):
+    path = []
+    while node != null:
+        path.prepend(node)
+        node = node.parent
+    return path</pre>
+        </div>
+
+        <!-- ============ СЛОЖНОСТЬ ============ -->
+        <h2>Вычислительная сложность</h2>
+
+        <p>Сколько ресурсов жрёт A*? Зависит от качества эвристики и размера карты.</p>
+
+        <div class="grid">
+            <div class="card">
+                <strong>Время</strong>
+                <div class="formula-block" style="margin:12px 0">$$O(E \cdot \log V)$$</div>
+                <p>$V$ — количество клеток (вершин), $E$ — количество переходов (рёбер). $\log V$ появляется из-за приоритетной очереди — каждое добавление/извлечение стоит $\log V$.</p>
+                <p style="margin-top:8px">На сетке $N \times N$: $V = N^2$, $E \leq 8N^2$, итого <strong>$O(N^2 \log N)$</strong>.</p>
+                <p style="margin-top:8px;color:var(--text2)">Но это худший случай. С хорошей эвристикой A* проверяет значительно меньше клеток, чем $N^2$.</p>
+            </div>
+            <div class="card">
+                <strong>Память</strong>
+                <div class="formula-block" style="margin:12px 0">$$O(V)$$</div>
+                <p>Нужно хранить все клетки в OPEN и CLOSED. В худшем случае — вся карта окажется в памяти.</p>
+                <p style="margin-top:8px">На сетке $N \times N$: <strong>$O(N^2)$</strong>. Для карты 1000×1000 это миллион клеток — вполне подъёмно для современного компьютера.</p>
+            </div>
+        </div>
+
+        <div class="card warn">
+            <p><strong>Узкое место</strong> — это именно память, а не время. Если карта огромная (например, 10000×10000), A* может сожрать несколько гигабайт RAM. Для таких случаев существуют модификации: IDA* (iterative deepening A*) использует меньше памяти за счёт времени, а JPS (Jump Point Search) ускоряет поиск на однородных сетках.</p>
+        </div>
+
+        <!-- ============ ПЛЮСЫ/МИНУСЫ ============ -->
+        <h2>Плюсы и минусы</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <strong>Плюсы:</strong>
+                <ul>
+                    <li><strong>Оптимальность</strong> — при допустимой эвристике всегда находит кратчайший путь. Математически доказано.</li>
+                    <li><strong>Полнота</strong> — если путь существует, A* его найдёт. Не зависнет.</li>
+                    <li><strong>Гибкость</strong> — работает на любом графе: сетки, дорожные карты, навмеши в играх.</li>
+                    <li><strong>Простота</strong> — весь алгоритм помещается в 50 строк C++.</li>
+                    <li><strong>Проверен временем</strong> — с 1968 года используется повсеместно. Тонна документации и примеров.</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <strong>Минусы:</strong>
+                <ul>
+                    <li><strong>Память</strong> — хранит все посещённые клетки. На больших картах это проблема.</li>
+                    <li><strong>Статичная карта</strong> — если стена появилась после расчёта, нужно пересчитывать с нуля. D* Lite решает эту проблему.</li>
+                    <li><strong>Ступенчатый путь</strong> — на сетке движение только по 4/8 направлениям. Результат — «лесенка». Theta* строит пути под любым углом.</li>
+                    <li><strong>Не учитывает физику</strong> — A* не знает, что робот не может повернуть на 90° мгновенно. Hybrid A* это умеет.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ В ROS2 ============ -->
+        <h2>Как это выглядит в ROS2 проекте</h2>
+
+        <p>В контексте нашего задания A* — это «глобальный планировщик». Он получает карту и цель, возвращает маршрут. Поверх него работает «локальный планировщик» (обычно DWA), который ведёт робота по маршруту и реагирует на неожиданные препятствия.</p>
+
+        <h3>Схема работы</h3>
+        <div class="card highlight">
+            <ol>
+                <li>Лидар (<code>/scan</code>) отдаёт 360 лучей → строим <strong>Occupancy Grid</strong> (сетку проходимости): каждая ячейка = 5–10 см, значение 0 (свободно) или 1 (стена)</li>
+                <li>Одометрия (<code>/odom</code>) даёт текущую позицию робота → переводим в координаты сетки</li>
+                <li>Цель (<code>/goal_pose</code>) → тоже переводим в координаты сетки</li>
+                <li><strong>A*</strong> работает на сетке, возвращает список клеток = маршрут</li>
+                <li>Маршрут передаётся <strong>локальному контроллеру</strong>, который генерирует <code>/cmd_vel</code></li>
+            </ol>
+        </div>
+
+        <h3>Ключевые фрагменты C++</h3>
+        <div class="card">
+<pre style="margin:0">struct Cell {
+    int x, y;
+    double g = 0, h = 0, f = 0;
+    Cell* parent = nullptr;
+
+    // Для приоритетной очереди: меньший f — выше приоритет
+    bool operator>(const Cell& o) const { return f > o.f; }
+};
+
+double heuristic(int x1, int y1, int x2, int y2) {
+    // Октильное расстояние — оптимально для 8-связной сетки
+    double dx = std::abs(x1 - x2), dy = std::abs(y1 - y2);
+    return std::max(dx, dy) + (std::sqrt(2.0) - 1.0) * std::min(dx, dy);
+}
+
+// В ноде ROS2:
+class AStarPlanner : public rclcpp::Node {
+    rclcpp::Subscription&lt;sensor_msgs::msg::LaserScan&gt;::SharedPtr scan_sub_;
+    rclcpp::Subscription&lt;nav_msgs::msg::Odometry&gt;::SharedPtr odom_sub_;
+    rclcpp::Publisher&lt;geometry_msgs::msg::Twist&gt;::SharedPtr vel_pub_;
+
+    std::vector&lt;std::vector&lt;int&gt;&gt; grid_;  // 0=free, 1=wall
+
+    std::vector&lt;Cell&gt; find_path(Cell start, Cell goal) {
+        std::priority_queue&lt;Cell, std::vector&lt;Cell&gt;,
+                            std::greater&lt;Cell&gt;&gt; open;
+        std::unordered_set&lt;int&gt; closed;
+        // ... реализация A* ...
+    }
+};</pre>
+        </div>
+
+        <!-- ============ СРАВНЕНИЕ ============ -->
+        <h2>Сравнение с другими алгоритмами</h2>
+
+        <div class="card">
+            <table>
+                <tr><th>Алгоритм</th><th>A* выигрывает</th><th>A* проигрывает</th></tr>
+                <tr><td><strong>Dijkstra</strong></td><td>Быстрее — эвристика отсекает бесперспективные направления</td><td>— (A* всегда ≥ Dijkstra)</td></tr>
+                <tr><td><strong>RRT/RRT*</strong></td><td>Оптимальный путь + детерминированный (всегда одинаковый)</td><td>Медленнее на огромных открытых картах</td></tr>
+                <tr><td><strong>D* Lite</strong></td><td>Проще в реализации</td><td>Полный пересчёт при изменении карты</td></tr>
+                <tr><td><strong>Theta*</strong></td><td>Быстрее (меньше проверок на line-of-sight)</td><td>Путь «ступенчатый» — только по осям/диагоналям</td></tr>
+                <tr><td><strong>JPS</strong></td><td>Работает на weighted-графах (разная стоимость клеток)</td><td>Медленнее на uniform-сетках (JPS пропускает пустые области)</td></tr>
+                <tr><td><strong>Hybrid A*</strong></td><td>Проще, не нужна кинематическая модель</td><td>Не учитывает радиус поворота робота</td></tr>
+            </table>
+        </div>
+
+        <!-- ============ КОГДА ИСПОЛЬЗОВАТЬ ============ -->
+        <h2>Когда выбирать A*</h2>
+
+        <div class="grid">
+            <div class="card success">
+                <strong>Хорошо подходит:</strong>
+                <ul>
+                    <li>Статичная карта (стены не двигаются)</li>
+                    <li>Карты до ~1000×1000 клеток</li>
+                    <li>Нужна гарантия оптимальности</li>
+                    <li>Сетка с 4/8 направлениями</li>
+                    <li>Учебные проекты (понятен, легко отладить)</li>
+                </ul>
+            </div>
+            <div class="card warn">
+                <strong>Лучше взять другое:</strong>
+                <ul>
+                    <li>Карта меняется на лету → <strong>D* Lite</strong></li>
+                    <li>Нужны плавные траектории → <strong>Theta*</strong> или <strong>Hybrid A*</strong></li>
+                    <li>Огромное пространство → <strong>RRT/PRM</strong></li>
+                    <li>Однородная сетка и нужна скорость → <strong>JPS</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="guide.html">&larr; Основная документация</a>
+            <a href="algo-2-dijkstra.html">Dijkstra &rarr;</a>
+        </div>
+    </div>
+</body>
+</html>

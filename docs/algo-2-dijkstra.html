@@ -190,7 +190,7 @@
         <!-- ============ ПРИМЕР ============ -->
         <h2>Пример — разбор по шагам</h2>
 
-        <p>Та же сетка 5×5, те же стены. Но теперь без эвристики — Dijkstra знает только $g$ (расстояние от старта). Сравни с <a href="algo-1-astar.html" style="color:var(--accent)">визуализацией A*</a> — разница в паттерне исследования драматическая.</p>
+        <p>Та же сетка 5×5, те же стены, движение по 8 направлениям (прямой ход = 1, диагональный = $\sqrt{2} \approx 1.41$). Но теперь без эвристики — Dijkstra знает только $g$ (расстояние от старта). Сравни с <a href="algo-1-astar.html" style="color:var(--accent)">визуализацией A*</a> — разница в паттерне исследования драматическая.</p>
 
         <p>В каждой клетке — значение $g$ (расстояние от старта). Оранжевая цифра — порядок обработки. Заметь, как «волна» расходится <strong>равномерно</strong> от старта.</p>
 
@@ -205,58 +205,58 @@
         <div class="grid-viz">
             <!-- Ряд 0: Dijkstra расширяется кругами от старта -->
             <div class="cell start path"><span class="ord">#1</span><span class="lbl">S</span><span class="vals"><b>g=0</b></span></div>
-            <div class="cell explored"><span class="ord">#3</span><span class="vals"><b>g=1</b></span></div>
-            <div class="cell explored"><span class="ord">#6</span><span class="vals"><b>g=2</b></span></div>
-            <div class="cell explored"><span class="ord">#10</span><span class="vals"><b>g=3</b></span></div>
-            <div class="cell explored"><span class="ord">#15</span><span class="vals"><b>g=4</b></span></div>
+            <div class="cell explored"><span class="ord">#2</span><span class="vals"><b>g=1.0</b></span></div>
+            <div class="cell explored"><span class="ord">#5</span><span class="vals"><b>g=2.0</b></span></div>
+            <div class="cell explored"><span class="ord">#8</span><span class="vals"><b>g=3.0</b></span></div>
+            <div class="cell explored"><span class="ord">#13</span><span class="vals"><b>g=4.0</b></span></div>
 
             <!-- Ряд 1 -->
-            <div class="cell path explored"><span class="ord">#2</span><span class="vals"><b>g=1</b></span></div>
-            <div class="cell path explored"><span class="ord">#5</span><span class="vals"><b>g=2</b></span></div>
+            <div class="cell explored"><span class="ord">#3</span><span class="vals"><b>g=1.0</b></span></div>
+            <div class="cell path explored"><span class="ord">#4</span><span class="vals"><b>g=1.41</b></span></div>
             <div class="cell wall"></div>
-            <div class="cell explored"><span class="ord">#14</span><span class="vals"><b>g=4</b></span></div>
-            <div class="cell explored"><span class="ord">#18</span><span class="vals"><b>g=5</b></span></div>
+            <div class="cell explored"><span class="ord">#10</span><span class="vals"><b>g=3.41</b></span></div>
+            <div class="cell explored"><span class="ord">#15</span><span class="vals"><b>g=4.41</b></span></div>
 
             <!-- Ряд 2 -->
-            <div class="cell explored"><span class="ord">#4</span><span class="vals"><b>g=2</b></span></div>
-            <div class="cell path explored"><span class="ord">#7</span><span class="vals"><b>g=3</b></span></div>
+            <div class="cell explored"><span class="ord">#6</span><span class="vals"><b>g=2.0</b></span></div>
+            <div class="cell path explored"><span class="ord">#7</span><span class="vals"><b>g=2.41</b></span></div>
             <div class="cell wall"></div>
-            <div class="cell explored"><span class="ord">#17</span><span class="vals"><b>g=5</b></span></div>
-            <div class="cell explored"><span class="ord">#20</span><span class="vals"><b>g=6</b></span></div>
+            <div class="cell explored"><span class="ord">#17</span><span class="vals"><b>g=4.41</b></span></div>
+            <div class="cell explored"><span class="ord">#18</span><span class="vals"><b>g=4.83</b></span></div>
 
             <!-- Ряд 3 -->
-            <div class="cell explored"><span class="ord">#8</span><span class="vals"><b>g=3</b></span></div>
-            <div class="cell path explored"><span class="ord">#9</span><span class="vals"><b>g=4</b></span></div>
-            <div class="cell path explored"><span class="ord">#12</span><span class="vals"><b>g=5</b></span></div>
-            <div class="cell path explored"><span class="ord">#16</span><span class="vals"><b>g=6</b></span></div>
-            <div class="cell path explored"><span class="ord">#19</span><span class="vals"><b>g=7</b></span></div>
+            <div class="cell explored"><span class="ord">#9</span><span class="vals"><b>g=3.0</b></span></div>
+            <div class="cell explored"><span class="ord">#11</span><span class="vals"><b>g=3.41</b></span></div>
+            <div class="cell path explored"><span class="ord">#12</span><span class="vals"><b>g=3.83</b></span></div>
+            <div class="cell path explored"><span class="ord">#19</span><span class="vals"><b>g=4.83</b></span></div>
+            <div class="cell explored"><span class="ord">#22</span><span class="vals"><b>g=5.83</b></span></div>
 
             <!-- Ряд 4 -->
-            <div class="cell explored"><span class="ord">#11</span><span class="vals"><b>g=4</b></span></div>
-            <div class="cell explored"><span class="ord">#13</span><span class="vals"><b>g=5</b></span></div>
-            <div class="cell explored"><span class="ord">#16</span><span class="vals"><b>g=6</b></span></div>
-            <div class="cell explored"><span class="ord">#21</span><span class="vals"><b>g=7</b></span></div>
-            <div class="cell goal path"><span class="ord">#22</span><span class="lbl">G</span><span class="vals"><b>g=8</b></span></div>
+            <div class="cell explored"><span class="ord">#14</span><span class="vals"><b>g=4.0</b></span></div>
+            <div class="cell explored"><span class="ord">#16</span><span class="vals"><b>g=4.41</b></span></div>
+            <div class="cell explored"><span class="ord">#20</span><span class="vals"><b>g=4.83</b></span></div>
+            <div class="cell explored"><span class="ord">#21</span><span class="vals"><b>g=5.24</b></span></div>
+            <div class="cell goal path"><span class="ord">#23</span><span class="lbl">G</span><span class="vals"><b>g=6.24</b></span></div>
         </div>
 
         <h3>Что здесь видно — и чем это отличается от A*</h3>
 
-        <p>Посмотри на порядок обработки. Dijkstra идёт <strong>концентрическими кольцами</strong> от старта:</p>
+        <p>Посмотри на порядок обработки. Dijkstra идёт <strong>концентрическими кольцами</strong> от старта, но теперь кольца — не ровные круги (диагональные ходы стоят $\sqrt{2} \approx 1.41$, а прямые — 1):</p>
         <ul>
-            <li><strong>Кольцо g=1:</strong> клетки (1,0) и (0,1) — шаг 2 и 3</li>
-            <li><strong>Кольцо g=2:</strong> клетки (2,0), (1,1), (0,2) — шаги 4, 5, 6</li>
-            <li><strong>Кольцо g=3:</strong> клетки (3,0), (2,1), (0,3) — шаги 7, 8, 9, 10</li>
-            <li>И так далее...</li>
+            <li><strong>g=1.0:</strong> прямые соседи (0,1) и (1,0) — шаги #2–#3</li>
+            <li><strong>g=1.41:</strong> диагональный (1,1) — шаг #4</li>
+            <li><strong>g=2.0:</strong> (0,2) и (2,0) — шаги #5–#6</li>
+            <li><strong>g=2.41:</strong> (2,1) — шаг #7, и так далее...</li>
         </ul>
 
-        <p>Ему <strong>всё равно</strong>, что цель — в правом нижнем углу. Он одинаково усердно исследует и верхний правый угол (клетки (0,3), (0,4) — бесполезны!), и нижний левый (клетки (3,0), (4,0) — тоже мимо).</p>
+        <p>Ему <strong>всё равно</strong>, что цель — в правом нижнем углу. Он одинаково усердно исследует и верхний правый угол ((0,3), (0,4) — бесполезны!), и нижний левый ((3,0), (4,0) — тоже мимо).</p>
 
         <div class="card warn">
-            <p><strong>Сравнение:</strong> A* проверил <strong>14 клеток</strong>. Dijkstra проверил <strong>22 клетки</strong> (все проходимые, кроме одной). На этой крошечной сетке разница — 8 лишних клеток. На карте 100×100 это будут тысячи лишних проверок, на 1000×1000 — сотни тысяч.</p>
+            <p><strong>Сравнение:</strong> A* проверил <strong>9 клеток</strong>. Dijkstra проверил <strong>все 23</strong> проходимых клетки. Разница — в 2.5 раза. На карте 100×100 это будут тысячи лишних проверок, на 1000×1000 — сотни тысяч.</p>
         </div>
 
         <div class="card success">
-            <p><strong>Но путь — тот же!</strong> Длина = 8 шагов, маршрут идентичен A*. Dijkstra находит тот же оптимальный путь, просто тратит больше времени на «лишнюю работу».</p>
+            <p><strong>Но путь — тот же!</strong> Стоимость = $3\sqrt{2} + 2 \approx 6.24$, маршрут идентичен A*: S → (1,1) → (2,1) → (3,2) → (3,3) → G. Dijkstra находит тот же оптимальный путь, просто тратит больше времени на «лишнюю работу».</p>
         </div>
 
         <div class="analogy">Dijkstra — как искать ключи в тёмной комнате, ощупывая пол кругами от центра. A* — как искать ключи, зная, что они упали «где-то у двери». Оба найдут, но второй — быстрее.</div>
@@ -331,7 +331,7 @@
                 <strong>Время</strong>
                 <div class="formula-block" style="margin:12px 0">$$O((V + E) \cdot \log V)$$</div>
                 <p>С бинарной кучей (стандартный <code>priority_queue</code> в C++). $V$ — вершины, $E$ — рёбра.</p>
-                <p style="margin-top:8px">На сетке $N \times N$: $V = N^2$, $E \leq 4N^2$, итого <strong>$O(N^2 \log N)$</strong>.</p>
+                <p style="margin-top:8px">На сетке $N \times N$: $V = N^2$, $E \leq 8N^2$, итого <strong>$O(N^2 \log N)$</strong>.</p>
                 <p style="margin-top:8px;color:var(--text2)">Формально — такая же, как у A*. Но A* проверяет меньше клеток на практике, потому что эвристика отсекает бесперспективные направления.</p>
             </div>
             <div class="card">
@@ -364,7 +364,7 @@
         </div>
 
         <div class="card warn">
-            <p><strong>Для проекта:</strong> если твоя сетка имеет одинаковую стоимость всех переходов (1 для прямого хода, без диагоналей), можно не заморачиваться с Dijkstra и использовать BFS — он проще и быстрее. Dijkstra нужен, когда переходы имеют разную стоимость (например, 1 для прямого хода и $\sqrt{2}$ для диагонального, или разные «цены» для разных типов поверхности).</p>
+            <p><strong>Для проекта:</strong> если твоя сетка допускает только 4 направления с одинаковой стоимостью, можно не заморачиваться с Dijkstra и использовать BFS — он проще и быстрее. Но на 8-связной сетке (прямой ход = 1, диагональный = $\sqrt{2}$) стоимости уже разные — тут BFS не годится, нужен Dijkstra или A*.</p>
         </div>
 
         <!-- ============ ПЛЮСЫ/МИНУСЫ ============ -->

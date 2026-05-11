@@ -271,7 +271,13 @@
 
         <!-- ============ АНИМАЦИЯ ============ -->
         <h2>Анимация: волна Dijkstra</h2>
-        <p>Смотри, как Dijkstra расширяется <em>равномерно</em> от старта, не зная, где цель. Каждая «волна» — клетки с одинаковым (или близким) g. Сравни с A*, который сфокусирован на цели.</p>
+        <p>Dijkstra на каждом шаге достаёт из очереди клетку с <strong>наименьшим g</strong> (кратчайшее известное расстояние от старта). Он не знает, где цель — поэтому волна расходится <em>равномерно</em> во все стороны.</p>
+
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;font-size:.82em;color:var(--text2)">
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:4px;background:rgba(251,146,60,.25);border:2px solid var(--orange)"></span> Достали из очереди (обрабатываем)</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:4px;background:rgba(108,158,255,.12);border:1px solid rgba(108,158,255,.3)"></span> Обработана (финальный g)</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:4px;background:rgba(74,222,128,.2);border:2px solid rgba(74,222,128,.6)"></span> Итоговый путь</span>
+        </div>
 
         <div class="card" style="padding:28px 20px">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
@@ -280,19 +286,21 @@
                 <button id="dj-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
                 <span id="dj-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 0 / 23</span>
             </div>
-            <div style="position:relative;max-width:380px;margin:0 auto 16px">
-                <div id="dj-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
+            <div style="position:relative;max-width:460px;margin:0 auto 12px">
+                <div id="dj-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px"></div>
                 <svg id="dj-svg" viewBox="0 0 100 100" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" preserveAspectRatio="none"></svg>
             </div>
-            <div id="dj-desc" class="card highlight" style="margin-top:8px;font-size:.95em;min-height:60px"></div>
+            <div id="dj-info" style="display:flex;gap:16px;flex-wrap:wrap;margin:8px 0;font-size:.85em">
+                <div id="dj-queue" style="flex:1;background:rgba(108,158,255,.06);border:1px solid rgba(108,158,255,.15);border-radius:8px;padding:8px 12px;min-height:32px;color:var(--text2)"></div>
+                <div id="dj-stats" style="background:rgba(251,146,60,.06);border:1px solid rgba(251,146,60,.15);border-radius:8px;padding:8px 12px;white-space:nowrap;color:var(--orange);font-weight:600"></div>
+            </div>
+            <div id="dj-desc" class="card highlight" style="margin-top:8px;font-size:.93em;min-height:70px;line-height:1.6"></div>
         </div>
 
         <script>
         (function(){
             const walls=[[1,2],[2,2]];
             const isWall=(r,c)=>walls.some(w=>w[0]===r&&w[1]===c);
-
-            // g values for each cell
             const gvals={
                 '0,0':0,'0,1':1,'0,2':2,'0,3':3,'0,4':4,
                 '1,0':1,'1,1':1.41,'1,3':3.41,'1,4':4.41,
@@ -300,8 +308,6 @@
                 '3,0':3,'3,1':3.41,'3,2':3.83,'3,3':4.83,'3,4':5.83,
                 '4,0':4,'4,1':4.41,'4,2':4.83,'4,3':5.24,'4,4':6.24
             };
-
-            // Expansion order: [row,col] for each step
             const order=[
                 [0,0],[0,1],[1,0],[1,1],[0,2],[2,0],[2,1],
                 [0,3],[3,0],[1,3],[3,1],[3,2],
@@ -309,32 +315,34 @@
                 [2,4],[3,3],[4,2],[4,3],
                 [3,4],[4,4]
             ];
+            function lbl(r,c){return r===0&&c===0?'S':r===4&&c===4?'G':'('+r+','+c+')';}
+            function gv(r,c){const v=gvals[r+','+c];return v!==undefined?v:'?';}
 
             const descriptions=[
-                '<b>Инициализация.</b> Старт S(0,0) помещён в очередь с g = 0.',
-                '<b>#1: (0,0)</b> g=0. Раскрываем старт. 3 соседа: (0,1) g=1, (1,0) g=1, (1,1) g=1.41.',
-                '<b>#2: (0,1)</b> g=1. Первое кольцо. Волна начинает расходиться вправо.',
-                '<b>#3: (1,0)</b> g=1. Первое кольцо. Волна расходится и вниз — равномерно.',
-                '<b>#4: (1,1)</b> g=1.41. Диагональный сосед старта. Видит стену (1,2) — путь вправо заблокирован.',
-                '<b>#5: (0,2)</b> g=2. Второе кольцо начинается. Dijkstra уходит вправо — хотя цель внизу-справа.',
-                '<b>#6: (2,0)</b> g=2. Второе кольцо. Волна идёт и вниз по левому краю — в стороне от цели.',
-                '<b>#7: (2,1)</b> g=2.41. Перед стеной. Дальше вправо нельзя — (2,2) стена.',
-                '<b>#8: (0,3)</b> g=3. Третье кольцо. Dijkstra упорно исследует верхний ряд — бесполезно, но он не знает.',
-                '<b>#9: (3,0)</b> g=3. Третье кольцо. Левый край — тоже бесполезно. Вот цена отсутствия эвристики.',
-                '<b>#10: (1,3)</b> g=3.41. Наконец-то правее стены! Но Dijkstra дошёл сюда через верх.',
-                '<b>#11: (3,1)</b> g=3.41. Волна обходит стену снизу.',
-                '<b>#12: (3,2)</b> g=3.83. Стена обойдена снизу. Путь к цели открывается.',
-                '<b>#13: (0,4)</b> g=4. Четвёртое кольцо. Правый верхний угол — максимально далеко от цели.',
-                '<b>#14: (4,0)</b> g=4. Левый нижний угол — тоже бесполезно.',
-                '<b>#15: (1,4)</b> g=4.41. Продолжаем заливать правый верх.',
-                '<b>#16: (4,1)</b> g=4.41. Нижний ряд заполняется.',
-                '<b>#17: (2,3)</b> g=4.41. Правее стены, но через верх — длинный обход.',
-                '<b>#18: (2,4)</b> g=4.83. Ещё правый край.',
-                '<b>#19: (3,3)</b> g=4.83. Наконец ближе к цели! Но мы уже проверили 19 клеток...',
-                '<b>#20: (4,2)</b> g=4.83. Нижний ряд.',
-                '<b>#21: (4,3)</b> g=5.24. Почти у цели.',
-                '<b>#22: (3,4)</b> g=5.83. Предпоследняя клетка.',
-                '<b>#23: ЦЕЛЬ НАЙДЕНА!</b> G(4,4) g=6.24. Путь: S→(1,1)→(2,1)→(3,2)→(3,3)→G. Тот же путь, что у A*, но проверено <b>все 23 клетки</b> вместо 9.'
+                '<b>Старт.</b> Кладём S(0,0) в очередь с g=0. У всех остальных клеток g=∞ (бесконечность — мы пока не знаем, как до них добраться).',
+                '<b>#1: достаём S(0,0)</b>, g=0 — наименьший. Смотрим соседей: (0,1) → g=0+1=1, (1,0) → g=0+1=1, (1,1) → g=0+√2=1.41. Все три добавлены в очередь.',
+                '<b>#2: достаём (0,1)</b>, g=1. Сосед (0,2) → g=1+1=2. Dijkstra уже пошёл вправо, хотя цель внизу-справа. Ему всё равно — он не знает, где цель.',
+                '<b>#3: достаём (1,0)</b>, g=1. Сосед (2,0) → g=1+1=2. Волна идёт вниз по левому краю. Тоже мимо цели.',
+                '<b>#4: достаём (1,1)</b>, g=1.41. Видит стену (1,2) и (2,2). Сосед (2,1) → g=1.41+1=2.41. Стена блокирует прямой путь к цели.',
+                '<b>#5: достаём (0,2)</b>, g=2. Второе кольцо. Сосед (0,3) → g=2+1=3. Dijkstra продолжает заливать верхний ряд — бесполезно.',
+                '<b>#6: достаём (2,0)</b>, g=2. Второе кольцо. Сосед (3,0) → g=2+1=3. Левый край — в стороне от цели.',
+                '<b>#7: достаём (2,1)</b>, g=2.41. Стена (2,2) справа. Но есть сосед (3,2) → g=2.41+√2=3.83 и (3,1) → g=2.41+1=3.41.',
+                '<b>#8: достаём (0,3)</b>, g=3. Третье кольцо. Верхний ряд — далеко от цели. A* сюда бы не пошёл.',
+                '<b>#9: достаём (3,0)</b>, g=3. Третье кольцо. Левый нижний край. Полностью бесполезная работа.',
+                '<b>#10: достаём (1,3)</b>, g=3.41. Наконец правее стены! Сосед (2,3) → g=3.41+1=4.41. Но через верх — длинный обход.',
+                '<b>#11: достаём (3,1)</b>, g=3.41. Волна обходит стену снизу. Сосед (4,1) → g=3.41+1=4.41.',
+                '<b>#12: достаём (3,2)</b>, g=3.83. Стена обойдена снизу! (3,3) → g=3.83+1=4.83, (4,3) → g=3.83+√2=5.24. Путь к цели открыт, но Dijkstra ещё не знает.',
+                '<b>#13: достаём (0,4)</b>, g=4. Правый верхний угол — максимально далеко от G. Пустая трата.',
+                '<b>#14: достаём (4,0)</b>, g=4. Левый нижний угол. 14 клеток проверено, а мы ещё не подобрались к цели.',
+                '<b>#15: достаём (1,4)</b>, g=4.41. Правый верх.',
+                '<b>#16: достаём (4,1)</b>, g=4.41. Нижний ряд.',
+                '<b>#17: достаём (2,3)</b>, g=4.41. Правее стены.',
+                '<b>#18: достаём (2,4)</b>, g=4.83.',
+                '<b>#19: достаём (3,3)</b>, g=4.83. Два шага до цели! Но мы проверили уже 19 клеток. A* бы уже закончил на шаге 9.',
+                '<b>#20: достаём (4,2)</b>, g=4.83. Нижний ряд.',
+                '<b>#21: достаём (4,3)</b>, g=5.24. Соседняя с целью. (4,4) → g=5.24+1=6.24.',
+                '<b>#22: достаём (3,4)</b>, g=5.83.',
+                '<b>#23: достаём G(4,4)</b>, g=6.24. <span style="color:var(--green)"><b>ЦЕЛЬ!</b></span> Путь: <b>S→(1,1)→(2,1)→(3,2)→(3,3)→G</b>. Тот же путь, что у A*, но проверено <b>все 23 клетки</b> вместо 9.'
             ];
 
             const pathCells=[[0,0],[1,1],[2,1],[3,2],[3,3],[4,4]];
@@ -344,36 +352,68 @@
             const grid=document.getElementById('dj-grid');
             const svg=document.getElementById('dj-svg');
             const desc=document.getElementById('dj-desc');
+            const queueDiv=document.getElementById('dj-queue');
+            const statsDiv=document.getElementById('dj-stats');
             const counter=document.getElementById('dj-counter');
 
             function render(step){
-                // closed = order[0..step-1], current = order[step-1] if step>0
                 const closed=order.slice(0,step);
                 const currentCell=step>0?order[step-1]:null;
                 const isFinal=step===order.length;
+
                 let h='';
-                for(let r=0;r<5;r++)for(let c=0;c<5;c++){
-                    if(isWall(r,c)){h+='<div style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);border-radius:6px;min-height:50px;display:flex;align-items:center;justify-content:center;font-size:.75em;color:var(--red)">▓</div>';continue;}
+                for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+                    if(isWall(r,c)){
+                        h+='<div style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);border-radius:6px;min-height:60px;display:flex;align-items:center;justify-content:center;font-size:.8em;color:var(--red)">▓</div>';
+                        continue;
+                    }
+                    const key=r+','+c;
                     const isCur=currentCell&&currentCell[0]===r&&currentCell[1]===c;
                     const isClosed=closed.some(x=>x[0]===r&&x[1]===c);
                     const isPath=isFinal&&pathCells.some(x=>x[0]===r&&x[1]===c);
-                    let bg='var(--card)',border='1px solid var(--border)';
-                    if(isPath){bg='rgba(74,222,128,.15)';border='2px solid rgba(74,222,128,.5)';}
-                    else if(isCur){bg='rgba(108,158,255,.3)';border='2px solid var(--accent)';}
-                    else if(isClosed){bg='rgba(108,158,255,.1)';border='1px solid rgba(108,158,255,.3)';}
-                    let lbl='';
-                    if(r===0&&c===0)lbl='<span style="font-weight:700;font-size:.9em">S</span>';
-                    else if(r===4&&c===4)lbl='<span style="font-weight:700;font-size:.9em">G</span>';
-                    const gv=gvals[r+','+c];
-                    const vt=isClosed&&gv!==undefined?'<span style="color:var(--text2);font-size:.7em">g='+gv+'</span>':'';
-                    h+='<div style="background:'+bg+';border:'+border+';border-radius:6px;min-height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8em;color:var(--text)">'+lbl+vt+'</div>';
+                    const known=isCur||isClosed;
+
+                    let bg,border;
+                    if(isPath){bg='rgba(74,222,128,.2)';border='2px solid rgba(74,222,128,.6)';}
+                    else if(isCur){bg='rgba(251,146,60,.2)';border='2px solid var(--orange)';}
+                    else if(isClosed){bg='rgba(108,158,255,.08)';border='1px solid rgba(108,158,255,.25)';}
+                    else{bg='var(--card)';border='1px solid var(--border)';}
+
+                    let inner='';
+                    if(r===0&&c===0) inner+='<div style="font-weight:700;font-size:.95em;color:var(--accent)">S</div>';
+                    else if(r===4&&c===4) inner+='<div style="font-weight:700;font-size:.95em;color:var(--accent2)">G</div>';
+
+                    if(known && gvals[key]!==undefined){
+                        inner+='<div style="font-size:.8em;font-weight:700;color:'+(isPath?'var(--green)':isCur?'var(--orange)':'var(--text2)')+'">g='+gvals[key]+'</div>';
+                    }
+
+                    h+='<div style="background:'+bg+';border:'+border+';border-radius:6px;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px">'+inner+'</div>';
                 }
                 grid.innerHTML=h;
+
+                // SVG
                 let svgH='';
-                if(isFinal){
-                    svgH='<polyline points="'+pathPts+'" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>';
-                }
+                if(isFinal) svgH='<polyline points="'+pathPts+'" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>';
                 svg.innerHTML=svgH;
+
+                // Stats
+                statsDiv.textContent=step+' / 23 клеток';
+
+                // Remaining queue (simplified — show next few)
+                if(step<order.length){
+                    const remaining=order.slice(step);
+                    const show=remaining.slice(0,6);
+                    let qh='<span style="color:var(--accent);font-weight:600">Очередь:</span> ';
+                    qh+=show.map((x,i)=>{
+                        const style=i===0?'color:var(--orange);font-weight:700':'';
+                        return '<span style="'+style+'">'+lbl(x[0],x[1])+' <span style="opacity:.6">g='+gv(x[0],x[1])+'</span></span>';
+                    }).join(', ');
+                    if(remaining.length>6) qh+=' <span style="opacity:.5">... ещё '+(remaining.length-6)+'</span>';
+                    queueDiv.innerHTML=qh;
+                } else {
+                    queueDiv.innerHTML='<span style="color:var(--green);font-weight:600">Очередь пуста — все клетки обработаны</span>';
+                }
+
                 desc.innerHTML=descriptions[step];
                 counter.textContent='Шаг '+step+' / '+order.length;
             }
@@ -386,7 +426,7 @@
                 this.textContent='⏸ Pause';cur=0;render(0);
                 timer=setInterval(()=>{cur++;render(cur);
                     if(cur>=order.length){clearInterval(timer);timer=null;document.getElementById('dj-play').textContent='▶ Play';}
-                },800);
+                },1000);
             };
         })();
         </script>

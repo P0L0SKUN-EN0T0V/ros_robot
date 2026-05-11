@@ -307,7 +307,14 @@
 
         <!-- ============ АНИМАЦИЯ ============ -->
         <h2>Анимация: A* шаг за шагом</h2>
-        <p>Смотри, как A* исследует сетку. Синие клетки — в OPEN (кандидаты), зелёные — обработаны (CLOSED), яркая рамка — текущая клетка.</p>
+        <p>На каждом шаге A* достаёт из очереди OPEN клетку с <strong>наименьшим f</strong>, смотрит её соседей и добавляет новых кандидатов. Клетка в каждой ячейке показывает <code>g + h = f</code>.</p>
+
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;font-size:.82em;color:var(--text2)">
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:4px;background:rgba(251,146,60,.25);border:2px solid var(--orange)"></span> Достали из OPEN (обрабатываем)</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:4px;background:rgba(167,139,250,.15);border:2px solid rgba(167,139,250,.5)"></span> В очереди OPEN (кандидат)</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:4px;background:rgba(108,158,255,.12);border:1px solid rgba(108,158,255,.3)"></span> CLOSED (обработана, не вернёмся)</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:16px;border-radius:4px;background:rgba(74,222,128,.2);border:2px solid rgba(74,222,128,.6)"></span> Итоговый путь</span>
+        </div>
 
         <div class="card" style="padding:28px 20px">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
@@ -316,54 +323,92 @@
                 <button id="as-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
                 <span id="as-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 0 / 9</span>
             </div>
-            <div style="position:relative;max-width:380px;margin:0 auto 16px">
-                <div id="as-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
+            <div style="position:relative;max-width:460px;margin:0 auto 12px">
+                <div id="as-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px"></div>
                 <svg id="as-svg" viewBox="0 0 100 100" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" preserveAspectRatio="none"></svg>
             </div>
-            <div id="as-desc" class="card highlight" style="margin-top:8px;font-size:.95em;min-height:60px"></div>
+            <div id="as-open" style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:.85em;color:var(--text2);min-height:36px"></div>
+            <div id="as-desc" class="card highlight" style="margin-top:8px;font-size:.93em;min-height:70px;line-height:1.6"></div>
         </div>
 
         <script>
         (function(){
-            const W=null; // wall
-            // Grid: 0=free, null=wall
-            // Each step: {current:[r,c], open:[[r,c],...], closed:[[r,c],...], desc:string}
-            // A* expansion order: #1:(0,0) #2:(1,1) #3:(0,1) #4:(1,0) #5:(2,1) #6:(3,2) #7:(3,3) #8:(4,3) #9:(4,4)
             const walls=[[1,2],[2,2]];
             const isWall=(r,c)=>walls.some(w=>w[0]===r&&w[1]===c);
 
-            // f values for display
-            const fvals={
-                '0,0':'f=5.66','0,1':'f=6.24','0,2':'f=6.83','0,3':'','0,4':'',
-                '1,0':'f=6.24','1,1':'f=5.66','1,2':'','1,3':'','1,4':'',
-                '2,0':'','2,1':'f=6.24','2,2':'','2,3':'','2,4':'',
-                '3,0':'','3,1':'','3,2':'f=6.24','3,3':'f=6.24','3,4':'',
-                '4,0':'','4,1':'','4,2':'','4,3':'f=6.24','4,4':'f=6.24'
+            // Cell data: g, h, f for display
+            const D={
+                '0,0':{g:0,h:5.66,f:5.66},
+                '0,1':{g:1,h:5.24,f:6.24},
+                '1,0':{g:1,h:5.24,f:6.24},
+                '1,1':{g:1.41,h:4.24,f:5.66},
+                '0,2':{g:2,h:4.83,f:6.83},
+                '2,0':{g:2,h:4.83,f:6.83},
+                '2,1':{g:2.41,h:3.83,f:6.24},
+                '3,0':{g:3,h:4.41,f:7.41},
+                '3,1':{g:3.41,h:3.41,f:6.83},
+                '3,2':{g:3.83,h:2.41,f:6.24},
+                '3,3':{g:4.83,h:1.41,f:6.24},
+                '4,1':{g:4.41,h:3,f:7.41},
+                '4,3':{g:5.24,h:1,f:6.24},
+                '2,3':{g:4.41,h:2.41,f:6.83},
+                '4,4':{g:6.24,h:0,f:6.24}
             };
 
+            // Steps: each has current cell, open list (sorted by f), closed set, description
+            // open list items: [r,c,f] for display; sorted by f ascending
             const steps=[
-                {cur:null,open:[[0,0]],closed:[],
-                 desc:'<b>Инициализация.</b> Старт S(0,0) помещён в OPEN с f = 0 + 5.66 = 5.66.'},
-                {cur:[0,0],open:[[1,1],[0,1],[1,0]],closed:[[0,0]],
-                 desc:'<b>Шаг 1:</b> Раскрываем S(0,0). 8 соседей → 3 проходимых: (1,1) с f=5.66, (0,1) и (1,0) с f=6.24. Диагональный (1,1) — лучший кандидат.'},
-                {cur:[1,1],open:[[0,1],[1,0],[2,1],[2,0],[0,2]],closed:[[0,0],[1,1]],
-                 desc:'<b>Шаг 2:</b> Раскрываем (1,1), f=5.66. Стена справа (1,2) и (2,2). Новый сосед (2,1) с f=6.24 — единственный путь вниз.'},
-                {cur:[0,1],open:[[1,0],[2,1],[2,0],[0,2]],closed:[[0,0],[1,1],[0,1]],
-                 desc:'<b>Шаг 3:</b> Раскрываем (0,1), f=6.24. Все соседи уже известны или стены. Ничего нового — тупиковая ветка.'},
-                {cur:[1,0],open:[[2,1],[2,0],[0,2]],closed:[[0,0],[1,1],[0,1],[1,0]],
-                 desc:'<b>Шаг 4:</b> Раскрываем (1,0), f=6.24. Аналогично — ничего нового. A* проверил оба прямых соседа и убедился, что диагональ выгоднее.'},
-                {cur:[2,1],open:[[3,2],[2,0],[0,2],[3,1],[3,0]],closed:[[0,0],[1,1],[0,1],[1,0],[2,1]],
-                 desc:'<b>Шаг 5:</b> Раскрываем (2,1), f=6.24. Стена (2,2) блокирует путь вправо. Обходим снизу — сосед (3,2) с f=6.24.'},
-                {cur:[3,2],open:[[3,3],[2,0],[0,2],[3,1],[3,0],[4,3],[4,1]],closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2]],
-                 desc:'<b>Шаг 6:</b> Раскрываем (3,2), f=6.24. Стена обойдена! Появляется (3,3) с f=6.24 и (4,3) с f=6.24 — оба ведут к цели.'},
-                {cur:[3,3],open:[[2,0],[0,2],[3,1],[3,0],[4,3],[4,1],[4,4],[2,3]],closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3]],
-                 desc:'<b>Шаг 7:</b> Раскрываем (3,3), f=6.24. Появляется цель (4,4) с f=6.24! Она добавлена в OPEN.'},
-                {cur:[4,3],open:[[2,0],[0,2],[3,1],[3,0],[4,1],[4,4],[2,3]],closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3],[4,3]],
-                 desc:'<b>Шаг 8:</b> Раскрываем (4,3), f=6.24. (4,4) уже в OPEN — проверяем, не лучше ли путь через (4,3). Нет, стоимости равны.'},
-                {cur:[4,4],open:[],closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3],[4,3],[4,4]],
-                 desc:'<b>Шаг 9: ЦЕЛЬ НАЙДЕНА!</b> Извлекаем G(4,4) из OPEN. Восстанавливаем путь: S→(1,1)→(2,1)→(3,2)→(3,3)→G. Стоимость: 3√2 + 2 ≈ 6.24.'}
+                {cur:null,
+                 open:[[0,0,5.66]],
+                 closed:[],
+                 desc:'<b>Старт.</b> Кладём S(0,0) в очередь OPEN. Считаем: g=0 (ничего не прошли), h=5.66 (октильная оценка до G), <b>f = 0 + 5.66 = 5.66</b>.'},
+
+                {cur:[0,0],
+                 open:[[1,1,5.66],[0,1,6.24],[1,0,6.24]],
+                 closed:[[0,0]],
+                 desc:'<b>Шаг 1: достаём (0,0)</b> — у неё наименьший f=5.66. Смотрим 8 соседей: (0,1) и (1,0) — прямые, стоимость 1. (1,1) — диагональ, стоимость √2≈1.41. Считаем f для каждого и кладём в OPEN. Клетку (0,0) перемещаем в CLOSED — к ней больше не вернёмся.'},
+
+                {cur:[1,1],
+                 open:[[2,1,6.24],[0,1,6.24],[1,0,6.24],[0,2,6.83],[2,0,6.83]],
+                 closed:[[0,0],[1,1]],
+                 desc:'<b>Шаг 2: достаём (1,1)</b> — f=5.66, лучший в OPEN. Соседи: (1,2) и (2,2) — <span style="color:var(--red)">стены, пропускаем</span>. (0,0) — в CLOSED, пропускаем. Новые: (2,1) f=6.24, (2,0) f=6.83, (0,2) f=6.83. Обновляем (0,1) и (1,0) — но их f не улучшился.'},
+
+                {cur:[0,1],
+                 open:[[2,1,6.24],[1,0,6.24],[0,2,6.83],[2,0,6.83]],
+                 closed:[[0,0],[1,1],[0,1]],
+                 desc:'<b>Шаг 3: достаём (0,1)</b> — f=6.24 (одна из нескольких с таким f). Все соседи уже в OPEN или CLOSED. Ничего нового — перемещаем в CLOSED.'},
+
+                {cur:[1,0],
+                 open:[[2,1,6.24],[0,2,6.83],[2,0,6.83]],
+                 closed:[[0,0],[1,1],[0,1],[1,0]],
+                 desc:'<b>Шаг 4: достаём (1,0)</b> — f=6.24. Тоже ничего нового. A* проверил оба прямых направления от старта и подтвердил: диагональный путь через (1,1) был лучшим выбором.'},
+
+                {cur:[2,1],
+                 open:[[3,2,6.24],[0,2,6.83],[2,0,6.83],[3,1,6.83],[3,0,7.41]],
+                 closed:[[0,0],[1,1],[0,1],[1,0],[2,1]],
+                 desc:'<b>Шаг 5: достаём (2,1)</b> — f=6.24. Сосед (2,2) — <span style="color:var(--red)">стена</span>. Но снизу открывается (3,2) с f=6.24 и (3,1) с f=6.83. Ключевой момент: <b>(3,2) обходит стену снизу</b>.'},
+
+                {cur:[3,2],
+                 open:[[3,3,6.24],[4,3,6.24],[0,2,6.83],[2,0,6.83],[3,1,6.83],[4,1,7.41],[3,0,7.41]],
+                 closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2]],
+                 desc:'<b>Шаг 6: достаём (3,2)</b> — f=6.24. Стена обойдена! Новые соседи: (3,3) с f=6.24 и (4,3) с f=6.24 — оба ведут к цели. A* не уходит в сторону, а продолжает к G.'},
+
+                {cur:[3,3],
+                 open:[[4,3,6.24],[4,4,6.24],[0,2,6.83],[2,0,6.83],[3,1,6.83],[2,3,6.83],[4,1,7.41],[3,0,7.41]],
+                 closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3]],
+                 desc:'<b>Шаг 7: достаём (3,3)</b> — f=6.24. Сосед (4,4) — это ЦЕЛЬ! Считаем: g = 4.83 + √2 = 6.24, h = 0, <b>f = 6.24</b>. Добавляем G в OPEN.'},
+
+                {cur:[4,3],
+                 open:[[4,4,6.24],[0,2,6.83],[2,0,6.83],[3,1,6.83],[2,3,6.83],[4,1,7.41],[3,0,7.41]],
+                 closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3],[4,3]],
+                 desc:'<b>Шаг 8: достаём (4,3)</b> — f=6.24 (равен с G). Проверяем путь к (4,4) через (4,3): g = 5.24 + 1 = 6.24 — <b>не лучше</b>, чем через (3,3). Не обновляем.'},
+
+                {cur:[4,4],
+                 open:[],
+                 closed:[[0,0],[1,1],[0,1],[1,0],[2,1],[3,2],[3,3],[4,3],[4,4]],
+                 desc:'<b>Шаг 9: достаём G(4,4)</b> — f=6.24. <span style="color:var(--green)"><b>ЦЕЛЬ!</b></span> Восстанавливаем путь по цепочке родителей: <b>S → (1,1) → (2,1) → (3,2) → (3,3) → G</b>. Стоимость 3√2 + 2 ≈ 6.24. Проверено всего 9 клеток из 23.'}
             ];
-            // Path cells for final highlight
+
             const pathCells=[[0,0],[1,1],[2,1],[3,2],[3,3],[4,4]];
             const pathPts='10,10 30,30 30,50 50,70 70,70 90,90';
 
@@ -371,34 +416,74 @@
             const grid=document.getElementById('as-grid');
             const svg=document.getElementById('as-svg');
             const desc=document.getElementById('as-desc');
+            const openDiv=document.getElementById('as-open');
             const counter=document.getElementById('as-counter');
+
+            function cellLabel(r,c){
+                if(r===0&&c===0) return 'S';
+                if(r===4&&c===4) return 'G';
+                return '('+r+','+c+')';
+            }
 
             function render(step){
                 const s=steps[step];
+                const isFinal=step===steps.length-1;
+                // Build grid
                 let h='';
-                for(let r=0;r<5;r++)for(let c=0;c<5;c++){
-                    let cls='',label='',val='';
-                    if(isWall(r,c)){h+='<div style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);border-radius:6px;min-height:50px;display:flex;align-items:center;justify-content:center;font-size:.75em;color:var(--red)">▓</div>';continue;}
+                for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+                    if(isWall(r,c)){
+                        h+='<div style="background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);border-radius:6px;min-height:68px;display:flex;align-items:center;justify-content:center;font-size:.8em;color:var(--red)">▓</div>';
+                        continue;
+                    }
+                    const key=r+','+c;
                     const isCur=s.cur&&s.cur[0]===r&&s.cur[1]===c;
                     const isClosed=s.closed.some(x=>x[0]===r&&x[1]===c);
                     const isOpen=s.open.some(x=>x[0]===r&&x[1]===c);
-                    const isPath=step===steps.length-1&&pathCells.some(x=>x[0]===r&&x[1]===c);
-                    let bg='var(--card)',border='1px solid var(--border)';
-                    if(isPath){bg='rgba(74,222,128,.15)';border='2px solid rgba(74,222,128,.5)';}
-                    else if(isCur){bg='rgba(108,158,255,.3)';border='2px solid var(--accent)';}
-                    else if(isClosed){bg='rgba(108,158,255,.1)';border='1px solid rgba(108,158,255,.3)';}
-                    else if(isOpen){bg='rgba(167,139,250,.12)';border='1px solid rgba(167,139,250,.4)';}
-                    let lbl='';
-                    if(r===0&&c===0)lbl='<span style="font-weight:700;font-size:.9em">S</span>';
-                    else if(r===4&&c===4)lbl='<span style="font-weight:700;font-size:.9em">G</span>';
-                    const fv=fvals[r+','+c];
-                    const vt=(isClosed||isOpen||isCur)&&fv?'<span style="color:var(--text2);font-size:.7em">'+fv+'</span>':'';
-                    h+='<div style="background:'+bg+';border:'+border+';border-radius:6px;min-height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8em;color:var(--text)">'+lbl+vt+'</div>';
+                    const isPath=isFinal&&pathCells.some(x=>x[0]===r&&x[1]===c);
+                    const known=isCur||isClosed||isOpen;
+
+                    let bg,border;
+                    if(isPath){bg='rgba(74,222,128,.2)';border='2px solid rgba(74,222,128,.6)';}
+                    else if(isCur){bg='rgba(251,146,60,.2)';border='2px solid var(--orange)';}
+                    else if(isOpen){bg='rgba(167,139,250,.12)';border='2px solid rgba(167,139,250,.4)';}
+                    else if(isClosed){bg='rgba(108,158,255,.08)';border='1px solid rgba(108,158,255,.25)';}
+                    else{bg='var(--card)';border='1px solid var(--border)';}
+
+                    let inner='';
+                    // Label
+                    if(r===0&&c===0) inner+='<div style="font-weight:700;font-size:.95em;color:var(--accent)">S</div>';
+                    else if(r===4&&c===4) inner+='<div style="font-weight:700;font-size:.95em;color:var(--accent2)">G</div>';
+
+                    // Show g+h=f when cell is known
+                    if(known && D[key]){
+                        const d=D[key];
+                        inner+='<div style="font-size:.68em;color:var(--text2);font-family:monospace;line-height:1.3">'+d.g+' + '+d.h+'</div>';
+                        inner+='<div style="font-size:.78em;font-weight:700;color:'+(isPath?'var(--green)':isCur?'var(--orange)':'var(--accent)')+'">f='+d.f+'</div>';
+                    }
+
+                    h+='<div style="background:'+bg+';border:'+border+';border-radius:6px;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px">'+inner+'</div>';
                 }
                 grid.innerHTML=h;
-                // SVG path on final step
+
+                // Open queue display
+                if(s.open.length>0){
+                    let ohtml='<span style="color:var(--accent2);font-weight:600">OPEN:</span> ';
+                    ohtml+=s.open.map((x,i)=>{
+                        const lbl=cellLabel(x[0],x[1]);
+                        const style=i===0?'color:var(--orange);font-weight:700':'';
+                        return '<span style="'+style+'">'+lbl+' <span style="opacity:.7">f='+x[2]+'</span></span>';
+                    }).join(' → ');
+                    if(s.open.length>0) ohtml+=' &nbsp;<span style="color:var(--text2);font-size:.85em">← следующий: '+cellLabel(s.open[0][0],s.open[0][1])+'</span>';
+                    openDiv.innerHTML=ohtml;
+                } else if(isFinal){
+                    openDiv.innerHTML='<span style="color:var(--green);font-weight:600">OPEN пуст — цель найдена!</span>';
+                } else {
+                    openDiv.innerHTML='<span style="color:var(--text2)">OPEN: пусто</span>';
+                }
+
+                // SVG
                 let svgH='';
-                if(step===steps.length-1){
+                if(isFinal){
                     svgH='<polyline points="'+pathPts+'" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>';
                 }
                 svg.innerHTML=svgH;
@@ -414,7 +499,7 @@
                 this.textContent='⏸ Pause';cur=0;render(0);
                 timer=setInterval(()=>{cur++;render(cur);
                     if(cur>=steps.length-1){clearInterval(timer);timer=null;document.getElementById('as-play').textContent='▶ Play';}
-                },1200);
+                },2500);
             };
         })();
         </script>

@@ -83,13 +83,17 @@
         @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
 
         /* RRT Animation */
-        .rrt-anim-wrap{max-width:620px;margin:24px auto}
+        .rrt-anim-wrap{max-width:660px;margin:24px auto}
         .rrt-anim-controls{display:flex;gap:8px;justify-content:center;align-items:center;margin:12px 0;flex-wrap:wrap}
         .rrt-anim-controls button{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:.9em;transition:all .2s}
         .rrt-anim-controls button:hover{border-color:var(--accent);color:var(--accent)}
         .rrt-anim-controls button.active{background:rgba(108,158,255,.15);border-color:var(--accent);color:var(--accent)}
         .rrt-anim-label{color:var(--text2);font-size:.85em;min-width:120px;text-align:center}
         .rrt-anim-desc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:10px 0;font-size:.88em;line-height:1.6;min-height:50px}
+        .rrt-legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:.82em;color:var(--text2)}
+        .rrt-legend span{display:flex;align-items:center;gap:5px}
+        .rrt-legend i{display:inline-block;width:12px;height:12px;border-radius:50%}
+        .rrt-legend i.sq{border-radius:2px}
     </style>
 </head>
 <body>
@@ -382,16 +386,23 @@
         <!-- ============ АНИМАЦИЯ ============ -->
         <h2>Пошаговая анимация RRT</h2>
 
-        <p>Смотри, как дерево растёт шаг за шагом. На каждом шаге: <span style="color:var(--orange)">случайная точка</span> → ближайший узел → новое ребро (если нет коллизии).</p>
+        <p>Смотри, как дерево растёт шаг за шагом. Каждая итерация RRT — это 4 действия: <strong>бросить</strong> случайную точку → найти <strong>ближайший</strong> узел → сделать <strong>шаг</strong> (steer) → проверить <strong>коллизию</strong>.</p>
 
         <div class="rrt-anim-wrap">
+            <div class="rrt-legend">
+                <span><i style="background:#6c9eff"></i> Узел дерева</span>
+                <span><i style="background:#fb923c"></i> Случайная точка</span>
+                <span><i style="background:#fbbf24"></i> Ближайший узел</span>
+                <span><i style="background:#4ade80"></i> Новый узел</span>
+                <span><i class="sq" style="background:rgba(248,113,113,.35)"></i> Препятствие</span>
+            </div>
             <div class="rrt-anim-controls">
                 <button onclick="rrtAnim.prev()" id="rrt-prev">◀</button>
                 <button onclick="rrtAnim.toggle()" id="rrt-play">▶ Play</button>
                 <button onclick="rrtAnim.next()" id="rrt-next">▶</button>
                 <span class="rrt-anim-label" id="rrt-label">Шаг 0 / 16</span>
             </div>
-            <div class="tree-viz" style="height:400px">
+            <div class="tree-viz" style="height:420px">
                 <svg id="rrt-svg" viewBox="0 0 500 400"></svg>
             </div>
             <div class="rrt-anim-desc" id="rrt-desc"></div>
@@ -399,174 +410,204 @@
 
         <script>
         (function(){
-        // RRT animation data - each step adds one node/edge
-        // Obstacle: rect at x=200,y=80, w=30, h=200
         const OBS = {x:200,y:80,w:30,h:200};
         const START = {x:50,y:340};
         const GOAL = {x:420,y:45};
 
-        // Tree grows step by step
-        // Each step: {rand:{x,y}, nearest_idx, new:{x,y}, blocked:bool, desc:string}
-        // nodes[0] = START
-        const nodes = [{x:50,y:340}]; // start
-        const edges = []; // {from:idx, to:idx}
-        const pathEdges = []; // indices into edges[] that form the final path
-
-        const STEPS = [
-            {title:'Инициализация',desc:'Дерево содержит одну вершину — START. Начинаем бросать случайные точки в пространство.'},
-            {title:'Итерация 1',desc:'Бросаем случайную точку (120, 290). Ближайший узел — START. Делаем шаг длиной δ=50 в направлении случайной точки. Новый узел (90, 305) добавлен.',
-             rand:{x:120,y:290},near:0,node:{x:90,y:305}},
-            {title:'Итерация 2',desc:'Случайная точка (95, 380). Ближайший — START. Новый узел (85, 370). Ветка пошла вниз — это нормально, RRT исследует всё пространство.',
-             rand:{x:95,y:380},near:0,node:{x:85,y:370}},
-            {title:'Итерация 3',desc:'Случайная точка (170, 250). Ближайший — узел #1 (90,305). Новый узел (135, 275). Дерево растёт вправо к стене.',
-             rand:{x:170,y:250},near:1,node:{x:135,y:275}},
-            {title:'Итерация 4',desc:'Случайная точка (50, 230). Ближайший — #1 (90,305). Узел (70, 260). Ещё одна ветка — влево-вверх.',
-             rand:{x:50,y:230},near:1,node:{x:70,y:260}},
-            {title:'Итерация 5',desc:'Случайная точка (190, 210). Ближайший — #3 (135,275). Узел (175, 240). Приближаемся к стене!',
-             rand:{x:190,y:210},near:3,node:{x:175,y:240}},
-            {title:'Итерация 6',desc:'Случайная точка (175, 380). Ближайший — #2 (85,370). Узел (130, 355). Тупиковая ветка — пошла вниз-вправо.',
-             rand:{x:175,y:380},near:2,node:{x:130,y:355}},
-            {title:'Итерация 7',desc:'Случайная точка (145, 150). Ближайший — #4 (70,260). Узел (100, 215). Ветка #4 растёт вверх.',
-             rand:{x:145,y:150},near:4,node:{x:100,y:215}},
-            {title:'Итерация 8',desc:'Случайная точка (210, 170). Ближайший — #5 (175,240). Узел (185, 195). Пытаемся обойти стену, но пока не дошли.',
-             rand:{x:210,y:170},near:5,node:{x:185,y:195}},
-            {title:'Итерация 9',desc:'Случайная точка (130, 140). Ближайший — #7 (100,215). Узел (140, 175). Параллельная ветка идёт вверх.',
-             rand:{x:130,y:140},near:7,node:{x:140,y:175}},
-            {title:'Итерация 10',desc:'Случайная точка (160, 50). Ближайший — #8 (185,195). Узел (175, 145). <strong>Почти над стеной!</strong> Следующий шаг — критический.',
-             rand:{x:160,y:50},near:8,node:{x:175,y:145}},
-            {title:'Итерация 11',desc:'Случайная точка (165, 20). Ближайший — #10 (175,145). Проверяем коллизию... стена заканчивается на y=80, а мы идём от y=145 к y=60 — <strong>свободно!</strong> Узел (180, 60). Мы над стеной!',
-             rand:{x:165,y:20},near:10,node:{x:180,y:60}},
-            {title:'Итерация 12',desc:'Случайная точка (310, 50). Ближайший — #11 (180,60). Узел (245, 55). <strong>Мы прошли стену!</strong> Теперь справа — открытое пространство до цели.',
-             rand:{x:310,y:50},near:11,node:{x:245,y:55}},
-            {title:'Итерация 13',desc:'Случайная точка (350, 60). Ближайший — #12 (245,55). Узел (305, 70). Быстро приближаемся к цели.',
-             rand:{x:350,y:60},near:12,node:{x:305,y:70}},
-            {title:'Итерация 14',desc:'Случайная точка (400, 30). Ближайший — #13 (305,70). Узел (355, 55). Ещё один шаг до цели.',
-             rand:{x:400,y:30},near:13,node:{x:355,y:55}},
-            {title:'Итерация 15',desc:'Случайная точка (430, 40). Ближайший — #14 (355,55). Узел (420, 45) — это <strong>GOAL!</strong> Дерево достигло цели!',
-             rand:{x:430,y:40},near:14,node:{x:420,y:45}},
-            {title:'Путь найден!',desc:'Восстанавливаем путь по parent-ссылкам: G←#14←#13←#12←#11←#10←#8←#5←#3←#1←START.<br><strong>10 отрезков, путь ломаный</strong> — типичный результат RRT. Для сглаживания нужна пост-обработка или RRT*.'}
+        // Дерево: каждый узел {x, y, p=parent_index}
+        // Все координаты вычислены по формуле steer(nearest, random, delta=50)
+        const TREE = [
+            {x:50,y:340,p:-1},   // #0 START
+            {x:92,y:312,p:0},    // #1
+            {x:76,y:383,p:0},    // #2 dead-end
+            {x:125,y:274,p:1},   // #3
+            {x:136,y:336,p:1},   // #4 dead-end
+            {x:132,y:225,p:3},   // #5
+            {x:164,y:377,p:4},   // #6 dead-end
+            {x:123,y:176,p:5},   // #7
+            {x:169,y:156,p:7},   // #8
+            {x:143,y:113,p:8},   // #9
+            {x:161,y:67,p:9},    // #10
+            {x:209,y:52,p:10},   // #11 — above wall!
+            {x:259,y:51,p:11},   // #12 — past wall!
+            {x:308,y:42,p:12},   // #13
+            {x:358,y:45,p:13},   // #14
+            {x:420,y:45,p:14}    // #15 GOAL
         ];
 
-        // Dead-end branches (added at specific steps for realism)
-        const deadEdges = [
-            {from:6, to:{x:165,y:370}, step:7},
-            {from:9, to:{x:155,y:85}, step:10},
-            {from:12, to:{x:270,y:100}, step:13}
+        // Случайные точки для каждой итерации
+        const SAMPLES = [
+            null,
+            {x:140,y:280}, {x:80,y:390}, {x:190,y:200}, {x:160,y:350},
+            {x:150,y:100}, {x:180,y:400}, {x:100,y:50}, {x:230,y:130},
+            {x:80,y:10}, {x:180,y:20}, {x:280,y:30}, {x:350,y:50},
+            {x:420,y:20}, {x:460,y:50}, null
         ];
 
-        // Path: START(0)->1->3->5->8->10->11->12->13->14->15(GOAL)
-        const PATH_INDICES = [0,1,3,5,8,10,11,12,13,14,15];
+        // Путь: восстановлен по parent-ссылкам от GOAL
+        const PATH = [0,1,3,5,7,8,9,10,11,12,13,14,15];
+
+        // Описания шагов
+        const DESCS = [
+            {t:'Инициализация',
+             d:'Дерево — одна вершина <b>S</b> (START). Цель — <b>G</b> (GOAL). Между ними стена (красная). Начинаем бросать случайные точки.'},
+            {t:'Итерация 1',
+             d:'Случайная точка <span style="color:#fb923c">●</span> (140,280). Ближайший — <b>#0</b> (START). Steer: шаг δ=50 по вектору к точке → новый узел <span style="color:#4ade80">●</span> <b>#1</b> (92,312).'},
+            {t:'Итерация 2',
+             d:'Точка (80,390) — ниже старта. Ближайший — <b>#0</b>. Узел <b>#2</b> (76,383). Ветка пошла вниз — <i>тупик</i>, но RRT этого не знает, он исследует всё пространство.'},
+            {t:'Итерация 3',
+             d:'Точка (190,200). Ближайший — <b>#1</b>. Steer → <b>#3</b> (125,274). Дерево растёт вправо-вверх к стене.'},
+            {t:'Итерация 4',
+             d:'Точка (160,350) — вниз. Ближайший — <b>#1</b>. Узел <b>#4</b> (136,336). Ещё одна тупиковая ветка.'},
+            {t:'Итерация 5',
+             d:'Точка (150,100). Ближайший — <b>#3</b>. Steer → <b>#5</b> (132,225). Основная ветка продолжает идти вверх!'},
+            {t:'Итерация 6',
+             d:'Точка (180,400). Ближайший — <b>#4</b>. Узел <b>#6</b> (164,377). Третий тупик — RRT тратит итерации на бесполезные ветки.'},
+            {t:'Итерация 7',
+             d:'Точка (100,50). Ближайший — <b>#5</b>. Steer → <b>#7</b> (123,176). Приближаемся к верхней части стены.'},
+            {t:'Итерация 8',
+             d:'Точка (230,130). Ближайший — <b>#7</b>. Steer → <b>#8</b> (169,156). Идём вправо — стена начинается на x=200, мы левее.'},
+            {t:'Итерация 9',
+             d:'Точка (80,10) — далеко влево-вверх. Ближайший — <b>#8</b>. Steer → <b>#9</b> (143,113). Стена на y=80-280, мы выше y=280 но ещё слева.'},
+            {t:'Итерация 10',
+             d:'Точка (180,20). Ближайший — <b>#9</b>. Steer → <b>#10</b> (161,67). <b>Мы выше стены!</b> (y=67 < 80, верх стены). Критический момент.'},
+            {t:'Итерация 11',
+             d:'Точка (280,30). Ближайший — <b>#10</b>. Steer → <b>#11</b> (209,52). <b>Прошли стену!</b> x=209 > 200 (левый край стены), но y=52 < 80 (выше). Свободно!'},
+            {t:'Итерация 12',
+             d:'Точка (350,50). Ближайший — <b>#11</b>. Steer → <b>#12</b> (259,51). Справа от стены — открытое пространство. Движемся к цели.'},
+            {t:'Итерация 13',
+             d:'Точка (420,20). Ближайший — <b>#12</b>. Steer → <b>#13</b> (308,42). Быстро приближаемся к GOAL.'},
+            {t:'Итерация 14',
+             d:'Точка (460,50). Ближайший — <b>#13</b>. Steer → <b>#14</b> (358,45). distance(#14, GOAL)=62 < threshold → <b>соединяем с целью!</b>'},
+            {t:'Путь найден!',
+             d:'Восстанавливаем путь по parent: G←#14←#13←#12←#11←#10←#9←#8←#7←#5←#3←#1←S.<br><b>12 рёбер, путь ломаный</b> — типичный RRT. Тупиковые ветки (#2,#4,#6) — впустую потраченные итерации. Для сглаживания — пост-обработка или RRT*.'}
+        ];
 
         let step=0, timer=null;
+        const TOTAL = DESCS.length - 1; // 15
 
         function render(){
             const svg = document.getElementById('rrt-svg');
-            let html = '';
+            let h = '';
+            // How many tree nodes visible at this step
+            // Steps 1-14 add nodes #1-#14; step 15 adds GOAL (#15) and shows path
+            const nodesVisible = step >= TOTAL ? TREE.length : Math.min(step + 1, TREE.length);
+
+            // Subtle grid
+            for(let gx=0;gx<=500;gx+=50) h+='<line x1="'+gx+'" y1="0" x2="'+gx+'" y2="400" stroke="rgba(255,255,255,.03)"/>';
+            for(let gy=0;gy<=400;gy+=50) h+='<line x1="0" y1="'+gy+'" x2="500" y2="'+gy+'" stroke="rgba(255,255,255,.03)"/>';
 
             // Obstacle
-            html += '<rect x="'+OBS.x+'" y="'+OBS.y+'" width="'+OBS.w+'" height="'+OBS.h+'" rx="4" class="obstacle"/>';
+            h+='<rect x="'+OBS.x+'" y="'+OBS.y+'" width="'+OBS.w+'" height="'+OBS.h+'" rx="4" class="obstacle"/>';
+            h+='<text x="'+(OBS.x+3)+'" y="'+(OBS.y+OBS.h/2)+'" fill="rgba(248,113,113,.6)" font-size="10" transform="rotate(-90,'+(OBS.x+10)+','+(OBS.y+OBS.h/2)+')">wall</text>';
 
-            // Labels
-            html += '<text x="50" y="365" fill="#6c9eff" font-size="12" font-weight="bold">START</text>';
-            html += '<text x="400" y="38" fill="#a78bfa" font-size="12" font-weight="bold">GOAL</text>';
+            // GOAL marker (always visible, dashed)
+            h+='<circle cx="'+GOAL.x+'" cy="'+GOAL.y+'" r="10" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,3" opacity=".4"/>';
+            h+='<text x="432" y="42" fill="#a78bfa" font-size="12" font-weight="bold">G</text>';
+            h+='<text x="28" y="335" fill="#6c9eff" font-size="12" font-weight="bold">S</text>';
 
-            // How many nodes exist at this step
-            let nodeCount = 1; // START
-            if(step >= 1 && step <= 15) nodeCount = step + 1;
-            if(step === 16) nodeCount = 16; // all nodes
-
-            // Build node list for this step
-            let curNodes = [nodes[0]]; // START always
-            for(let i=1; i<STEPS.length-1; i++){
-                if(i <= step && STEPS[i].node){
-                    curNodes.push(STEPS[i].node);
+            // --- EDGES ---
+            for(let i=1; i<nodesVisible; i++){
+                const nd = TREE[i], par = TREE[nd.p];
+                const onPath = step===TOTAL && PATH.includes(i) && PATH.includes(nd.p);
+                const isCurrent = (i === step && step>=1 && step<TOTAL);
+                if(onPath) continue; // drawn below
+                if(isCurrent){
+                    h+='<line x1="'+par.x+'" y1="'+par.y+'" x2="'+nd.x+'" y2="'+nd.y+'" stroke="#4ade80" stroke-width="2.5" opacity=".9"/>';
+                } else {
+                    const dead = !PATH.includes(i);
+                    h+='<line x1="'+par.x+'" y1="'+par.y+'" x2="'+nd.x+'" y2="'+nd.y+'" stroke="'+(dead?'#6c9eff':'#6c9eff')+'" stroke-width="'+(dead?'1':'1.3')+'" opacity="'+(dead?'.2':'.4')+'"/>';
                 }
             }
 
-            // Draw edges (tree)
-            for(let i=1; i<STEPS.length-1; i++){
-                if(i > step) break;
-                const s = STEPS[i];
-                if(!s.node) continue;
-                const fromNode = curNodes[s.near];
-                const toNode = s.node;
-                const isPath = step===16 && PATH_INDICES.includes(i) && PATH_INDICES.includes(s.near);
-                html += '<line x1="'+fromNode.x+'" y1="'+fromNode.y+'" x2="'+toNode.x+'" y2="'+toNode.y+'" stroke="'+(isPath?'#4ade80':'#6c9eff')+'" stroke-width="'+(isPath?'2':'1.5')+'" opacity="'+(isPath?'1':'.5')+'"/>';
-            }
-
-            // Dead-end branches
-            for(const de of deadEdges){
-                if(step >= de.step){
-                    const fromNode = curNodes[de.from];
-                    html += '<line x1="'+fromNode.x+'" y1="'+fromNode.y+'" x2="'+de.to.x+'" y2="'+de.to.y+'" stroke="#6c9eff" stroke-width="1" opacity=".2"/>';
-                    html += '<circle cx="'+de.to.x+'" cy="'+de.to.y+'" r="3" fill="#6c9eff" opacity=".25"/>';
+            // Path highlight on final step
+            if(step===TOTAL){
+                for(let i=0;i<PATH.length-1;i++){
+                    const a=TREE[PATH[i]], b=TREE[PATH[i+1]];
+                    h+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#4ade80" stroke-width="3" opacity="1"/>';
                 }
             }
 
-            // Draw path highlight at final step
-            if(step===16){
-                for(let i=0;i<PATH_INDICES.length-1;i++){
-                    const a = curNodes[PATH_INDICES[i]];
-                    const b = curNodes[PATH_INDICES[i+1]];
-                    html += '<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#4ade80" stroke-width="2" opacity="1"/>';
-                }
+            // --- CURRENT STEP VISUALIZATION ---
+            if(step>=1 && step<TOTAL && SAMPLES[step]){
+                const samp = SAMPLES[step];
+                const nearIdx = TREE[step].p;
+                const near = TREE[nearIdx];
+                const nd = TREE[step];
+
+                // Dashed line: nearest → random sample
+                h+='<line x1="'+near.x+'" y1="'+near.y+'" x2="'+samp.x+'" y2="'+samp.y+'" stroke="#fb923c" stroke-width="1" stroke-dasharray="5,4" opacity=".35"/>';
+
+                // Arrow: nearest → new node (steer result)
+                h+='<line x1="'+near.x+'" y1="'+near.y+'" x2="'+nd.x+'" y2="'+nd.y+'" stroke="#4ade80" stroke-width="2" opacity=".6" stroke-dasharray="3,2"/>';
+
+                // Random sample point (orange, dashed circle)
+                h+='<circle cx="'+samp.x+'" cy="'+samp.y+'" r="6" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="3,3" opacity=".7"/>';
+                h+='<circle cx="'+samp.x+'" cy="'+samp.y+'" r="2" fill="#fb923c" opacity=".8"/>';
+                h+='<text x="'+(samp.x+9)+'" y="'+(samp.y-5)+'" fill="#fb923c" font-size="9" opacity=".7">random</text>';
+
+                // Nearest node highlight (yellow ring + label)
+                h+='<circle cx="'+near.x+'" cy="'+near.y+'" r="10" fill="none" stroke="#fbbf24" stroke-width="2" opacity=".7"/>';
+                h+='<text x="'+(near.x+(near.x>250?-55:12))+'" y="'+(near.y-8)+'" fill="#fbbf24" font-size="9" opacity=".8">nearest</text>';
             }
 
-            // Random sample point (current step)
-            if(step >= 1 && step <= 15 && STEPS[step].rand){
-                const r = STEPS[step].rand;
-                html += '<circle cx="'+r.x+'" cy="'+r.y+'" r="5" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="3,3" opacity=".8"/>';
-                html += '<circle cx="'+r.x+'" cy="'+r.y+'" r="2" fill="#fb923c" opacity=".8"/>';
-                // Draw dashed line from nearest to random
-                if(STEPS[step].near !== undefined){
-                    const nearest = curNodes[STEPS[step].near];
-                    html += '<line x1="'+nearest.x+'" y1="'+nearest.y+'" x2="'+r.x+'" y2="'+r.y+'" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4" opacity=".35"/>';
-                }
-            }
-
-            // Nodes
-            for(let i=0;i<curNodes.length;i++){
-                const n = curNodes[i];
+            // --- NODES ---
+            for(let i=0; i<nodesVisible; i++){
+                const nd = TREE[i];
                 const isStart = i===0;
-                const isGoal = i===15;
-                const isNew = (i === step && step >= 1 && step <= 15);
-                const isOnPath = step===16 && PATH_INDICES.includes(i);
+                const isGoal = (i===TREE.length-1) && step===TOTAL;
+                const isCurrent = (i===step && step>=1 && step<TOTAL);
+                const onPath = step===TOTAL && PATH.includes(i);
+                const dead = !PATH.includes(i);
 
-                let fill = '#6c9eff', r = 4, op = '.6';
+                let fill='#6c9eff', r=4, op='.5';
                 if(isStart){ fill='#6c9eff'; r=7; op='1'; }
                 else if(isGoal){ fill='#a78bfa'; r=7; op='1'; }
-                else if(isOnPath){ fill='#4ade80'; r=5; op='1'; }
-                else if(isNew){ fill='#fb923c'; r=6; op='1'; }
+                else if(onPath){ fill='#4ade80'; r=5; op='1'; }
+                else if(isCurrent){ fill='#4ade80'; r=6; op='1'; }
+                else if(dead){ fill='#6c9eff'; r=3; op='.25'; }
 
-                html += '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+r+'" fill="'+fill+'" opacity="'+op+'"/>';
+                h+='<circle cx="'+nd.x+'" cy="'+nd.y+'" r="'+r+'" fill="'+fill+'" opacity="'+op+'"/>';
+
+                // Node numbers: always show for current/path/start/goal, show all on final step
+                const showLabel = isStart || isGoal || isCurrent || onPath || step===TOTAL;
+                if(showLabel){
+                    // Position label to avoid overlap
+                    let lx=nd.x+8, ly=nd.y-6;
+                    if(isStart){ lx=nd.x-8; ly=nd.y+18; }
+                    else if(isGoal){ lx=nd.x-8; ly=nd.y+18; }
+                    else if(nd.x > 350){ lx=nd.x-20; }
+                    const lop = (dead && step===TOTAL) ? '.3' : '1';
+                    const lc = isGoal ? '#a78bfa' : (onPath||isCurrent ? '#4ade80' : '#6c9eff');
+                    h+='<text x="'+lx+'" y="'+ly+'" fill="'+lc+'" font-size="9" opacity="'+lop+'">#'+i+'</text>';
+                }
             }
 
-            svg.innerHTML = html;
+            svg.innerHTML = h;
 
-            // Controls
-            document.getElementById('rrt-label').textContent = 'Шаг '+step+' / '+(STEPS.length-1);
-            document.getElementById('rrt-desc').innerHTML = '<strong>'+STEPS[step].title+'</strong> — '+STEPS[step].desc;
+            document.getElementById('rrt-label').textContent = 'Шаг '+step+' / '+TOTAL;
+            const d = DESCS[step];
+            document.getElementById('rrt-desc').innerHTML = '<strong>'+d.t+'</strong> — '+d.d;
             document.getElementById('rrt-prev').disabled = step===0;
-            document.getElementById('rrt-next').disabled = step===STEPS.length-1;
+            document.getElementById('rrt-next').disabled = step===TOTAL;
         }
 
         const rrtAnim = {
             prev(){ if(step>0){step--;render();this.stop();} },
-            next(){ if(step<STEPS.length-1){step++;render();this.stop();} },
+            next(){ if(step<TOTAL){step++;render();this.stop();} },
             toggle(){
                 if(timer){this.stop();}
                 else{
                     timer=setInterval(()=>{
-                        if(step<STEPS.length-1){step++;render();}
-                        else this.stop();
-                    },1500);
-                    document.getElementById('rrt-play').textContent='⏸ Pause';
+                        if(step<TOTAL){step++;render();} else this.stop();
+                    },1800);
+                    document.getElementById('rrt-play').textContent='\u23f8 Pause';
                     document.getElementById('rrt-play').classList.add('active');
                 }
             },
             stop(){
                 if(timer){clearInterval(timer);timer=null;}
-                document.getElementById('rrt-play').textContent='▶ Play';
+                document.getElementById('rrt-play').textContent='\u25b6 Play';
                 document.getElementById('rrt-play').classList.remove('active');
             }
         };

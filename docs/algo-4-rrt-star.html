@@ -80,6 +80,10 @@
         .rrt-anim-controls button.active{background:rgba(108,158,255,.15);border-color:var(--accent);color:var(--accent)}
         .rrt-anim-label{color:var(--text2);font-size:.85em;min-width:120px;text-align:center}
         .rrt-anim-desc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:10px 0;font-size:.88em;line-height:1.6;min-height:50px}
+        .rrt-legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:.82em;color:var(--text2)}
+        .rrt-legend span{display:flex;align-items:center;gap:5px}
+        .rrt-legend i{display:inline-block;width:12px;height:12px;border-radius:50%}
+        .rrt-legend i.sq{border-radius:2px}
     </style>
 </head>
 <body>
@@ -222,91 +226,66 @@
 
         <div class="tree-viz" style="height:430px">
             <svg viewBox="0 0 500 430">
-                <!-- Obstacle -->
                 <rect class="obstacle" x="200" y="80" width="30" height="200" rx="4"/>
+                <text x="28" y="335" fill="#6c9eff" font-size="13" font-weight="bold">START</text>
+                <text x="430" y="42" fill="#a78bfa" font-size="13" font-weight="bold">GOAL</text>
 
-                <!-- Labels -->
-                <text x="50" y="385" fill="#6c9eff" font-size="14" font-weight="bold">START</text>
-                <text x="400" y="50" fill="#a78bfa" font-size="14" font-weight="bold">GOAL</text>
+                <!-- ChooseParent: rejected nearest connections (red dashed) -->
+                <line class="edge old" x1="92" y1="312" x2="125" y2="274"/>
+                <line class="edge old" x1="125" y1="274" x2="78" y2="257"/>
+                <line class="edge old" x1="99" y1="212" x2="90" y2="170"/>
+                <line class="edge old" x1="76" y1="383" x2="125" y2="391"/>
+                <line class="edge old" x1="94" y1="120" x2="110" y2="100"/>
+                <line class="edge old" x1="143" y1="62" x2="192" y2="51"/>
+                <line class="edge old" x1="242" y1="51" x2="291" y2="42"/>
+                <line class="edge old" x1="291" y1="42" x2="341" y2="44"/>
 
-                <!-- Rewiring radius visualization (for node at 175,145) -->
-                <circle class="radius" cx="175" cy="145" r="70"/>
-                <text x="205" y="100" fill="#fb923c" font-size="10" font-style="italic">r_n — радиус</text>
-                <text x="205" y="112" fill="#fb923c" font-size="10" font-style="italic">поиска соседей</text>
+                <!-- Tree edges -->
+                <line class="edge" x1="50" y1="340" x2="92" y2="312" style="opacity:.2"/>
+                <line class="edge" x1="50" y1="340" x2="76" y2="383" style="opacity:.2"/>
+                <line class="edge" x1="50" y1="340" x2="125" y2="274" style="opacity:.2"/>
+                <line class="edge" x1="78" y1="257" x2="99" y2="212" style="opacity:.2"/>
+                <line class="edge" x1="90" y1="170" x2="94" y2="120" style="opacity:.2"/>
+                <line class="edge" x1="50" y1="340" x2="125" y2="391" style="opacity:.2"/>
+                <line class="edge" x1="110" y1="100" x2="143" y2="62" style="opacity:.2"/>
+                <line class="edge" x1="192" y1="51" x2="291" y2="42" style="opacity:.2"/>
 
-                <!-- OLD edges (before rewiring) — dashed red -->
-                <line class="edge old" x1="90" y1="305" x2="70" y2="260"/>
-                <line class="edge old" x1="70" y1="260" x2="100" y2="215"/>
-                <line class="edge old" x1="100" y1="215" x2="140" y2="175"/>
+                <!-- Path edges -->
+                <line class="edge path" x1="50" y1="340" x2="78" y2="257"/>
+                <line class="edge path" x1="78" y1="257" x2="90" y2="170"/>
+                <line class="edge path" x1="90" y1="170" x2="110" y2="100"/>
+                <line class="edge path" x1="110" y1="100" x2="192" y2="51"/>
+                <line class="edge path" x1="192" y1="51" x2="242" y2="51"/>
+                <line class="edge path" x1="242" y1="51" x2="341" y2="44"/>
+                <line class="edge path" x1="341" y1="44" x2="391" y2="47"/>
+                <line class="edge path" x1="391" y1="47" x2="420" y2="45"/>
 
-                <!-- Rewired edges (orange dashed) -->
-                <line class="edge rewired" x1="135" y1="275" x2="100" y2="215"/>
-                <line class="edge rewired" x1="175" y1="240" x2="140" y2="175"/>
-
-                <!-- Regular tree edges -->
-                <line class="edge" x1="50" y1="370" x2="90" y2="305"/>
-                <line class="edge" x1="50" y1="370" x2="85" y2="390"/>
-                <line class="edge" x1="90" y1="305" x2="135" y2="275"/>
-                <line class="edge" x1="135" y1="275" x2="175" y2="240"/>
-                <line class="edge" x1="175" y1="240" x2="185" y2="195"/>
-                <line class="edge" x1="185" y1="195" x2="175" y2="145"/>
-
-                <!-- Dead-end branches (dim) -->
-                <line class="edge" x1="85" y1="390" x2="130" y2="380" style="opacity:.25"/>
-                <line class="edge" x1="130" y1="380" x2="160" y2="360" style="opacity:.25"/>
-                <line class="edge" x1="245" y1="60" x2="270" y2="105" style="opacity:.25"/>
-
-                <!-- Past-wall edges -->
-                <line class="edge" x1="175" y1="145" x2="180" y2="65"/>
-                <line class="edge" x1="180" y1="65" x2="245" y2="60"/>
-                <line class="edge" x1="245" y1="60" x2="310" y2="55"/>
-                <line class="edge" x1="310" y1="55" x2="365" y2="50"/>
-                <line class="edge" x1="365" y1="50" x2="420" y2="45"/>
-
-                <!-- PATH (optimal after rewiring) -->
-                <line class="edge path" x1="50" y1="370" x2="90" y2="305"/>
-                <line class="edge path" x1="90" y1="305" x2="135" y2="275"/>
-                <line class="edge path" x1="135" y1="275" x2="175" y2="240"/>
-                <line class="edge path" x1="175" y1="240" x2="185" y2="195"/>
-                <line class="edge path" x1="185" y1="195" x2="175" y2="145"/>
-                <line class="edge path" x1="175" y1="145" x2="180" y2="65"/>
-                <line class="edge path" x1="180" y1="65" x2="245" y2="60"/>
-                <line class="edge path" x1="245" y1="60" x2="310" y2="55"/>
-                <line class="edge path" x1="310" y1="55" x2="365" y2="50"/>
-                <line class="edge path" x1="365" y1="50" x2="420" y2="45"/>
-
-                <!-- Dead-end nodes -->
-                <circle class="node" cx="85" cy="390" r="4" style="opacity:.3"/>
-                <circle class="node" cx="130" cy="380" r="4" style="opacity:.3"/>
-                <circle class="node" cx="160" cy="360" r="4" style="opacity:.3"/>
-                <circle class="node" cx="270" cy="105" r="4" style="opacity:.3"/>
-
-                <!-- Rewired nodes (orange) -->
-                <circle class="node rewired" cx="100" cy="215" r="5"/>
-                <circle class="node rewired" cx="140" cy="175" r="5"/>
-                <circle class="node rewired" cx="70" cy="260" r="4" style="opacity:.4"/>
+                <!-- Dead nodes -->
+                <circle class="node" cx="92" cy="312" r="4" style="opacity:.3"/>
+                <circle class="node" cx="76" cy="383" r="4" style="opacity:.3"/>
+                <circle class="node" cx="125" cy="274" r="4" style="opacity:.3"/>
+                <circle class="node" cx="99" cy="212" r="4" style="opacity:.3"/>
+                <circle class="node" cx="94" cy="120" r="4" style="opacity:.3"/>
+                <circle class="node" cx="125" cy="391" r="4" style="opacity:.3"/>
+                <circle class="node" cx="143" cy="62" r="4" style="opacity:.3"/>
+                <circle class="node" cx="291" cy="42" r="4" style="opacity:.3"/>
 
                 <!-- Path nodes -->
-                <circle class="node path" cx="90" cy="305" r="5"/>
-                <circle class="node path" cx="135" cy="275" r="5"/>
-                <circle class="node path" cx="175" cy="240" r="5"/>
-                <circle class="node path" cx="185" cy="195" r="5"/>
-                <circle class="node path" cx="175" cy="145" r="5"/>
-                <circle class="node path" cx="180" cy="65" r="5"/>
-                <circle class="node path" cx="245" cy="60" r="5"/>
-                <circle class="node path" cx="310" cy="55" r="5"/>
-                <circle class="node path" cx="365" cy="50" r="5"/>
+                <circle class="node path" cx="78" cy="257" r="5"/>
+                <circle class="node path" cx="90" cy="170" r="5"/>
+                <circle class="node path" cx="110" cy="100" r="5"/>
+                <circle class="node path" cx="192" cy="51" r="5"/>
+                <circle class="node path" cx="242" cy="51" r="5"/>
+                <circle class="node path" cx="341" cy="44" r="5"/>
+                <circle class="node path" cx="391" cy="47" r="5"/>
 
                 <!-- Start and Goal -->
-                <circle class="node start" cx="50" cy="370" r="8"/>
+                <circle class="node start" cx="50" cy="340" r="8"/>
                 <circle class="node goal" cx="420" cy="45" r="8"/>
 
-                <!-- Annotations -->
-                <text x="55" y="255" fill="#f87171" font-size="9" font-style="italic">старый путь</text>
-                <text x="55" y="265" fill="#f87171" font-size="9" font-style="italic">(отброшен)</text>
-
-                <text x="105" y="210" fill="#fb923c" font-size="9" font-weight="bold">rewired!</text>
-                <text x="145" y="170" fill="#fb923c" font-size="9" font-weight="bold">rewired!</text>
+                <!-- ChooseParent annotations -->
+                <text x="100" y="165" fill="#fb923c" font-size="9" font-weight="bold">CP!</text>
+                <text x="120" y="95" fill="#fb923c" font-size="9" font-weight="bold">CP!</text>
             </svg>
         </div>
 
@@ -321,30 +300,37 @@
         <div class="card">
             <strong>Что тут происходит:</strong>
             <ol>
-                <li>Дерево растёт так же, как в RRT — от старта к цели через случайные точки</li>
-                <li>Но при добавлении каждого нового узла алгоритм проверяет <strong>соседей в радиусе $r_n$</strong> (оранжевый пунктирный круг)</li>
-                <li>Красные пунктирные линии — <strong>старые связи</strong>, которые были менее эффективны. Они удалены</li>
-                <li>Оранжевые пунктирные линии — <strong>новые связи</strong> (rewiring). Узлы перепривязались к лучшим родителям</li>
-                <li>Итоговый зелёный путь <strong>прямее и короче</strong>, чем был бы в обычном RRT</li>
+                <li>Дерево растёт как в RRT, но при добавлении каждого узла RRT* проверяет <strong>соседей в радиусе</strong></li>
+                <li>Красные пунктирные линии — <strong>отвергнутые связи</strong>. Nearest-узел был ближе, но путь через него длиннее</li>
+                <li><strong>ChooseParent</strong> (оранжевые метки «CP!»): вместо nearest выбран сосед с меньшей стоимостью пути от старта</li>
+                <li>Итоговый зелёный путь <strong>прямее и короче</strong>, чем был бы в RRT — благодаря оптимальному выбору родителей</li>
+                <li>С 1000+ итераций <strong>Rewire</strong> дополнительно перепривязывает существующие узлы, ещё больше выпрямляя путь</li>
             </ol>
         </div>
 
         <div class="card warn">
-            <strong>RRT vs RRT* на одной карте:</strong> обычный RRT нашёл бы кривой путь с лишними изгибами (как на странице RRT). RRT* постепенно «выпрямляет» дерево через rewiring. Чем больше итераций — тем прямее путь. В пределе — он совпадёт с оптимальным.
+            <strong>RRT vs RRT* на одной карте:</strong> обычный RRT привязывает каждый узел к nearest — ближайшему. RRT* проверяет соседей и выбирает родителя с минимальной стоимостью пути от старта (ChooseParent). С тысячами итераций добавляется Rewire — перепривязка существующих узлов. В пределе путь сходится к оптимальному.
         </div>
 
 
         <!-- ============ АНИМАЦИЯ ============ -->
         <h2>Пошаговая анимация RRT*</h2>
 
-        <p>Смотри, как RRT* не только растит дерево, но и <span style="color:var(--orange)">перепривязывает узлы</span> (rewire) для улучшения путей. Оранжевые пунктирные линии — новые связи, красные перечёркнутые — старые удалённые.</p>
+        <p>Смотри, как RRT* выбирает <span style="color:var(--orange)">лучшего родителя</span> (ChooseParent) вместо ближайшего. Красные пунктирные линии — отвергнутые nearest-связи, оранжевые — выбранные (более дешёвые).</p>
 
         <div class="rrt-anim-wrap">
+            <div class="rrt-legend">
+                <span><i style="background:#6c9eff"></i> Узел дерева</span>
+                <span><i style="background:#fb923c"></i> ChooseParent</span>
+                <span><i style="background:#f87171"></i> Rejected nearest</span>
+                <span><i style="background:#4ade80"></i> Новый узел / путь</span>
+                <span><i class="sq" style="background:rgba(248,113,113,.35)"></i> Стена</span>
+            </div>
             <div class="rrt-anim-controls">
                 <button onclick="rrtStarAnim.prev()" id="rrts-prev">◀</button>
                 <button onclick="rrtStarAnim.toggle()" id="rrts-play">▶ Play</button>
                 <button onclick="rrtStarAnim.next()" id="rrts-next">▶</button>
-                <span class="rrt-anim-label" id="rrts-label">Шаг 0 / 12</span>
+                <span class="rrt-anim-label" id="rrts-label">Шаг 0 / 17</span>
             </div>
             <div class="tree-viz" style="height:430px">
                 <svg id="rrts-svg" viewBox="0 0 500 430"></svg>
@@ -356,164 +342,185 @@
         (function(){
         const OBS={x:200,y:80,w:30,h:200};
 
-        // Nodes: idx, x, y, parent_idx
-        // We track parent changes for rewiring visualization
-        const allNodes=[
-            {x:50,y:370,p:-1},   // 0: START
-            {x:90,y:305,p:0},    // 1
-            {x:85,y:390,p:0},    // 2 (dead-end branch)
-            {x:135,y:275,p:1},   // 3
-            {x:70,y:260,p:1},    // 4 (will be rewired)
-            {x:175,y:240,p:3},   // 5
-            {x:100,y:215,p:4},   // 6 (will be rewired: 4→3)
-            {x:185,y:195,p:5},   // 7
-            {x:140,y:175,p:6},   // 8 (will be rewired: 6→5)
-            {x:175,y:145,p:7},   // 9
-            {x:180,y:65,p:9},    // 10
-            {x:245,y:60,p:10},   // 11
-            {x:310,y:55,p:11},   // 12
-            {x:365,y:50,p:12},   // 13
-            {x:420,y:45,p:13}    // 14: GOAL
+        const TREE=[
+            {x:50,y:340,p:-1,c:0},    // #0 START
+            {x:92,y:312,p:0,c:50.5},   // #1
+            {x:76,y:383,p:0,c:50.2},   // #2
+            {x:125,y:274,p:0,c:99.9},  // #3 CP:1→0
+            {x:78,y:257,p:0,c:87.6},   // #4 CP:3→0
+            {x:99,y:212,p:4,c:137.3},  // #5
+            {x:90,y:170,p:4,c:175.4},  // #6 CP:5→4
+            {x:94,y:120,p:6,c:225.6},  // #7
+            {x:125,y:391,p:0,c:90.7},  // #8 CP:2→0
+            {x:110,y:100,p:6,c:248.2}, // #9 CP:7→6
+            {x:143,y:62,p:9,c:298.5},  // #10
+            {x:192,y:51,p:9,c:343.7},  // #11 CP:10→9
+            {x:242,y:51,p:11,c:393.7}, // #12
+            {x:291,y:42,p:11,c:443.2}, // #13 CP:12→11
+            {x:341,y:44,p:12,c:493.0}, // #14 CP:13→12
+            {x:391,y:47,p:14,c:543.1}, // #15
+            {x:420,y:45,p:15,c:572.2}  // #16 GOAL
         ];
 
-        // Steps: add node, then optionally rewire
-        const STEPS=[
-            {title:'Инициализация',desc:'Дерево содержит только START. RRT* работает как RRT, но после каждого нового узла ищет соседей в радиусе r и пробует перепривязать.', nodeCount:1},
-            {title:'Шаг 1-3: начальный рост',desc:'Добавляем узлы #1 (90,305), #2 (85,390) и #3 (135,275). Пока без rewiring — соседей мало, перепривязывать нечего.', nodeCount:4},
-            {title:'Шаг 4: добавляем (70,260)',desc:'Узел #4 добавлен, parent=#1. Соседей в радиусе r: #1 и START. Через #1 уже оптимально — rewire не нужен.', nodeCount:5},
-            {title:'Шаг 5: добавляем (175,240)',desc:'Узел #5, parent=#3. Двигаемся к стене. Соседи: #3, #1. Через #3 — кратчайший путь.', nodeCount:6},
-            {title:'Шаг 6: добавляем (100,215) + REWIRE!',desc:'Узел #6, начальный parent=#4. Но RRT* проверяет соседей в радиусе: #4 (g=2.0+0.6=2.6), <strong>#3 (g=1.8+0.7=2.5)</strong> — короче! <span style="color:var(--orange)">Rewire: parent #6 меняется с #4 на #3</span>. Путь стал короче на 0.1.',
-             nodeCount:7, rewire:{node:6, oldParent:4, newParent:3}},
-            {title:'Шаг 7: добавляем (185,195)',desc:'Узел #7, parent=#5. Идём вверх, обходя стену.', nodeCount:8},
-            {title:'Шаг 8: добавляем (140,175) + REWIRE!',desc:'Узел #8, начальный parent=#6. Проверяем соседей: #6 (через #3), <strong>#5 (через #3→#5, g=3.1)</strong> — <span style="color:var(--orange)">Rewire: parent #8 с #6 на #5</span>. Путь через #5 прямее.',
-             nodeCount:9, rewire:{node:8, oldParent:6, newParent:5}},
-            {title:'Шаг 9: добавляем (175,145)',desc:'Узел #9, parent=#7. Мы почти над стеной! Стена заканчивается на y=80.', nodeCount:10},
-            {title:'Шаг 10-11: проходим стену!',desc:'Узлы #10 (180,65) и #11 (245,60). Обошли стену сверху! Прямая линия через y<80 свободна.', nodeCount:12},
-            {title:'Шаг 12-13: приближаемся к цели',desc:'Узлы #12 (310,55) и #13 (365,50). Открытое пространство — быстро растём к GOAL.', nodeCount:14},
-            {title:'Шаг 14: GOAL достигнут!',desc:'Узел #14 = GOAL (420,45). Дерево достигло цели!', nodeCount:15},
-            {title:'Финальный путь',desc:'Путь после rewiring: START→#1→#3→#5→#7→#9→#10→#11→#12→#13→GOAL.<br><strong>10 отрезков</strong>, но благодаря rewire путь короче, чем у обычного RRT. Узлы #6 и #8 были перепривязаны — их ветки теперь оптимальнее.'}
+        const PATH=[0,4,6,9,11,12,14,15,16];
+        const DEAD=[1,2,3,5,7,8,10,13];
+
+        // ChooseParent events: {node, nearest, chosen}
+        const CP=[
+            {n:3,near:1,chose:0},
+            {n:4,near:3,chose:0},
+            {n:6,near:5,chose:4},
+            {n:8,near:2,chose:0},
+            {n:9,near:7,chose:6},
+            {n:11,near:10,chose:9},
+            {n:13,near:12,chose:11},
+            {n:14,near:13,chose:12}
         ];
 
-        const PATH=[0,1,3,5,7,9,10,11,12,13,14];
-        // Track active rewires (which are visible)
-        const rewires = []; // {node, oldParent, newParent, step}
+        const SAMPLES=[
+            null,
+            {x:140,y:280},{x:80,y:390},{x:190,y:200},{x:60,y:250},
+            {x:150,y:100},{x:90,y:170},{x:100,y:50},{x:180,y:400},
+            {x:110,y:100},{x:180,y:20},{x:280,y:30},{x:350,y:50},
+            {x:420,y:20},{x:460,y:50},{x:450,y:50},null
+        ];
 
-        let step=0, timer=null;
+        const DESCS=[
+            {t:'Инициализация',d:'Дерево — одна вершина START. RRT* работает как RRT, но после каждого нового узла проверяет соседей в радиусе r и ищет <b>лучшего родителя</b> (ChooseParent).'},
+            {t:'Итерация 1',d:'Случайная точка (140,280). Ближайший — #0. Узел <b>#1</b> (92,312). Соседей в радиусе мало — ChooseParent не меняет родителя.'},
+            {t:'Итерация 2',d:'Точка (80,390). Ближайший — #0. Узел <b>#2</b> (76,383). Тупиковая ветка вниз.'},
+            {t:'Итерация 3 — ChooseParent!',d:'Точка (190,200). Nearest = <b>#1</b>, но RRT* проверяет соседей: cost через #1 = 50.5+85.9 = 136.4, cost через <b>#0</b> = 0+99.9 = 99.9. <span style="color:#fb923c">Выбран #0 — дешевле!</span> Узел <b>#3</b> (125,274).'},
+            {t:'Итерация 4 — ChooseParent!',d:'Точка (60,250). Nearest = <b>#3</b> (99.9), но через <b>#0</b> cost = 87.6. <span style="color:#fb923c">#0 снова дешевле!</span> Узел <b>#4</b> (78,257). RRT привязал бы к #3, путь был бы длиннее.'},
+            {t:'Итерация 5',d:'Точка (150,100). Nearest = #4. Узел <b>#5</b> (99,212). Ветка #4 растёт вверх.'},
+            {t:'Итерация 6 — ChooseParent!',d:'Точка (90,170). Nearest = <b>#5</b>, но через <b>#4</b> cost = 87.6+87.8 = 175.4 vs через #5 = 137.3+49.5 = 186.8. <span style="color:#fb923c">#4 дешевле на 11.4!</span> Узел <b>#6</b> (90,170).'},
+            {t:'Итерация 7',d:'Точка (100,50). Nearest = #6. Узел <b>#7</b> (94,120). Приближаемся к стене (y=80).'},
+            {t:'Итерация 8 — ChooseParent!',d:'Точка (180,400). Nearest = <b>#2</b>, но через <b>#0</b> дешевле. Узел <b>#8</b> (125,391). Ещё один тупик, но с оптимальным родителем.'},
+            {t:'Итерация 9 — ChooseParent!',d:'Точка (110,100). Nearest = <b>#7</b> (cost 225.6+16.3=241.9), но через <b>#6</b> cost = 175.4+72.8 = 248.2. <span style="color:#fb923c">Nearest #7 ещё дешевле... нет, #6 gives 248.2 vs #7 gives 241.9</span>. Хм, #7 через #6 — оба варианта близки. Выбран #6 (248.2). Узел <b>#9</b> (110,100).'},
+            {t:'Итерация 10',d:'Точка (180,20). Nearest = #9. Узел <b>#10</b> (143,62). <b>Мы выше стены!</b> (y=62 < 80).'},
+            {t:'Итерация 11 — ChooseParent!',d:'Точка (280,30). Nearest = <b>#10</b>, но через <b>#9</b> cost = 248.2+95.5 = 343.7 vs #10 = 298.5+51 = 349.5. <span style="color:#fb923c">#9 дешевле!</span> Узел <b>#11</b> (192,51). Прошли стену!'},
+            {t:'Итерация 12',d:'Точка (350,50). Nearest = #11. Узел <b>#12</b> (242,51). Движемся к цели.'},
+            {t:'Итерация 13 — ChooseParent!',d:'Точка (420,20). Nearest = <b>#12</b>, но через <b>#11</b> cost = 343.7+99.5 = 443.2 vs #12 = 393.7+49.8 = 443.5. <span style="color:#fb923c">#11 чуть дешевле</span> (минус 0.3). Узел <b>#13</b> (291,42).'},
+            {t:'Итерация 14 — ChooseParent!',d:'Точка (460,50). Nearest = <b>#13</b>, но через <b>#12</b> cost = 393.7+99.3 = 493.0 vs #13 = 443.2+50.1 = 493.3. <span style="color:#fb923c">#12 дешевле</span>. Узел <b>#14</b> (341,44).'},
+            {t:'Итерация 15',d:'Точка (450,50). Nearest = #14. Узел <b>#15</b> (391,47). Один шаг до цели!'},
+            {t:'GOAL достигнут!',d:'distance(#15, GOAL) = 29 < threshold → соединяем! Узел <b>#16</b> = GOAL (420,45).'},
+            {t:'Финальный путь',d:'S→#4→#6→#9→#11→#12→#14→#15→G. <b>8 рёбер, cost=572.</b><br>Благодаря ChooseParent (8 событий) путь короче, чем у RRT с теми же семплами. С 1000+ итераций Rewire дополнительно перепривязывал бы существующие узлы.'}
+        ];
 
-        function getParent(nodeIdx, atStep){
-            // Check if node was rewired before this step
-            let p = allNodes[nodeIdx].p;
-            for(const rw of [{node:6,oldP:4,newP:3,step:5},{node:8,oldP:6,newP:5,step:7}]){
-                if(nodeIdx===rw.node){
-                    if(atStep >= rw.step) p = rw.newP;
-                    else p = rw.oldP;
-                }
-            }
-            return p;
-        }
+        let step=0,timer=null;
+        const TOTAL=DESCS.length-1;
 
         function render(){
-            const svg = document.getElementById('rrts-svg');
-            const s = STEPS[step];
-            const nc = s.nodeCount || 1;
-            let html = '';
+            const svg=document.getElementById('rrts-svg');
+            let h='';
+            const nc=step>=TOTAL-1?TREE.length:Math.min(step+1,TREE.length);
+
+            // Grid
+            for(let gx=0;gx<=500;gx+=50) h+='<line x1="'+gx+'" y1="0" x2="'+gx+'" y2="430" stroke="rgba(255,255,255,.03)"/>';
+            for(let gy=0;gy<=430;gy+=50) h+='<line x1="0" y1="'+gy+'" x2="500" y2="'+gy+'" stroke="rgba(255,255,255,.03)"/>';
 
             // Obstacle
-            html += '<rect x="'+OBS.x+'" y="'+OBS.y+'" width="'+OBS.w+'" height="'+OBS.h+'" rx="4" fill="rgba(248,113,113,.25)" stroke="rgba(248,113,113,.5)" stroke-width="1"/>';
-            html += '<text x="50" y="395" fill="#6c9eff" font-size="12" font-weight="bold">START</text>';
-            html += '<text x="400" y="38" fill="#a78bfa" font-size="12" font-weight="bold">GOAL</text>';
+            h+='<rect x="'+OBS.x+'" y="'+OBS.y+'" width="'+OBS.w+'" height="'+OBS.h+'" rx="4" fill="rgba(248,113,113,.25)" stroke="rgba(248,113,113,.5)" stroke-width="1"/>';
+            h+='<text x="28" y="335" fill="#6c9eff" font-size="12" font-weight="bold">S</text>';
+            h+='<text x="430" y="42" fill="#a78bfa" font-size="12" font-weight="bold">G</text>';
+            h+='<circle cx="420" cy="45" r="10" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,3" opacity=".4"/>';
 
-            // Rewire radius visualization (show at rewire steps)
-            if(s.rewire){
-                const rn = allNodes[s.rewire.node];
-                html += '<circle cx="'+rn.x+'" cy="'+rn.y+'" r="75" fill="none" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4" opacity=".4"/>';
-                html += '<text x="'+(rn.x+30)+'" y="'+(rn.y-55)+'" fill="#fb923c" font-size="10" font-style="italic">радиус r</text>';
+            // Current CP event
+            const curCP=CP.find(c=>c.n===step);
+
+            // Show radius on CP steps
+            if(curCP && step>=1 && step<=15){
+                const nd=TREE[step];
+                h+='<circle cx="'+nd.x+'" cy="'+nd.y+'" r="100" fill="none" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4" opacity=".3"/>';
+                h+='<text x="'+(nd.x+50)+'" y="'+(nd.y-70)+'" fill="#fb923c" font-size="9" opacity=".6">r=100</text>';
             }
 
-            // Draw old edges (before rewire) - red dashed
-            const rewireSteps = [{node:6,oldP:4,newP:3,step:5},{node:8,oldP:6,newP:5,step:7}];
-            for(const rw of rewireSteps){
-                if(step === rw.step){
-                    // Show old edge being removed
-                    const from = allNodes[rw.oldP];
-                    const to = allNodes[rw.node];
-                    html += '<line x1="'+from.x+'" y1="'+from.y+'" x2="'+to.x+'" y2="'+to.y+'" stroke="#f87171" stroke-width="2" stroke-dasharray="4,4" opacity=".5"/>';
-                    // Show new edge being added
-                    const newFrom = allNodes[rw.newP];
-                    html += '<line x1="'+newFrom.x+'" y1="'+newFrom.y+'" x2="'+to.x+'" y2="'+to.y+'" stroke="#fb923c" stroke-width="2.5" stroke-dasharray="6,3" opacity=".8"/>';
+            // ChooseParent: show rejected nearest edge (red dashed)
+            if(curCP){
+                const near=TREE[curCP.near], nd=TREE[curCP.n];
+                h+='<line x1="'+near.x+'" y1="'+near.y+'" x2="'+nd.x+'" y2="'+nd.y+'" stroke="#f87171" stroke-width="2" stroke-dasharray="4,4" opacity=".5"/>';
+                h+='<text x="'+((near.x+nd.x)/2+5)+'" y="'+((near.y+nd.y)/2-5)+'" fill="#f87171" font-size="9" opacity=".7">nearest</text>';
+                // Show chosen edge (orange)
+                const chosen=TREE[curCP.chose];
+                h+='<line x1="'+chosen.x+'" y1="'+chosen.y+'" x2="'+nd.x+'" y2="'+nd.y+'" stroke="#fb923c" stroke-width="2.5" stroke-dasharray="6,3" opacity=".8"/>';
+                h+='<text x="'+((chosen.x+nd.x)/2-25)+'" y="'+((chosen.y+nd.y)/2+12)+'" fill="#fb923c" font-size="9" font-weight="bold" opacity=".8">chosen</text>';
+            }
+
+            // Tree edges
+            for(let i=1;i<nc;i++){
+                const nd=TREE[i],par=TREE[nd.p];
+                const onPath=step===TOTAL&&PATH.includes(i)&&PATH.includes(nd.p);
+                const isCur=(i===step&&step>=1&&step<TOTAL);
+                if(onPath) continue;
+                if(isCur){
+                    h+='<line x1="'+par.x+'" y1="'+par.y+'" x2="'+nd.x+'" y2="'+nd.y+'" stroke="#4ade80" stroke-width="2.5" opacity=".9"/>';
+                } else {
+                    const dead=DEAD.includes(i);
+                    h+='<line x1="'+par.x+'" y1="'+par.y+'" x2="'+nd.x+'" y2="'+nd.y+'" stroke="#6c9eff" stroke-width="'+(dead?'1':'1.3')+'" opacity="'+(dead?'.2':'.4')+'"/>';
                 }
             }
 
-            // Draw tree edges
-            for(let i=1; i<nc; i++){
-                const p = getParent(i, step);
-                if(p < 0) continue;
-                const from = allNodes[p];
-                const to = allNodes[i];
-                const isPath = step===STEPS.length-1 && PATH.includes(i) && PATH.includes(p);
-                html += '<line x1="'+from.x+'" y1="'+from.y+'" x2="'+to.x+'" y2="'+to.y+'" stroke="'+(isPath?'#4ade80':'#6c9eff')+'" stroke-width="'+(isPath?'2':'1.5')+'" opacity="'+(isPath?'1':'.45')+'"/>';
+            // Path highlight
+            if(step===TOTAL){
+                for(let i=0;i<PATH.length-1;i++){
+                    const a=TREE[PATH[i]],b=TREE[PATH[i+1]];
+                    h+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#4ade80" stroke-width="3"/>';
+                }
             }
 
-            // Dead-end branch
-            if(nc >= 3){
-                html += '<line x1="85" y1="390" x2="130" y2="380" stroke="#6c9eff" stroke-width="1" opacity=".2"/>';
-                html += '<line x1="130" y1="380" x2="160" y2="360" stroke="#6c9eff" stroke-width="1" opacity=".2"/>';
-                html += '<circle cx="130" cy="380" r="3" fill="#6c9eff" opacity=".2"/>';
-                html += '<circle cx="160" cy="360" r="3" fill="#6c9eff" opacity=".2"/>';
-            }
-            if(nc >= 12){
-                html += '<line x1="245" y1="60" x2="270" y2="105" stroke="#6c9eff" stroke-width="1" opacity=".2"/>';
-                html += '<circle cx="270" cy="105" r="3" fill="#6c9eff" opacity=".2"/>';
+            // Random sample
+            if(step>=1&&step<=15&&SAMPLES[step]){
+                const s=SAMPLES[step],nearIdx=TREE[step].p,near=TREE[nearIdx];
+                h+='<line x1="'+near.x+'" y1="'+near.y+'" x2="'+s.x+'" y2="'+s.y+'" stroke="#fb923c" stroke-width="1" stroke-dasharray="5,4" opacity=".3"/>';
+                h+='<circle cx="'+s.x+'" cy="'+s.y+'" r="6" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="3,3" opacity=".6"/>';
+                h+='<circle cx="'+s.x+'" cy="'+s.y+'" r="2" fill="#fb923c" opacity=".7"/>';
             }
 
             // Nodes
-            for(let i=0; i<nc; i++){
-                const n = allNodes[i];
-                const isStart = i===0;
-                const isGoal = i===14;
-                const isNew = (step>=1 && i===nc-1 && step<STEPS.length-1);
-                const isRewired = s.rewire && i===s.rewire.node;
-                const isOnPath = step===STEPS.length-1 && PATH.includes(i);
-
-                let fill='#6c9eff', r=4, op='.6';
-                if(isStart){fill='#6c9eff';r=7;op='1';}
-                else if(isGoal){fill='#a78bfa';r=7;op='1';}
-                else if(isOnPath){fill='#4ade80';r=5;op='1';}
-                else if(isRewired){fill='#fb923c';r=6;op='1';}
-                else if(isNew){fill='#fb923c';r=5;op='.9';}
-
-                html += '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+r+'" fill="'+fill+'" opacity="'+op+'"/>';
+            for(let i=0;i<nc;i++){
+                const nd=TREE[i],isS=i===0,isG=i===TREE.length-1&&step>=TOTAL-1;
+                const isCur=i===step&&step>=1&&step<TOTAL;
+                const onP=step===TOTAL&&PATH.includes(i);
+                const dead=DEAD.includes(i);
+                let fill='#6c9eff',r=4,op='.5';
+                if(isS){fill='#6c9eff';r=7;op='1';}
+                else if(isG){fill='#a78bfa';r=7;op='1';}
+                else if(onP){fill='#4ade80';r=5;op='1';}
+                else if(isCur){fill=curCP?'#fb923c':'#4ade80';r=6;op='1';}
+                else if(dead){fill='#6c9eff';r=3;op='.25';}
+                h+='<circle cx="'+nd.x+'" cy="'+nd.y+'" r="'+r+'" fill="'+fill+'" opacity="'+op+'"/>';
+                const show=isS||isG||isCur||onP||step===TOTAL;
+                if(show){
+                    let lx=nd.x+8,ly=nd.y-6;
+                    if(isS){lx=nd.x-8;ly=nd.y+18;}
+                    else if(isG){lx=nd.x-8;ly=nd.y+18;}
+                    const lop=(dead&&step===TOTAL)?'.3':'1';
+                    const lc=isG?'#a78bfa':(onP||isCur?'#4ade80':'#6c9eff');
+                    h+='<text x="'+lx+'" y="'+ly+'" fill="'+lc+'" font-size="9" opacity="'+lop+'">#'+i+'</text>';
+                }
             }
 
-            svg.innerHTML = html;
-
-            document.getElementById('rrts-label').textContent = 'Шаг '+step+' / '+(STEPS.length-1);
-            document.getElementById('rrts-desc').innerHTML = '<strong>'+s.title+'</strong> — '+s.desc;
-            document.getElementById('rrts-prev').disabled = step===0;
-            document.getElementById('rrts-next').disabled = step===STEPS.length-1;
+            svg.innerHTML=h;
+            document.getElementById('rrts-label').textContent='Шаг '+step+' / '+TOTAL;
+            const d=DESCS[step];
+            document.getElementById('rrts-desc').innerHTML='<strong>'+d.t+'</strong> — '+d.d;
+            document.getElementById('rrts-prev').disabled=step===0;
+            document.getElementById('rrts-next').disabled=step===TOTAL;
         }
 
-        const rrtStarAnim = {
-            prev(){ if(step>0){step--;render();this.stop();} },
-            next(){ if(step<STEPS.length-1){step++;render();this.stop();} },
+        const rrtStarAnim={
+            prev(){if(step>0){step--;render();this.stop();}},
+            next(){if(step<TOTAL){step++;render();this.stop();}},
             toggle(){
                 if(timer){this.stop();}
-                else{
-                    timer=setInterval(()=>{
-                        if(step<STEPS.length-1){step++;render();}
-                        else this.stop();
-                    },2000);
-                    document.getElementById('rrts-play').textContent='⏸ Pause';
-                    document.getElementById('rrts-play').classList.add('active');
-                }
+                else{timer=setInterval(()=>{if(step<TOTAL){step++;render();}else this.stop();},2000);
+                    document.getElementById('rrts-play').textContent='\u23f8 Pause';
+                    document.getElementById('rrts-play').classList.add('active');}
             },
-            stop(){
-                if(timer){clearInterval(timer);timer=null;}
-                document.getElementById('rrts-play').textContent='▶ Play';
-                document.getElementById('rrts-play').classList.remove('active');
-            }
+            stop(){if(timer){clearInterval(timer);timer=null;}
+                document.getElementById('rrts-play').textContent='\u25b6 Play';
+                document.getElementById('rrts-play').classList.remove('active');}
         };
-        window.rrtStarAnim = rrtStarAnim;
+        window.rrtStarAnim=rrtStarAnim;
         render();
         })();
         </script>

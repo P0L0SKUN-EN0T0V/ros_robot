@@ -71,6 +71,15 @@
         .grid-legend span{display:flex;align-items:center;gap:6px}
         .grid-legend .dot{width:14px;height:14px;border-radius:4px;border:2px solid}
         @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}.formula-block{background:#f3f0ff;border-color:#d4c8f0}.analogy{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}
+
+        /* RRT* Animation */
+        .rrt-anim-wrap{max-width:620px;margin:24px auto}
+        .rrt-anim-controls{display:flex;gap:8px;justify-content:center;align-items:center;margin:12px 0;flex-wrap:wrap}
+        .rrt-anim-controls button{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 14px;cursor:pointer;font-size:.9em;transition:all .2s}
+        .rrt-anim-controls button:hover{border-color:var(--accent);color:var(--accent)}
+        .rrt-anim-controls button.active{background:rgba(108,158,255,.15);border-color:var(--accent);color:var(--accent)}
+        .rrt-anim-label{color:var(--text2);font-size:.85em;min-width:120px;text-align:center}
+        .rrt-anim-desc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:10px 0;font-size:.88em;line-height:1.6;min-height:50px}
     </style>
 </head>
 <body>
@@ -323,6 +332,191 @@
         <div class="card warn">
             <strong>RRT vs RRT* на одной карте:</strong> обычный RRT нашёл бы кривой путь с лишними изгибами (как на странице RRT). RRT* постепенно «выпрямляет» дерево через rewiring. Чем больше итераций — тем прямее путь. В пределе — он совпадёт с оптимальным.
         </div>
+
+
+        <!-- ============ АНИМАЦИЯ ============ -->
+        <h2>Пошаговая анимация RRT*</h2>
+
+        <p>Смотри, как RRT* не только растит дерево, но и <span style="color:var(--orange)">перепривязывает узлы</span> (rewire) для улучшения путей. Оранжевые пунктирные линии — новые связи, красные перечёркнутые — старые удалённые.</p>
+
+        <div class="rrt-anim-wrap">
+            <div class="rrt-anim-controls">
+                <button onclick="rrtStarAnim.prev()" id="rrts-prev">◀</button>
+                <button onclick="rrtStarAnim.toggle()" id="rrts-play">▶ Play</button>
+                <button onclick="rrtStarAnim.next()" id="rrts-next">▶</button>
+                <span class="rrt-anim-label" id="rrts-label">Шаг 0 / 12</span>
+            </div>
+            <div class="tree-viz" style="height:430px">
+                <svg id="rrts-svg" viewBox="0 0 500 430"></svg>
+            </div>
+            <div class="rrt-anim-desc" id="rrts-desc"></div>
+        </div>
+
+        <script>
+        (function(){
+        const OBS={x:200,y:80,w:30,h:200};
+
+        // Nodes: idx, x, y, parent_idx
+        // We track parent changes for rewiring visualization
+        const allNodes=[
+            {x:50,y:370,p:-1},   // 0: START
+            {x:90,y:305,p:0},    // 1
+            {x:85,y:390,p:0},    // 2 (dead-end branch)
+            {x:135,y:275,p:1},   // 3
+            {x:70,y:260,p:1},    // 4 (will be rewired)
+            {x:175,y:240,p:3},   // 5
+            {x:100,y:215,p:4},   // 6 (will be rewired: 4→3)
+            {x:185,y:195,p:5},   // 7
+            {x:140,y:175,p:6},   // 8 (will be rewired: 6→5)
+            {x:175,y:145,p:7},   // 9
+            {x:180,y:65,p:9},    // 10
+            {x:245,y:60,p:10},   // 11
+            {x:310,y:55,p:11},   // 12
+            {x:365,y:50,p:12},   // 13
+            {x:420,y:45,p:13}    // 14: GOAL
+        ];
+
+        // Steps: add node, then optionally rewire
+        const STEPS=[
+            {title:'Инициализация',desc:'Дерево содержит только START. RRT* работает как RRT, но после каждого нового узла ищет соседей в радиусе r и пробует перепривязать.', nodeCount:1},
+            {title:'Шаг 1-3: начальный рост',desc:'Добавляем узлы #1 (90,305), #2 (85,390) и #3 (135,275). Пока без rewiring — соседей мало, перепривязывать нечего.', nodeCount:4},
+            {title:'Шаг 4: добавляем (70,260)',desc:'Узел #4 добавлен, parent=#1. Соседей в радиусе r: #1 и START. Через #1 уже оптимально — rewire не нужен.', nodeCount:5},
+            {title:'Шаг 5: добавляем (175,240)',desc:'Узел #5, parent=#3. Двигаемся к стене. Соседи: #3, #1. Через #3 — кратчайший путь.', nodeCount:6},
+            {title:'Шаг 6: добавляем (100,215) + REWIRE!',desc:'Узел #6, начальный parent=#4. Но RRT* проверяет соседей в радиусе: #4 (g=2.0+0.6=2.6), <strong>#3 (g=1.8+0.7=2.5)</strong> — короче! <span style="color:var(--orange)">Rewire: parent #6 меняется с #4 на #3</span>. Путь стал короче на 0.1.',
+             nodeCount:7, rewire:{node:6, oldParent:4, newParent:3}},
+            {title:'Шаг 7: добавляем (185,195)',desc:'Узел #7, parent=#5. Идём вверх, обходя стену.', nodeCount:8},
+            {title:'Шаг 8: добавляем (140,175) + REWIRE!',desc:'Узел #8, начальный parent=#6. Проверяем соседей: #6 (через #3), <strong>#5 (через #3→#5, g=3.1)</strong> — <span style="color:var(--orange)">Rewire: parent #8 с #6 на #5</span>. Путь через #5 прямее.',
+             nodeCount:9, rewire:{node:8, oldParent:6, newParent:5}},
+            {title:'Шаг 9: добавляем (175,145)',desc:'Узел #9, parent=#7. Мы почти над стеной! Стена заканчивается на y=80.', nodeCount:10},
+            {title:'Шаг 10-11: проходим стену!',desc:'Узлы #10 (180,65) и #11 (245,60). Обошли стену сверху! Прямая линия через y<80 свободна.', nodeCount:12},
+            {title:'Шаг 12-13: приближаемся к цели',desc:'Узлы #12 (310,55) и #13 (365,50). Открытое пространство — быстро растём к GOAL.', nodeCount:14},
+            {title:'Шаг 14: GOAL достигнут!',desc:'Узел #14 = GOAL (420,45). Дерево достигло цели!', nodeCount:15},
+            {title:'Финальный путь',desc:'Путь после rewiring: START→#1→#3→#5→#7→#9→#10→#11→#12→#13→GOAL.<br><strong>10 отрезков</strong>, но благодаря rewire путь короче, чем у обычного RRT. Узлы #6 и #8 были перепривязаны — их ветки теперь оптимальнее.'}
+        ];
+
+        const PATH=[0,1,3,5,7,9,10,11,12,13,14];
+        // Track active rewires (which are visible)
+        const rewires = []; // {node, oldParent, newParent, step}
+
+        let step=0, timer=null;
+
+        function getParent(nodeIdx, atStep){
+            // Check if node was rewired before this step
+            let p = allNodes[nodeIdx].p;
+            for(const rw of [{node:6,oldP:4,newP:3,step:5},{node:8,oldP:6,newP:5,step:7}]){
+                if(nodeIdx===rw.node){
+                    if(atStep >= rw.step) p = rw.newP;
+                    else p = rw.oldP;
+                }
+            }
+            return p;
+        }
+
+        function render(){
+            const svg = document.getElementById('rrts-svg');
+            const s = STEPS[step];
+            const nc = s.nodeCount || 1;
+            let html = '';
+
+            // Obstacle
+            html += '<rect x="'+OBS.x+'" y="'+OBS.y+'" width="'+OBS.w+'" height="'+OBS.h+'" rx="4" fill="rgba(248,113,113,.25)" stroke="rgba(248,113,113,.5)" stroke-width="1"/>';
+            html += '<text x="50" y="395" fill="#6c9eff" font-size="12" font-weight="bold">START</text>';
+            html += '<text x="400" y="38" fill="#a78bfa" font-size="12" font-weight="bold">GOAL</text>';
+
+            // Rewire radius visualization (show at rewire steps)
+            if(s.rewire){
+                const rn = allNodes[s.rewire.node];
+                html += '<circle cx="'+rn.x+'" cy="'+rn.y+'" r="75" fill="none" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4" opacity=".4"/>';
+                html += '<text x="'+(rn.x+30)+'" y="'+(rn.y-55)+'" fill="#fb923c" font-size="10" font-style="italic">радиус r</text>';
+            }
+
+            // Draw old edges (before rewire) - red dashed
+            const rewireSteps = [{node:6,oldP:4,newP:3,step:5},{node:8,oldP:6,newP:5,step:7}];
+            for(const rw of rewireSteps){
+                if(step === rw.step){
+                    // Show old edge being removed
+                    const from = allNodes[rw.oldP];
+                    const to = allNodes[rw.node];
+                    html += '<line x1="'+from.x+'" y1="'+from.y+'" x2="'+to.x+'" y2="'+to.y+'" stroke="#f87171" stroke-width="2" stroke-dasharray="4,4" opacity=".5"/>';
+                    // Show new edge being added
+                    const newFrom = allNodes[rw.newP];
+                    html += '<line x1="'+newFrom.x+'" y1="'+newFrom.y+'" x2="'+to.x+'" y2="'+to.y+'" stroke="#fb923c" stroke-width="2.5" stroke-dasharray="6,3" opacity=".8"/>';
+                }
+            }
+
+            // Draw tree edges
+            for(let i=1; i<nc; i++){
+                const p = getParent(i, step);
+                if(p < 0) continue;
+                const from = allNodes[p];
+                const to = allNodes[i];
+                const isPath = step===STEPS.length-1 && PATH.includes(i) && PATH.includes(p);
+                html += '<line x1="'+from.x+'" y1="'+from.y+'" x2="'+to.x+'" y2="'+to.y+'" stroke="'+(isPath?'#4ade80':'#6c9eff')+'" stroke-width="'+(isPath?'2':'1.5')+'" opacity="'+(isPath?'1':'.45')+'"/>';
+            }
+
+            // Dead-end branch
+            if(nc >= 3){
+                html += '<line x1="85" y1="390" x2="130" y2="380" stroke="#6c9eff" stroke-width="1" opacity=".2"/>';
+                html += '<line x1="130" y1="380" x2="160" y2="360" stroke="#6c9eff" stroke-width="1" opacity=".2"/>';
+                html += '<circle cx="130" cy="380" r="3" fill="#6c9eff" opacity=".2"/>';
+                html += '<circle cx="160" cy="360" r="3" fill="#6c9eff" opacity=".2"/>';
+            }
+            if(nc >= 12){
+                html += '<line x1="245" y1="60" x2="270" y2="105" stroke="#6c9eff" stroke-width="1" opacity=".2"/>';
+                html += '<circle cx="270" cy="105" r="3" fill="#6c9eff" opacity=".2"/>';
+            }
+
+            // Nodes
+            for(let i=0; i<nc; i++){
+                const n = allNodes[i];
+                const isStart = i===0;
+                const isGoal = i===14;
+                const isNew = (step>=1 && i===nc-1 && step<STEPS.length-1);
+                const isRewired = s.rewire && i===s.rewire.node;
+                const isOnPath = step===STEPS.length-1 && PATH.includes(i);
+
+                let fill='#6c9eff', r=4, op='.6';
+                if(isStart){fill='#6c9eff';r=7;op='1';}
+                else if(isGoal){fill='#a78bfa';r=7;op='1';}
+                else if(isOnPath){fill='#4ade80';r=5;op='1';}
+                else if(isRewired){fill='#fb923c';r=6;op='1';}
+                else if(isNew){fill='#fb923c';r=5;op='.9';}
+
+                html += '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+r+'" fill="'+fill+'" opacity="'+op+'"/>';
+            }
+
+            svg.innerHTML = html;
+
+            document.getElementById('rrts-label').textContent = 'Шаг '+step+' / '+(STEPS.length-1);
+            document.getElementById('rrts-desc').innerHTML = '<strong>'+s.title+'</strong> — '+s.desc;
+            document.getElementById('rrts-prev').disabled = step===0;
+            document.getElementById('rrts-next').disabled = step===STEPS.length-1;
+        }
+
+        const rrtStarAnim = {
+            prev(){ if(step>0){step--;render();this.stop();} },
+            next(){ if(step<STEPS.length-1){step++;render();this.stop();} },
+            toggle(){
+                if(timer){this.stop();}
+                else{
+                    timer=setInterval(()=>{
+                        if(step<STEPS.length-1){step++;render();}
+                        else this.stop();
+                    },2000);
+                    document.getElementById('rrts-play').textContent='⏸ Pause';
+                    document.getElementById('rrts-play').classList.add('active');
+                }
+            },
+            stop(){
+                if(timer){clearInterval(timer);timer=null;}
+                document.getElementById('rrts-play').textContent='▶ Play';
+                document.getElementById('rrts-play').classList.remove('active');
+            }
+        };
+        window.rrtStarAnim = rrtStarAnim;
+        render();
+        })();
+        </script>
 
         <!-- ============ ПСЕВДОКОД ============ -->
         <h2>Псевдокод</h2>

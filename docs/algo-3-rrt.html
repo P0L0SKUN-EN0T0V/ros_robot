@@ -238,123 +238,94 @@
 
         <div class="tree-viz">
             <svg viewBox="0 0 500 400">
-                <!-- Obstacle (wall in the middle) -->
+                <!-- Obstacle -->
                 <rect class="obstacle" x="200" y="80" width="30" height="200" rx="4"/>
 
                 <!-- Labels -->
-                <text x="50" y="350" class="node-label" fill="#6c9eff" font-size="14" font-weight="bold">START</text>
-                <text x="400" y="50" class="node-label" fill="#a78bfa" font-size="14" font-weight="bold">GOAL</text>
+                <text x="28" y="335" class="node-label" fill="#6c9eff" font-size="13" font-weight="bold">START</text>
+                <text x="430" y="42" class="node-label" fill="#a78bfa" font-size="13" font-weight="bold">GOAL</text>
 
-                <!-- Tree edges (exploration) - showing how RRT grows -->
-                <!-- Iteration 1: random point upper-left area -->
-                <line class="edge" x1="50" y1="340" x2="90" y2="305"/>
-                <!-- Iteration 2: random point right (blocked by wall) → goes up -->
-                <line class="edge" x1="50" y1="340" x2="85" y2="370"/>
-                <!-- Iteration 3 -->
-                <line class="edge" x1="90" y1="305" x2="135" y2="275"/>
-                <!-- Iteration 4 -->
-                <line class="edge" x1="90" y1="305" x2="70" y2="260"/>
-                <!-- Iteration 5 -->
-                <line class="edge" x1="135" y1="275" x2="175" y2="240"/>
-                <!-- Iteration 6: branch going down -->
-                <line class="edge" x1="85" y1="370" x2="130" y2="355"/>
-                <!-- Iteration 7 -->
-                <line class="edge" x1="70" y1="260" x2="100" y2="215"/>
-                <!-- Iteration 8: trying to go right but wall blocks → grows up -->
-                <line class="edge" x1="175" y1="240" x2="185" y2="195"/>
-                <!-- Iteration 9 -->
-                <line class="edge" x1="100" y1="215" x2="140" y2="175"/>
-                <!-- Iteration 10: going up to pass wall -->
-                <line class="edge" x1="185" y1="195" x2="175" y2="145"/>
-                <!-- Iteration 11 -->
-                <line class="edge" x1="140" y1="175" x2="170" y2="130"/>
-                <!-- Iteration 12: passing above the wall! -->
-                <line class="edge" x1="175" y1="145" x2="180" y2="60"/>
-                <!-- Iteration 13: past the wall! -->
-                <line class="edge" x1="180" y1="60" x2="245" y2="55"/>
-                <!-- Iteration 14 -->
-                <line class="edge" x1="245" y1="55" x2="305" y2="70"/>
-                <!-- Iteration 15 -->
-                <line class="edge" x1="305" y1="70" x2="355" y2="55"/>
-                <!-- Iteration 16: reaching goal area -->
-                <line class="edge" x1="355" y1="55" x2="420" y2="45"/>
+                <!-- Tree edges -->
+                <line class="edge" x1="50" y1="340" x2="92" y2="312" style="opacity:.5"/>
+                <line class="edge" x1="50" y1="340" x2="76" y2="383" style="opacity:.25"/>
+                <line class="edge" x1="92" y1="312" x2="125" y2="274" style="opacity:.5"/>
+                <line class="edge" x1="92" y1="312" x2="136" y2="336" style="opacity:.25"/>
+                <line class="edge" x1="125" y1="274" x2="132" y2="225" style="opacity:.5"/>
+                <line class="edge" x1="136" y1="336" x2="164" y2="377" style="opacity:.25"/>
+                <line class="edge" x1="132" y1="225" x2="123" y2="176" style="opacity:.5"/>
+                <line class="edge" x1="123" y1="176" x2="169" y2="156" style="opacity:.5"/>
+                <line class="edge" x1="169" y1="156" x2="143" y2="113" style="opacity:.5"/>
+                <line class="edge" x1="143" y1="113" x2="161" y2="67" style="opacity:.5"/>
+                <line class="edge" x1="161" y1="67" x2="209" y2="52" style="opacity:.5"/>
+                <line class="edge" x1="209" y1="52" x2="259" y2="51" style="opacity:.5"/>
+                <line class="edge" x1="259" y1="51" x2="308" y2="42" style="opacity:.5"/>
+                <line class="edge" x1="308" y1="42" x2="358" y2="45" style="opacity:.5"/>
+                <line class="edge" x1="358" y1="45" x2="420" y2="45" style="opacity:.5"/>
 
-                <!-- Dead-end branches (exploration that didn't lead anywhere) -->
-                <line class="edge" x1="130" y1="355" x2="165" y2="370" style="opacity:.3"/>
-                <line class="edge" x1="165" y1="370" x2="185" y2="345" style="opacity:.3"/>
-                <line class="edge" x1="135" y1="275" x2="160" y2="310" style="opacity:.3"/>
-                <line class="edge" x1="170" y1="130" x2="155" y2="85" style="opacity:.3"/>
-                <line class="edge" x1="245" y1="55" x2="270" y2="100" style="opacity:.3"/>
-                <line class="edge" x1="305" y1="70" x2="320" y2="120" style="opacity:.3"/>
-                <line class="edge" x1="320" y1="120" x2="350" y2="155" style="opacity:.3"/>
+                <!-- Path (solution) -->
+                <line class="edge path" x1="50" y1="340" x2="92" y2="312"/>
+                <line class="edge path" x1="92" y1="312" x2="125" y2="274"/>
+                <line class="edge path" x1="125" y1="274" x2="132" y2="225"/>
+                <line class="edge path" x1="132" y1="225" x2="123" y2="176"/>
+                <line class="edge path" x1="123" y1="176" x2="169" y2="156"/>
+                <line class="edge path" x1="169" y1="156" x2="143" y2="113"/>
+                <line class="edge path" x1="143" y1="113" x2="161" y2="67"/>
+                <line class="edge path" x1="161" y1="67" x2="209" y2="52"/>
+                <line class="edge path" x1="209" y1="52" x2="259" y2="51"/>
+                <line class="edge path" x1="259" y1="51" x2="308" y2="42"/>
+                <line class="edge path" x1="308" y1="42" x2="358" y2="45"/>
+                <line class="edge path" x1="358" y1="45" x2="420" y2="45"/>
 
-                <!-- Path edges (the solution) -->
-                <line class="edge path" x1="50" y1="340" x2="90" y2="305"/>
-                <line class="edge path" x1="90" y1="305" x2="135" y2="275"/>
-                <line class="edge path" x1="135" y1="275" x2="175" y2="240"/>
-                <line class="edge path" x1="175" y1="240" x2="185" y2="195"/>
-                <line class="edge path" x1="185" y1="195" x2="175" y2="145"/>
-                <line class="edge path" x1="175" y1="145" x2="180" y2="60"/>
-                <line class="edge path" x1="180" y1="60" x2="245" y2="55"/>
-                <line class="edge path" x1="245" y1="55" x2="305" y2="70"/>
-                <line class="edge path" x1="305" y1="70" x2="355" y2="55"/>
-                <line class="edge path" x1="355" y1="55" x2="420" y2="45"/>
+                <!-- Random sample points -->
+                <circle class="sample" cx="140" cy="280" r="3"/>
+                <circle class="sample" cx="80" cy="390" r="3"/>
+                <circle class="sample" cx="190" cy="200" r="3"/>
+                <circle class="sample" cx="160" cy="350" r="3"/>
+                <circle class="sample" cx="150" cy="100" r="3"/>
+                <circle class="sample" cx="180" cy="400" r="3"/>
+                <circle class="sample" cx="100" cy="50" r="3"/>
+                <circle class="sample" cx="230" cy="130" r="3"/>
+                <circle class="sample" cx="80" cy="10" r="3"/>
+                <circle class="sample" cx="180" cy="20" r="3"/>
+                <circle class="sample" cx="280" cy="30" r="3"/>
+                <circle class="sample" cx="350" cy="50" r="3"/>
+                <circle class="sample" cx="420" cy="20" r="3"/>
+                <circle class="sample" cx="460" cy="50" r="3"/>
 
-                <!-- Random sample points (orange dots) -->
-                <circle class="sample" cx="120" cy="290" r="3"/>
-                <circle class="sample" cx="95" cy="380" r="3"/>
-                <circle class="sample" cx="50" cy="230" r="3"/>
-                <circle class="sample" cx="190" cy="210" r="3"/>
-                <circle class="sample" cx="145" cy="150" r="3"/>
-                <circle class="sample" cx="400" cy="30" r="3"/>
-                <circle class="sample" cx="310" cy="50" r="3"/>
-                <circle class="sample" cx="280" cy="140" r="3"/>
-                <circle class="sample" cx="175" cy="380" r="3"/>
-                <circle class="sample" cx="160" cy="50" r="3"/>
-
-                <!-- Tree nodes -->
-                <!-- Dead-end nodes (dim) -->
-                <circle class="node" cx="165" cy="370" r="4" style="opacity:.35"/>
-                <circle class="node" cx="185" cy="345" r="4" style="opacity:.35"/>
-                <circle class="node" cx="160" cy="310" r="4" style="opacity:.35"/>
-                <circle class="node" cx="155" cy="85" r="4" style="opacity:.35"/>
-                <circle class="node" cx="270" cy="100" r="4" style="opacity:.35"/>
-                <circle class="node" cx="320" cy="120" r="4" style="opacity:.35"/>
-                <circle class="node" cx="350" cy="155" r="4" style="opacity:.35"/>
-                <circle class="node" cx="130" cy="355" r="4" style="opacity:.35"/>
+                <!-- Dead-end nodes -->
+                <circle class="node" cx="76" cy="383" r="4" style="opacity:.3"/>
+                <circle class="node" cx="136" cy="336" r="4" style="opacity:.3"/>
+                <circle class="node" cx="164" cy="377" r="4" style="opacity:.3"/>
 
                 <!-- Path nodes -->
-                <circle class="node path" cx="90" cy="305" r="5"/>
-                <circle class="node path" cx="135" cy="275" r="5"/>
-                <circle class="node path" cx="175" cy="240" r="5"/>
-                <circle class="node path" cx="185" cy="195" r="5"/>
-                <circle class="node path" cx="175" cy="145" r="5"/>
-                <circle class="node path" cx="180" cy="60" r="5"/>
-                <circle class="node path" cx="245" cy="55" r="5"/>
-                <circle class="node path" cx="305" cy="70" r="5"/>
-                <circle class="node path" cx="355" cy="55" r="5"/>
-
-                <!-- Non-path exploration nodes -->
-                <circle class="node" cx="85" cy="370" r="4"/>
-                <circle class="node" cx="70" cy="260" r="4"/>
-                <circle class="node" cx="100" cy="215" r="4"/>
-                <circle class="node" cx="140" cy="175" r="4"/>
-                <circle class="node" cx="170" cy="130" r="4"/>
+                <circle class="node path" cx="92" cy="312" r="5"/>
+                <circle class="node path" cx="125" cy="274" r="5"/>
+                <circle class="node path" cx="132" cy="225" r="5"/>
+                <circle class="node path" cx="123" cy="176" r="5"/>
+                <circle class="node path" cx="169" cy="156" r="5"/>
+                <circle class="node path" cx="143" cy="113" r="5"/>
+                <circle class="node path" cx="161" cy="67" r="5"/>
+                <circle class="node path" cx="209" cy="52" r="5"/>
+                <circle class="node path" cx="259" cy="51" r="5"/>
+                <circle class="node path" cx="308" cy="42" r="5"/>
+                <circle class="node path" cx="358" cy="45" r="5"/>
 
                 <!-- Start and Goal -->
                 <circle class="node start" cx="50" cy="340" r="8"/>
                 <circle class="node goal" cx="420" cy="45" r="8"/>
 
-                <!-- Step labels along path -->
-                <text x="75" y="298" fill="#fb923c" font-size="10" font-weight="bold">#1</text>
-                <text x="120" y="268" fill="#fb923c" font-size="10" font-weight="bold">#3</text>
-                <text x="160" y="233" fill="#fb923c" font-size="10" font-weight="bold">#5</text>
-                <text x="190" y="190" fill="#fb923c" font-size="10" font-weight="bold">#8</text>
-                <text x="160" y="140" fill="#fb923c" font-size="10" font-weight="bold">#10</text>
-                <text x="165" y="55" fill="#fb923c" font-size="10" font-weight="bold">#12</text>
-                <text x="248" y="48" fill="#fb923c" font-size="10" font-weight="bold">#13</text>
-                <text x="308" y="63" fill="#fb923c" font-size="10" font-weight="bold">#14</text>
-                <text x="358" y="48" fill="#fb923c" font-size="10" font-weight="bold">#15</text>
+                <!-- Node labels -->
+                <text x="100" y="306" fill="#4ade80" font-size="9" font-weight="bold">#1</text>
+                <text x="133" y="268" fill="#4ade80" font-size="9" font-weight="bold">#3</text>
+                <text x="140" y="219" fill="#4ade80" font-size="9" font-weight="bold">#5</text>
+                <text x="131" y="170" fill="#4ade80" font-size="9" font-weight="bold">#7</text>
+                <text x="177" y="150" fill="#4ade80" font-size="9" font-weight="bold">#8</text>
+                <text x="151" y="107" fill="#4ade80" font-size="9" font-weight="bold">#9</text>
+                <text x="169" y="61" fill="#4ade80" font-size="9" font-weight="bold">#10</text>
+                <text x="217" y="46" fill="#4ade80" font-size="9" font-weight="bold">#11</text>
+                <text x="267" y="45" fill="#4ade80" font-size="9" font-weight="bold">#12</text>
+                <text x="290" y="36" fill="#4ade80" font-size="9" font-weight="bold">#13</text>
+                <text x="340" y="39" fill="#4ade80" font-size="9" font-weight="bold">#14</text>
             </svg>
         </div>
 

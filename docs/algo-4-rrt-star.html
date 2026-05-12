@@ -331,40 +331,40 @@
 RRT_Star(q_start, q_goal, map, max_iterations):
     T.init(q_start, cost=0)
 
-    for i = 1 to max_iterations:
+    <span style="color:var(--accent)">for</span> i = 1 to max_iterations:
         q_rand = sample(map, goal_bias)
         q_nearest = nearest(T, q_rand)
         q_new = steer(q_nearest, q_rand, Δq)
 
-        if not collision_free(q_nearest, q_new, map):
-            continue
+        <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> collision_free(q_nearest, q_new, map):
+            <span style="color:var(--accent)">continue</span>
 
-        // === ОТЛИЧИЕ №1: выбор лучшего родителя ===
-        neighbors = near(T, q_new, r_n)          // все соседи в радиусе r_n
+        <span style="color:var(--green)">// === ОТЛИЧИЕ №1: выбор лучшего родителя ===</span>
+        neighbors = near(T, q_new, r_n)          <span style="color:var(--orange)">// все соседи в радиусе r_n</span>
         q_best = q_nearest
         cost_best = cost(q_nearest) + dist(q_nearest, q_new)
 
-        for q_near in neighbors:                  // ищем лучшего родителя
+        <span style="color:var(--accent)">for</span> q_near <span style="color:var(--accent)">in</span> neighbors:                  <span style="color:var(--orange)">// ищем лучшего родителя</span>
             new_cost = cost(q_near) + dist(q_near, q_new)
-            if new_cost < cost_best AND collision_free(q_near, q_new):
+            <span style="color:var(--accent)">if</span> new_cost < cost_best AND collision_free(q_near, q_new):
                 q_best = q_near
                 cost_best = new_cost
 
         T.add_node(q_new, parent=q_best, cost=cost_best)
 
-        // === ОТЛИЧИЕ №2: перепривязка соседей ===
-        for q_near in neighbors:                  // rewiring
+        <span style="color:var(--green)">// === ОТЛИЧИЕ №2: перепривязка соседей ===</span>
+        <span style="color:var(--accent)">for</span> q_near <span style="color:var(--accent)">in</span> neighbors:                  <span style="color:var(--orange)">// rewiring</span>
             new_cost = cost(q_new) + dist(q_new, q_near)
-            if new_cost < cost(q_near) AND collision_free(q_new, q_near):
-                q_near.parent = q_new             // перепривязка!
+            <span style="color:var(--accent)">if</span> new_cost < cost(q_near) AND collision_free(q_new, q_near):
+                q_near.parent = q_new             <span style="color:var(--orange)">// перепривязка!</span>
                 q_near.cost = new_cost
-                update_costs_recursive(q_near)    // обновить потомков
+                update_costs_recursive(q_near)    <span style="color:var(--orange)">// обновить потомков</span>
 
-        if dist(q_new, q_goal) < threshold:
-            // путь найден, но можно продолжить для улучшения
+        <span style="color:var(--accent)">if</span> dist(q_new, q_goal) < threshold:
+            <span style="color:var(--green)">// путь найден, но можно продолжить для улучшения</span>
             ...
 
-    return best_path(T, q_goal)
+    <span style="color:var(--accent)">return</span> best_path(T, q_goal)
 </pre>
 
         <div class="card highlight">
@@ -440,51 +440,51 @@ RRT_Star(q_start, q_goal, map, max_iterations):
         <p>Показываю только отличия от RRT. Структура ноды та же — меняется логика внутри <code>plan()</code>:</p>
 
 <pre>
-// Структура узла — добавляем cost
-struct Node {
-    double x, y;
-    int parent;
-    double cost;  // стоимость пути от старта до этого узла
+<span style="color:var(--green)">// Структура узла — добавляем cost</span>
+<span style="color:var(--accent2)">struct</span> <span style="color:var(--accent2)">Node</span> {
+    <span style="color:var(--accent2)">double</span> x, y;
+    <span style="color:var(--accent2)">int</span> parent;
+    <span style="color:var(--accent2)">double</span> cost;  <span style="color:var(--orange)">// стоимость пути от старта до этого узла</span>
 };
 
-// Внутри plan():
-// ... (шаги 1-4 как в RRT) ...
+<span style="color:var(--green)">// Внутри plan():</span>
+<span style="color:var(--green)">// ... (шаги 1-4 как в RRT) ...</span>
 
-// === ОТЛИЧИЕ №1: ChooseParent ===
-double r_n = std::min(
-    gamma_ * std::pow(std::log((double)tree.size()) / tree.size(), 1.0 / 2.0),
+<span style="color:var(--green)">// === ОТЛИЧИЕ №1: ChooseParent ===</span>
+<span style="color:var(--accent2)">double</span> r_n = <span style="color:var(--accent2)">std::min</span>(
+    gamma_ * <span style="color:var(--accent2)">std::pow</span>(<span style="color:var(--accent2)">std::log</span>((<span style="color:var(--accent2)">double</span>)tree.size()) / tree.size(), 1.0 / 2.0),
     step_size_
 );
 
-// Найти всех соседей в радиусе r_n
-std::vector&lt;int&gt; neighbors;
-for (int j = 0; j &lt; (int)tree.size(); ++j) {
-    if (hypot(tree[j].x - nx, tree[j].y - ny) &lt; r_n)
+<span style="color:var(--green)">// Найти всех соседей в радиусе r_n</span>
+<span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">int</span>&gt; neighbors;
+<span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> j = 0; j &lt; (<span style="color:var(--accent2)">int</span>)tree.size(); ++j) {
+    <span style="color:var(--accent)">if</span> (hypot(tree[j].x - nx, tree[j].y - ny) &lt; r_n)
         neighbors.push_back(j);
 }
 
-// Выбрать лучшего родителя
-int best_parent = nearest_idx;
-double best_cost = tree[nearest_idx].cost + hypot(nx - tree[nearest_idx].x, ny - tree[nearest_idx].y);
+<span style="color:var(--green)">// Выбрать лучшего родителя</span>
+<span style="color:var(--accent2)">int</span> best_parent = nearest_idx;
+<span style="color:var(--accent2)">double</span> best_cost = tree[nearest_idx].cost + hypot(nx - tree[nearest_idx].x, ny - tree[nearest_idx].y);
 
-for (int j : neighbors) {
-    double new_cost = tree[j].cost + hypot(nx - tree[j].x, ny - tree[j].y);
-    if (new_cost &lt; best_cost &amp;&amp; collision_free(tree[j].x, tree[j].y, nx, ny)) {
+<span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> j : neighbors) {
+    <span style="color:var(--accent2)">double</span> new_cost = tree[j].cost + hypot(nx - tree[j].x, ny - tree[j].y);
+    <span style="color:var(--accent)">if</span> (new_cost &lt; best_cost &amp;&amp; collision_free(tree[j].x, tree[j].y, nx, ny)) {
         best_parent = j;
         best_cost = new_cost;
     }
 }
 
 tree.push_back({nx, ny, best_parent, best_cost});
-int new_idx = tree.size() - 1;
+<span style="color:var(--accent2)">int</span> new_idx = tree.size() - 1;
 
-// === ОТЛИЧИЕ №2: Rewire ===
-for (int j : neighbors) {
-    double new_cost = best_cost + hypot(tree[j].x - nx, tree[j].y - ny);
-    if (new_cost &lt; tree[j].cost &amp;&amp; collision_free(nx, ny, tree[j].x, tree[j].y)) {
+<span style="color:var(--green)">// === ОТЛИЧИЕ №2: Rewire ===</span>
+<span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> j : neighbors) {
+    <span style="color:var(--accent2)">double</span> new_cost = best_cost + hypot(tree[j].x - nx, tree[j].y - ny);
+    <span style="color:var(--accent)">if</span> (new_cost &lt; tree[j].cost &amp;&amp; collision_free(nx, ny, tree[j].x, tree[j].y)) {
         tree[j].parent = new_idx;
         tree[j].cost = new_cost;
-        // TODO: рекурсивно обновить cost всех потомков j
+        <span style="color:var(--green)">// TODO: рекурсивно обновить cost всех потомков j</span>
     }
 }
 </pre>

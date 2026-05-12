@@ -451,42 +451,42 @@
         <p>Сравни с A* — отличие буквально в одной строке (нет $h$):</p>
 
         <div class="card">
-<pre style="margin:0">function Dijkstra(start, goal, grid):
-    // Для всех клеток: g = бесконечность
-    for each cell in grid:
+<pre style="margin:0"><span style="color:var(--accent)">function</span> Dijkstra(start, goal, grid):
+    <span style="color:var(--green)">// Для всех клеток: g = бесконечность</span>
+    <span style="color:var(--accent)">for</span> <span style="color:var(--accent)">each</span> cell <span style="color:var(--accent)">in</span> grid:
         cell.g = INFINITY
-        cell.parent = null
+        cell.parent = <span style="color:var(--accent)">null</span>
 
     start.g = 0
-    open_set = PriorityQueue()   // приоритет по g (не по f!)
-    open_set.push(start)
-    closed_set = Set()
+    open_set = <span style="color:var(--accent)">PriorityQueue</span>()   <span style="color:var(--orange)">// приоритет по g (не по f!)</span>
+    open_set.<span style="color:var(--accent)">push</span>(start)
+    closed_set = <span style="color:var(--accent)">Set</span>()
 
-    while open_set is not empty:
-        current = open_set.pop()   // клетка с наименьшим g
+    <span style="color:var(--accent)">while</span> open_set <span style="color:var(--accent)">is</span> <span style="color:var(--accent)">not</span> empty:
+        current = open_set.<span style="color:var(--accent)">pop</span>()   <span style="color:var(--orange)">// клетка с наименьшим g</span>
 
-        if current == goal:
-            return reconstruct_path(current)
+        <span style="color:var(--accent)">if</span> current == goal:
+            <span style="color:var(--accent)">return</span> reconstruct_path(current)
 
-        closed_set.add(current)
+        closed_set.<span style="color:var(--accent)">add</span>(current)
 
-        for each neighbor of current:
-            if neighbor in closed_set:  continue
-            if neighbor is obstacle:    continue
+        <span style="color:var(--accent)">for</span> <span style="color:var(--accent)">each</span> neighbor <span style="color:var(--accent)">of</span> current:
+            <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">in</span> closed_set:  <span style="color:var(--accent)">continue</span>
+            <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">is</span> obstacle:    <span style="color:var(--accent)">continue</span>
 
             tentative_g = current.g + cost(current, neighbor)
 
-            if tentative_g < neighbor.g:
-                // Нашли путь короче — обновляем (релаксация)
+            <span style="color:var(--accent)">if</span> tentative_g < neighbor.g:
+                <span style="color:var(--green)">// Нашли путь короче — обновляем (релаксация)</span>
                 neighbor.g = tentative_g
                 neighbor.parent = current
 
-                if neighbor not in open_set:
-                    open_set.push(neighbor)
-                else:
+                <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">not</span> <span style="color:var(--accent)">in</span> open_set:
+                    open_set.<span style="color:var(--accent)">push</span>(neighbor)
+                <span style="color:var(--accent)">else</span>:
                     open_set.decrease_key(neighbor)
 
-    return null  // путь не существует</pre>
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">null</span>  <span style="color:var(--orange)">// путь не существует</span></pre>
         </div>
 
         <div class="card highlight">
@@ -569,41 +569,41 @@
         <p>Dijkstra в ROS2 — почти копипаста A*, но ещё проще: убираем эвристику.</p>
 
         <div class="card">
-<pre style="margin:0">class DijkstraPlanner : public rclcpp::Node {
-    // Подписки и публикации — как у A*
+<pre style="margin:0"><span style="color:var(--accent2)">class</span> DijkstraPlanner : <span style="color:var(--accent)">public</span> <span style="color:var(--accent2)">rclcpp::Node</span> {
+    <span style="color:var(--green)">// Подписки и публикации — как у A*</span>
 
-    std::vector&lt;Cell&gt; find_path(Cell start, Cell goal) {
-        // g[y][x] = расстояние от старта
-        std::vector&lt;std::vector&lt;double&gt;&gt; g(
-            height, std::vector&lt;double&gt;(width, INF));
+    <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">Cell</span>&gt; find_path(<span style="color:var(--accent2)">Cell</span> start, <span style="color:var(--accent2)">Cell</span> goal) {
+        <span style="color:var(--green)">// g[y][x] = расстояние от старта</span>
+        <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">double</span>&gt;&gt; g(
+            height, <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">double</span>&gt;(width, INF));
         g[start.y][start.x] = 0.0;
 
-        // Приоритетная очередь по g
-        using PQItem = std::pair&lt;double, Cell&gt;;
-        std::priority_queue&lt;PQItem, std::vector&lt;PQItem&gt;,
-                            std::greater&lt;PQItem&gt;&gt; pq;
+        <span style="color:var(--green)">// Приоритетная очередь по g</span>
+        <span style="color:var(--accent)">using</span> PQItem = <span style="color:var(--accent2)">std::pair</span>&lt;<span style="color:var(--accent2)">double</span>, <span style="color:var(--accent2)">Cell</span>&gt;;
+        <span style="color:var(--accent2)">std::priority_queue</span>&lt;PQItem, <span style="color:var(--accent2)">std::vector</span>&lt;PQItem&gt;,
+                            <span style="color:var(--accent2)">std::greater</span>&lt;PQItem&gt;&gt; pq;
         pq.push({0.0, start});
 
-        while (!pq.empty()) {
-            auto [dist, current] = pq.top();
+        <span style="color:var(--accent)">while</span> (!pq.empty()) {
+            <span style="color:var(--accent2)">auto</span> [dist, current] = pq.top();
             pq.pop();
 
-            if (current == goal)
-                return reconstruct_path(current);
+            <span style="color:var(--accent)">if</span> (current == goal)
+                <span style="color:var(--accent)">return</span> reconstruct_path(current);
 
-            if (dist > g[current.y][current.x])
-                continue;  // устаревшая запись
+            <span style="color:var(--accent)">if</span> (dist > g[current.y][current.x])
+                <span style="color:var(--accent)">continue</span>;  <span style="color:var(--orange)">// устаревшая запись</span>
 
-            for (auto& nb : neighbors(current)) {
-                double new_g = dist + cost(current, nb);
-                if (new_g < g[nb.y][nb.x]) {
+            <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">auto</span>& nb : neighbors(current)) {
+                <span style="color:var(--accent2)">double</span> new_g = dist + cost(current, nb);
+                <span style="color:var(--accent)">if</span> (new_g < g[nb.y][nb.x]) {
                     g[nb.y][nb.x] = new_g;
                     nb.parent = &current;
                     pq.push({new_g, nb});
                 }
             }
         }
-        return {};  // путь не найден
+        <span style="color:var(--accent)">return</span> {};  <span style="color:var(--orange)">// путь не найден</span>
     }
 };</pre>
         </div>

@@ -571,51 +571,51 @@ Theta_Star(start, goal, grid):
     g[start] = 0
     f[start] = h(start, goal)
     parent[start] = start
-    open_list.push(start, f[start])
+    open_list.<span style="color:var(--accent)">push</span>(start, f[start])
 
-    while open_list is not empty:
-        s = open_list.pop()       // узел с минимальным f
+    <span style="color:var(--accent)">while</span> open_list <span style="color:var(--accent)">is</span> <span style="color:var(--accent)">not</span> empty:
+        s = open_list.<span style="color:var(--accent)">pop</span>()       <span style="color:var(--orange)">// узел с минимальным f</span>
 
-        if s == goal:
-            return reconstruct_path(parent, goal)
+        <span style="color:var(--accent)">if</span> s == goal:
+            <span style="color:var(--accent)">return</span> reconstruct_path(parent, goal)
 
-        for each neighbor n of s:
-            if n is obstacle: continue
+        <span style="color:var(--accent)">for</span> <span style="color:var(--accent)">each</span> neighbor n <span style="color:var(--accent)">of</span> s:
+            <span style="color:var(--accent)">if</span> n <span style="color:var(--accent)">is</span> obstacle: <span style="color:var(--accent)">continue</span>
 
-            // === ОТЛИЧИЕ ОТ A*: проверка line-of-sight ===
-            if line_of_sight(parent[s], n):
-                // Путь 2: через "дедушку"
+            <span style="color:var(--green)">// === ОТЛИЧИЕ ОТ A*: проверка line-of-sight ===</span>
+            <span style="color:var(--accent)">if</span> line_of_sight(parent[s], n):
+                <span style="color:var(--green)">// Путь 2: через "дедушку"</span>
                 new_g = g[parent[s]] + dist(parent[s], n)
-                if new_g < g[n]:
+                <span style="color:var(--accent)">if</span> new_g < g[n]:
                     g[n] = new_g
                     f[n] = new_g + h(n, goal)
-                    parent[n] = parent[s]     // "дедушка"!
-                    open_list.push(n, f[n])
-            else:
-                // Путь 1: стандартный A*
+                    parent[n] = parent[s]     <span style="color:var(--orange)">// "дедушка"!</span>
+                    open_list.<span style="color:var(--accent)">push</span>(n, f[n])
+            <span style="color:var(--accent)">else</span>:
+                <span style="color:var(--green)">// Путь 1: стандартный A*</span>
                 new_g = g[s] + dist(s, n)
-                if new_g < g[n]:
+                <span style="color:var(--accent)">if</span> new_g < g[n]:
                     g[n] = new_g
                     f[n] = new_g + h(n, goal)
                     parent[n] = s
-                    open_list.push(n, f[n])
+                    open_list.<span style="color:var(--accent)">push</span>(n, f[n])
 
-    return FAILURE
+    <span style="color:var(--accent)">return</span> FAILURE
 
 
-line_of_sight(A, B):     // алгоритм Брезенхема
+line_of_sight(A, B):     <span style="color:var(--orange)">// алгоритм Брезенхема</span>
     dx = abs(B.x - A.x),  dy = abs(B.y - A.y)
     sx = sign(B.x - A.x), sy = sign(B.y - A.y)
     err = dx - dy
     x = A.x, y = A.y
 
-    while (x, y) != (B.x, B.y):
-        if grid[x][y] is obstacle: return false
+    <span style="color:var(--accent)">while</span> (x, y) != (B.x, B.y):
+        <span style="color:var(--accent)">if</span> grid[x][y] <span style="color:var(--accent)">is</span> obstacle: <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">false</span>
         e2 = 2 * err
-        if e2 > -dy: err -= dy; x += sx
-        if e2 <  dx: err += dx; y += sy
+        <span style="color:var(--accent)">if</span> e2 > -dy: err -= dy; x += sx
+        <span style="color:var(--accent)">if</span> e2 <  dx: err += dx; y += sy
 
-    return true
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">true</span>
 </pre>
 
         <div class="card highlight">
@@ -684,47 +684,47 @@ line_of_sight(A, B):     // алгоритм Брезенхема
         <p>Показываю только отличие от A* — функцию line-of-sight и модифицированный цикл обновления соседей:</p>
 
 <pre>
-// Line-of-Sight check (алгоритм Брезенхема)
-bool line_of_sight(int x0, int y0, int x1, int y1,
-                   const nav_msgs::msg::OccupancyGrid&amp; grid) {
-    int dx = std::abs(x1 - x0), dy = std::abs(y1 - y0);
-    int sx = (x0 &lt; x1) ? 1 : -1;
-    int sy = (y0 &lt; y1) ? 1 : -1;
-    int err = dx - dy;
+<span style="color:var(--green)">// Line-of-Sight check (алгоритм Брезенхема)</span>
+<span style="color:var(--accent2)">bool</span> line_of_sight(<span style="color:var(--accent2)">int</span> x0, <span style="color:var(--accent2)">int</span> y0, <span style="color:var(--accent2)">int</span> x1, <span style="color:var(--accent2)">int</span> y1,
+                   <span style="color:var(--accent2)">const</span> <span style="color:var(--accent2)">nav_msgs::msg</span>::OccupancyGrid&amp; grid) {
+    <span style="color:var(--accent2)">int</span> dx = <span style="color:var(--accent2)">std::abs</span>(x1 - x0), dy = <span style="color:var(--accent2)">std::abs</span>(y1 - y0);
+    <span style="color:var(--accent2)">int</span> sx = (x0 &lt; x1) ? 1 : -1;
+    <span style="color:var(--accent2)">int</span> sy = (y0 &lt; y1) ? 1 : -1;
+    <span style="color:var(--accent2)">int</span> err = dx - dy;
 
-    while (x0 != x1 || y0 != y1) {
-        if (grid.data[y0 * grid.info.width + x0] &gt; 50)
-            return false;  // препятствие!
+    <span style="color:var(--accent)">while</span> (x0 != x1 || y0 != y1) {
+        <span style="color:var(--accent)">if</span> (grid.data[y0 * grid.info.width + x0] &gt; 50)
+            <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">false</span>;  <span style="color:var(--orange)">// препятствие!</span>
 
-        int e2 = 2 * err;
-        if (e2 &gt; -dy) { err -= dy; x0 += sx; }
-        if (e2 &lt;  dx) { err += dx; y0 += sy; }
+        <span style="color:var(--accent2)">int</span> e2 = 2 * err;
+        <span style="color:var(--accent)">if</span> (e2 &gt; -dy) { err -= dy; x0 += sx; }
+        <span style="color:var(--accent)">if</span> (e2 &lt;  dx) { err += dx; y0 += sy; }
     }
-    return true;
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">true</span>;
 }
 
-// Внутри основного цикла A* — замена блока обновления соседа:
-for (auto [nx, ny] : neighbors(cx, cy)) {
-    if (closed[ny][nx] || is_wall(nx, ny)) continue;
+<span style="color:var(--green)">// Внутри основного цикла A* — замена блока обновления соседа:</span>
+<span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">auto</span> [nx, ny] : neighbors(cx, cy)) {
+    <span style="color:var(--accent)">if</span> (closed[ny][nx] || is_wall(nx, ny)) <span style="color:var(--accent)">continue</span>;
 
-    // === THETA*: проверяем line-of-sight к parent(current) ===
-    int px = parent_x[cy][cx];  // координаты родителя текущего узла
-    int py = parent_y[cy][cx];
+    <span style="color:var(--green)">// === THETA*: проверяем line-of-sight к parent(current) ===</span>
+    <span style="color:var(--accent2)">int</span> px = parent_x[cy][cx];  <span style="color:var(--orange)">// координаты родителя текущего узла</span>
+    <span style="color:var(--accent2)">int</span> py = parent_y[cy][cx];
 
-    if (line_of_sight(px, py, nx, ny, *map_)) {
-        // Путь 2: через "дедушку"
-        double new_g = g[py][px] + hypot(nx - px, ny - py);
-        if (new_g &lt; g[ny][nx]) {
+    <span style="color:var(--accent)">if</span> (line_of_sight(px, py, nx, ny, *map_)) {
+        <span style="color:var(--green)">// Путь 2: через "дедушку"</span>
+        <span style="color:var(--accent2)">double</span> new_g = g[py][px] + hypot(nx - px, ny - py);
+        <span style="color:var(--accent)">if</span> (new_g &lt; g[ny][nx]) {
             g[ny][nx] = new_g;
             f[ny][nx] = new_g + heuristic(nx, ny, gx, gy);
-            parent_x[ny][nx] = px;  // привязываем к "дедушке"!
+            parent_x[ny][nx] = px;  <span style="color:var(--orange)">// привязываем к "дедушке"!</span>
             parent_y[ny][nx] = py;
             open.push({f[ny][nx], nx, ny});
         }
-    } else {
-        // Путь 1: стандартный A*
-        double new_g = g[cy][cx] + hypot(nx - cx, ny - cy);
-        if (new_g &lt; g[ny][nx]) {
+    } <span style="color:var(--accent)">else</span> {
+        <span style="color:var(--green)">// Путь 1: стандартный A*</span>
+        <span style="color:var(--accent2)">double</span> new_g = g[cy][cx] + hypot(nx - cx, ny - cy);
+        <span style="color:var(--accent)">if</span> (new_g &lt; g[ny][nx]) {
             g[ny][nx] = new_g;
             f[ny][nx] = new_g + heuristic(nx, ny, gx, gy);
             parent_x[ny][nx] = cx;

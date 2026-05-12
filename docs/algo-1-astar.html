@@ -505,56 +505,56 @@
         <p>Вот алгоритм целиком — можно почти дословно переписать на C++:</p>
 
         <div class="card">
-<pre style="margin:0">function A_Star(start, goal, grid):
-    // Приоритетная очередь — наверху клетка с min f
-    open_set  = PriorityQueue()
-    closed_set = Set()
+<pre style="margin:0"><span style="color:var(--accent)">function</span> A_Star(start, goal, grid):
+    <span style="color:var(--green)">// Приоритетная очередь — наверху клетка с min f</span>
+    open_set  = <span style="color:var(--accent)">PriorityQueue</span>()
+    closed_set = <span style="color:var(--accent)">Set</span>()
 
     start.g = 0
     start.h = heuristic(start, goal)
     start.f = start.g + start.h
-    start.parent = null
-    open_set.push(start)
+    start.parent = <span style="color:var(--accent)">null</span>
+    open_set.<span style="color:var(--accent)">push</span>(start)
 
-    while open_set is not empty:
-        current = open_set.pop()       // берём клетку с min f
+    <span style="color:var(--accent)">while</span> open_set <span style="color:var(--accent)">is</span> <span style="color:var(--accent)">not</span> empty:
+        current = open_set.<span style="color:var(--accent)">pop</span>()       <span style="color:var(--orange)">// берём клетку с min f</span>
 
-        if current == goal:
-            return reconstruct_path(current)  // 🎉 нашли!
+        <span style="color:var(--accent)">if</span> current == goal:
+            <span style="color:var(--accent)">return</span> reconstruct_path(current)  <span style="color:var(--orange)">// 🎉 нашли!</span>
 
-        closed_set.add(current)
+        closed_set.<span style="color:var(--accent)">add</span>(current)
 
-        for each neighbor of current:
-            if neighbor in closed_set:  continue   // уже обработан
-            if neighbor is obstacle:    continue   // стена
+        <span style="color:var(--accent)">for</span> <span style="color:var(--accent)">each</span> neighbor <span style="color:var(--accent)">of</span> current:
+            <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">in</span> closed_set:  <span style="color:var(--accent)">continue</span>   <span style="color:var(--orange)">// уже обработан</span>
+            <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">is</span> obstacle:    <span style="color:var(--accent)">continue</span>   <span style="color:var(--orange)">// стена</span>
 
-            // Считаем стоимость пути через current
+            <span style="color:var(--green)">// Считаем стоимость пути через current</span>
             tentative_g = current.g + cost(current, neighbor)
 
-            if neighbor not in open_set:
-                // Новая клетка — добавляем
+            <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">not</span> <span style="color:var(--accent)">in</span> open_set:
+                <span style="color:var(--green)">// Новая клетка — добавляем</span>
                 neighbor.g = tentative_g
                 neighbor.h = heuristic(neighbor, goal)
                 neighbor.f = neighbor.g + neighbor.h
                 neighbor.parent = current
-                open_set.push(neighbor)
+                open_set.<span style="color:var(--accent)">push</span>(neighbor)
 
-            else if tentative_g < neighbor.g:
-                // Нашли более короткий путь к уже известной клетке
+            <span style="color:var(--accent)">else</span> <span style="color:var(--accent)">if</span> tentative_g < neighbor.g:
+                <span style="color:var(--green)">// Нашли более короткий путь к уже известной клетке</span>
                 neighbor.g = tentative_g
                 neighbor.f = neighbor.g + neighbor.h
                 neighbor.parent = current
-                open_set.update(neighbor)    // обновить позицию в очереди
+                open_set.<span style="color:var(--accent)">update</span>(neighbor)    <span style="color:var(--orange)">// обновить позицию в очереди</span>
 
-    return null  // путь не существует
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">null</span>  <span style="color:var(--orange)">// путь не существует</span>
 
 
-function reconstruct_path(node):
+<span style="color:var(--accent)">function</span> reconstruct_path(node):
     path = []
-    while node != null:
-        path.prepend(node)
+    <span style="color:var(--accent)">while</span> node != <span style="color:var(--accent)">null</span>:
+        path.<span style="color:var(--accent)">prepend</span>(node)
         node = node.parent
-    return path</pre>
+    <span style="color:var(--accent)">return</span> path</pre>
         </div>
 
         <!-- ============ СЛОЖНОСТЬ ============ -->
@@ -625,34 +625,34 @@ function reconstruct_path(node):
 
         <h3>Ключевые фрагменты C++</h3>
         <div class="card">
-<pre style="margin:0">struct Cell {
-    int x, y;
-    double g = 0, h = 0, f = 0;
-    Cell* parent = nullptr;
+<pre style="margin:0"><span style="color:var(--accent2)">struct</span> <span style="color:var(--accent2)">Cell</span> {
+    <span style="color:var(--accent2)">int</span> x, y;
+    <span style="color:var(--accent2)">double</span> g = 0, h = 0, f = 0;
+    <span style="color:var(--accent2)">Cell</span>* parent = <span style="color:var(--accent)">nullptr</span>;
 
-    // Для приоритетной очереди: меньший f — выше приоритет
-    bool operator>(const Cell& o) const { return f > o.f; }
+    <span style="color:var(--green)">// Для приоритетной очереди: меньший f — выше приоритет</span>
+    <span style="color:var(--accent2)">bool</span> operator>(<span style="color:var(--accent2)">const</span> <span style="color:var(--accent2)">Cell</span>& o) <span style="color:var(--accent2)">const</span> { <span style="color:var(--accent)">return</span> f > o.f; }
 };
 
-double heuristic(int x1, int y1, int x2, int y2) {
-    // Октильное расстояние — оптимально для 8-связной сетки
-    double dx = std::abs(x1 - x2), dy = std::abs(y1 - y2);
-    return std::max(dx, dy) + (std::sqrt(2.0) - 1.0) * std::min(dx, dy);
+<span style="color:var(--accent2)">double</span> heuristic(<span style="color:var(--accent2)">int</span> x1, <span style="color:var(--accent2)">int</span> y1, <span style="color:var(--accent2)">int</span> x2, <span style="color:var(--accent2)">int</span> y2) {
+    <span style="color:var(--green)">// Октильное расстояние — оптимально для 8-связной сетки</span>
+    <span style="color:var(--accent2)">double</span> dx = <span style="color:var(--accent2)">std::abs</span>(x1 - x2), dy = <span style="color:var(--accent2)">std::abs</span>(y1 - y2);
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">std::max</span>(dx, dy) + (<span style="color:var(--accent2)">std::sqrt</span>(2.0) - 1.0) * <span style="color:var(--accent2)">std::min</span>(dx, dy);
 }
 
-// В ноде ROS2:
-class AStarPlanner : public rclcpp::Node {
-    rclcpp::Subscription&lt;sensor_msgs::msg::LaserScan&gt;::SharedPtr scan_sub_;
-    rclcpp::Subscription&lt;nav_msgs::msg::Odometry&gt;::SharedPtr odom_sub_;
-    rclcpp::Publisher&lt;geometry_msgs::msg::Twist&gt;::SharedPtr vel_pub_;
+<span style="color:var(--green)">// В ноде ROS2:</span>
+<span style="color:var(--accent2)">class</span> AStarPlanner : <span style="color:var(--accent)">public</span> <span style="color:var(--accent2)">rclcpp::Node</span> {
+    <span style="color:var(--accent2)">rclcpp::Subscription</span>&lt;<span style="color:var(--accent2)">sensor_msgs::msg</span>::LaserScan&gt;::SharedPtr scan_sub_;
+    <span style="color:var(--accent2)">rclcpp::Subscription</span>&lt;<span style="color:var(--accent2)">nav_msgs::msg</span>::Odometry&gt;::SharedPtr odom_sub_;
+    <span style="color:var(--accent2)">rclcpp::Publisher</span>&lt;<span style="color:var(--accent2)">geometry_msgs::msg</span>::Twist&gt;::SharedPtr vel_pub_;
 
-    std::vector&lt;std::vector&lt;int&gt;&gt; grid_;  // 0=free, 1=wall
+    <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">int</span>&gt;&gt; grid_;  <span style="color:var(--orange)">// 0=free, 1=wall</span>
 
-    std::vector&lt;Cell&gt; find_path(Cell start, Cell goal) {
-        std::priority_queue&lt;Cell, std::vector&lt;Cell&gt;,
-                            std::greater&lt;Cell&gt;&gt; open;
-        std::unordered_set&lt;int&gt; closed;
-        // ... реализация A* ...
+    <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">Cell</span>&gt; find_path(<span style="color:var(--accent2)">Cell</span> start, <span style="color:var(--accent2)">Cell</span> goal) {
+        <span style="color:var(--accent2)">std::priority_queue</span>&lt;<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">Cell</span>&gt;,
+                            <span style="color:var(--accent2)">std::greater</span>&lt;<span style="color:var(--accent2)">Cell</span>&gt;&gt; open;
+        <span style="color:var(--accent2)">std::unordered_set</span>&lt;<span style="color:var(--accent2)">int</span>&gt; closed;
+        <span style="color:var(--green)">// ... реализация A* ...</span>
     }
 };</pre>
         </div>

@@ -400,27 +400,27 @@
 
 <pre>
 RRT(q_start, q_goal, map, max_iterations):
-    T.init(q_start)                     // дерево с одним корнем
+    T.init(q_start)                     <span style="color:var(--orange)">// дерево с одним корнем</span>
 
-    for i = 1 to max_iterations:
-        if random() < p_goal:           // goal bias (~5-10%)
+    <span style="color:var(--accent)">for</span> i = 1 to max_iterations:
+        <span style="color:var(--accent)">if</span> random() < p_goal:           <span style="color:var(--orange)">// goal bias (~5-10%)</span>
             q_rand = q_goal
-        else:
-            q_rand = random_point(map)  // случайная точка
+        <span style="color:var(--accent)">else</span>:
+            q_rand = random_point(map)  <span style="color:var(--orange)">// случайная точка</span>
 
-        q_near = nearest(T, q_rand)     // ближайший узел дерева
+        q_near = nearest(T, q_rand)     <span style="color:var(--orange)">// ближайший узел дерева</span>
 
-        q_new = steer(q_near, q_rand, Δq)  // шаг длиной Δq
+        q_new = steer(q_near, q_rand, Δq)  <span style="color:var(--orange)">// шаг длиной Δq</span>
 
-        if collision_free(q_near, q_new, map):
+        <span style="color:var(--accent)">if</span> collision_free(q_near, q_new, map):
             T.add_node(q_new)
             T.add_edge(q_near, q_new)
 
-            if distance(q_new, q_goal) < threshold:
+            <span style="color:var(--accent)">if</span> distance(q_new, q_goal) < threshold:
                 T.add_edge(q_new, q_goal)
-                return reconstruct_path(T, q_start, q_goal)
+                <span style="color:var(--accent)">return</span> reconstruct_path(T, q_start, q_goal)
 
-    return FAILURE  // путь не найден за max_iterations
+    <span style="color:var(--accent)">return</span> FAILURE  <span style="color:var(--orange)">// путь не найден за max_iterations</span>
 </pre>
 
         <div class="card highlight">
@@ -501,23 +501,23 @@ RRT(q_start, q_goal, map, max_iterations):
         <p>Ниже — скелет ROS2-ноды, реализующей RRT-планировщик. Нода подписывается на карту (<code>/map</code>), получает стартовую и целевую позицию, строит дерево и публикует путь:</p>
 
 <pre>
-#include &lt;rclcpp/rclcpp.hpp&gt;
-#include &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
-#include &lt;nav_msgs/msg/path.hpp&gt;
-#include &lt;geometry_msgs/msg/pose_stamped.hpp&gt;
-#include &lt;random&gt;
-#include &lt;cmath&gt;
-#include &lt;vector&gt;
+<span style="color:var(--accent2)">#include &lt;rclcpp/rclcpp.hpp&gt;</span>
+<span style="color:var(--accent2)">#include &lt;nav_msgs/msg/occupancy_grid.hpp&gt;</span>
+<span style="color:var(--accent2)">#include &lt;nav_msgs/msg/path.hpp&gt;</span>
+<span style="color:var(--accent2)">#include &lt;geometry_msgs/msg/pose_stamped.hpp&gt;</span>
+<span style="color:var(--accent2)">#include &lt;random&gt;</span>
+<span style="color:var(--accent2)">#include &lt;cmath&gt;</span>
+<span style="color:var(--accent2)">#include &lt;vector&gt;</span>
 
-struct Node {
-    double x, y;
-    int parent;  // индекс родительского узла в дереве
+<span style="color:var(--accent2)">struct</span> <span style="color:var(--accent2)">Node</span> {
+    <span style="color:var(--accent2)">double</span> x, y;
+    <span style="color:var(--accent2)">int</span> parent;  <span style="color:var(--orange)">// индекс родительского узла в дереве</span>
 };
 
-class RRTPlanner : public rclcpp::Node {
-public:
-    RRTPlanner() : Node("rrt_planner") {
-        // Параметры
+<span style="color:var(--accent2)">class</span> RRTPlanner : <span style="color:var(--accent)">public</span> <span style="color:var(--accent2)">rclcpp::Node</span> {
+<span style="color:var(--accent)">public</span>:
+    RRTPlanner() : <span style="color:var(--accent2)">Node</span>("rrt_planner") {
+        <span style="color:var(--green)">// Параметры</span>
         this-&gt;declare_parameter("step_size", 0.5);
         this-&gt;declare_parameter("goal_bias", 0.05);
         this-&gt;declare_parameter("max_iterations", 10000);
@@ -528,116 +528,116 @@ public:
         max_iter_      = this-&gt;get_parameter("max_iterations").as_int();
         goal_thresh_   = this-&gt;get_parameter("goal_threshold").as_double();
 
-        // Подписки и паблишеры
-        map_sub_ = this-&gt;create_subscription&lt;nav_msgs::msg::OccupancyGrid&gt;(
-            "/map", 10, [this](nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+        <span style="color:var(--green)">// Подписки и паблишеры</span>
+        map_sub_ = this-&gt;create_subscription&lt;<span style="color:var(--accent2)">nav_msgs::msg</span>::OccupancyGrid&gt;(
+            "/map", 10, [this](<span style="color:var(--accent2)">nav_msgs::msg</span>::OccupancyGrid::SharedPtr msg) {
                 map_ = msg;
             });
 
-        path_pub_ = this-&gt;create_publisher&lt;nav_msgs::msg::Path&gt;("/planned_path", 10);
+        path_pub_ = this-&gt;create_publisher&lt;<span style="color:var(--accent2)">nav_msgs::msg</span>::Path&gt;("/planned_path", 10);
 
-        // Генератор случайных чисел
-        rng_ = std::mt19937(std::random_device{}());
+        <span style="color:var(--green)">// Генератор случайных чисел</span>
+        rng_ = <span style="color:var(--accent2)">std::mt19937</span>(<span style="color:var(--accent2)">std::random_device</span>{}());
     }
 
-    nav_msgs::msg::Path plan(double sx, double sy, double gx, double gy) {
-        std::vector&lt;Node&gt; tree;
+    <span style="color:var(--accent2)">nav_msgs::msg</span>::Path plan(<span style="color:var(--accent2)">double</span> sx, <span style="color:var(--accent2)">double</span> sy, <span style="color:var(--accent2)">double</span> gx, <span style="color:var(--accent2)">double</span> gy) {
+        <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">Node</span>&gt; tree;
         tree.push_back({sx, sy, -1});
 
-        std::uniform_real_distribution&lt;double&gt; dist_x(0, map_width_);
-        std::uniform_real_distribution&lt;double&gt; dist_y(0, map_height_);
-        std::uniform_real_distribution&lt;double&gt; dist_01(0, 1);
+        <span style="color:var(--accent2)">std::uniform_real_distribution</span>&lt;<span style="color:var(--accent2)">double</span>&gt; dist_x(0, map_width_);
+        <span style="color:var(--accent2)">std::uniform_real_distribution</span>&lt;<span style="color:var(--accent2)">double</span>&gt; dist_y(0, map_height_);
+        <span style="color:var(--accent2)">std::uniform_real_distribution</span>&lt;<span style="color:var(--accent2)">double</span>&gt; dist_01(0, 1);
 
-        for (int i = 0; i &lt; max_iter_; ++i) {
-            // 1. Sample
-            double rx, ry;
-            if (dist_01(rng_) &lt; goal_bias_) {
-                rx = gx; ry = gy;  // goal bias
-            } else {
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> i = 0; i &lt; max_iter_; ++i) {
+            <span style="color:var(--green)">// 1. Sample</span>
+            <span style="color:var(--accent2)">double</span> rx, ry;
+            <span style="color:var(--accent)">if</span> (dist_01(rng_) &lt; goal_bias_) {
+                rx = gx; ry = gy;  <span style="color:var(--orange)">// goal bias</span>
+            } <span style="color:var(--accent)">else</span> {
                 rx = dist_x(rng_); ry = dist_y(rng_);
             }
 
-            // 2. Nearest
-            int nearest_idx = 0;
-            double min_dist = 1e9;
-            for (int j = 0; j &lt; (int)tree.size(); ++j) {
-                double d = hypot(tree[j].x - rx, tree[j].y - ry);
-                if (d &lt; min_dist) { min_dist = d; nearest_idx = j; }
+            <span style="color:var(--green)">// 2. Nearest</span>
+            <span style="color:var(--accent2)">int</span> nearest_idx = 0;
+            <span style="color:var(--accent2)">double</span> min_dist = 1e9;
+            <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> j = 0; j &lt; (<span style="color:var(--accent2)">int</span>)tree.size(); ++j) {
+                <span style="color:var(--accent2)">double</span> d = hypot(tree[j].x - rx, tree[j].y - ry);
+                <span style="color:var(--accent)">if</span> (d &lt; min_dist) { min_dist = d; nearest_idx = j; }
             }
 
-            // 3. Steer
-            double dx = rx - tree[nearest_idx].x;
-            double dy = ry - tree[nearest_idx].y;
-            double dist = hypot(dx, dy);
-            double nx = tree[nearest_idx].x + step_size_ * dx / dist;
-            double ny = tree[nearest_idx].y + step_size_ * dy / dist;
+            <span style="color:var(--green)">// 3. Steer</span>
+            <span style="color:var(--accent2)">double</span> dx = rx - tree[nearest_idx].x;
+            <span style="color:var(--accent2)">double</span> dy = ry - tree[nearest_idx].y;
+            <span style="color:var(--accent2)">double</span> dist = hypot(dx, dy);
+            <span style="color:var(--accent2)">double</span> nx = tree[nearest_idx].x + step_size_ * dx / dist;
+            <span style="color:var(--accent2)">double</span> ny = tree[nearest_idx].y + step_size_ * dy / dist;
 
-            // 4. Collision check
-            if (!collision_free(tree[nearest_idx].x, tree[nearest_idx].y, nx, ny))
-                continue;
+            <span style="color:var(--green)">// 4. Collision check</span>
+            <span style="color:var(--accent)">if</span> (!collision_free(tree[nearest_idx].x, tree[nearest_idx].y, nx, ny))
+                <span style="color:var(--accent)">continue</span>;
 
-            // 5. Add to tree
+            <span style="color:var(--green)">// 5. Add to tree</span>
             tree.push_back({nx, ny, nearest_idx});
 
-            // 6. Goal check
-            if (hypot(nx - gx, ny - gy) &lt; goal_thresh_) {
-                tree.push_back({gx, gy, (int)tree.size() - 1});
-                return reconstruct_path(tree);
+            <span style="color:var(--green)">// 6. Goal check</span>
+            <span style="color:var(--accent)">if</span> (hypot(nx - gx, ny - gy) &lt; goal_thresh_) {
+                tree.push_back({gx, gy, (<span style="color:var(--accent2)">int</span>)tree.size() - 1});
+                <span style="color:var(--accent)">return</span> reconstruct_path(tree);
             }
         }
 
         RCLCPP_WARN(this-&gt;get_logger(), "RRT: path not found in %d iterations", max_iter_);
-        return nav_msgs::msg::Path();  // пустой путь
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">nav_msgs::msg</span>::Path();  <span style="color:var(--orange)">// пустой путь</span>
     }
 
-private:
-    bool collision_free(double x1, double y1, double x2, double y2) {
-        // Проверяем отрезок с шагом resolution/2
-        double dist = hypot(x2 - x1, y2 - y1);
-        int steps = std::max(2, (int)(dist / (resolution_ * 0.5)));
-        for (int i = 0; i &lt;= steps; ++i) {
-            double t = (double)i / steps;
-            double cx = x1 + t * (x2 - x1);
-            double cy = y1 + t * (y2 - y1);
-            if (is_occupied(cx, cy)) return false;
+<span style="color:var(--accent)">private</span>:
+    <span style="color:var(--accent2)">bool</span> collision_free(<span style="color:var(--accent2)">double</span> x1, <span style="color:var(--accent2)">double</span> y1, <span style="color:var(--accent2)">double</span> x2, <span style="color:var(--accent2)">double</span> y2) {
+        <span style="color:var(--green)">// Проверяем отрезок с шагом resolution/2</span>
+        <span style="color:var(--accent2)">double</span> dist = hypot(x2 - x1, y2 - y1);
+        <span style="color:var(--accent2)">int</span> steps = <span style="color:var(--accent2)">std::max</span>(2, (<span style="color:var(--accent2)">int</span>)(dist / (resolution_ * 0.5)));
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> i = 0; i &lt;= steps; ++i) {
+            <span style="color:var(--accent2)">double</span> t = (<span style="color:var(--accent2)">double</span>)i / steps;
+            <span style="color:var(--accent2)">double</span> cx = x1 + t * (x2 - x1);
+            <span style="color:var(--accent2)">double</span> cy = y1 + t * (y2 - y1);
+            <span style="color:var(--accent)">if</span> (is_occupied(cx, cy)) <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">false</span>;
         }
-        return true;
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">true</span>;
     }
 
-    bool is_occupied(double x, double y) {
-        int mx = (int)((x - origin_x_) / resolution_);
-        int my = (int)((y - origin_y_) / resolution_);
-        if (mx &lt; 0 || mx &gt;= map_w_ || my &lt; 0 || my &gt;= map_h_) return true;
-        return map_-&gt;data[my * map_w_ + mx] &gt; 50;  // >50 = занято
+    <span style="color:var(--accent2)">bool</span> is_occupied(<span style="color:var(--accent2)">double</span> x, <span style="color:var(--accent2)">double</span> y) {
+        <span style="color:var(--accent2)">int</span> mx = (<span style="color:var(--accent2)">int</span>)((x - origin_x_) / resolution_);
+        <span style="color:var(--accent2)">int</span> my = (<span style="color:var(--accent2)">int</span>)((y - origin_y_) / resolution_);
+        <span style="color:var(--accent)">if</span> (mx &lt; 0 || mx &gt;= map_w_ || my &lt; 0 || my &gt;= map_h_) <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">true</span>;
+        <span style="color:var(--accent)">return</span> map_-&gt;data[my * map_w_ + mx] &gt; 50;  <span style="color:var(--orange)">// >50 = занято</span>
     }
 
-    nav_msgs::msg::Path reconstruct_path(const std::vector&lt;Node&gt;&amp; tree) {
-        nav_msgs::msg::Path path;
+    <span style="color:var(--accent2)">nav_msgs::msg</span>::Path reconstruct_path(<span style="color:var(--accent2)">const</span> <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">Node</span>&gt;&amp; tree) {
+        <span style="color:var(--accent2)">nav_msgs::msg</span>::Path path;
         path.header.frame_id = "map";
         path.header.stamp = this-&gt;now();
 
-        int idx = tree.size() - 1;
-        while (idx != -1) {
-            geometry_msgs::msg::PoseStamped ps;
+        <span style="color:var(--accent2)">int</span> idx = tree.size() - 1;
+        <span style="color:var(--accent)">while</span> (idx != -1) {
+            <span style="color:var(--accent2)">geometry_msgs::msg</span>::PoseStamped ps;
             ps.header = path.header;
             ps.pose.position.x = tree[idx].x;
             ps.pose.position.y = tree[idx].y;
             path.poses.push_back(ps);
             idx = tree[idx].parent;
         }
-        std::reverse(path.poses.begin(), path.poses.end());
-        return path;
+        <span style="color:var(--accent2)">std::reverse</span>(path.poses.begin(), path.poses.end());
+        <span style="color:var(--accent)">return</span> path;
     }
 
-    // Данные
-    nav_msgs::msg::OccupancyGrid::SharedPtr map_;
-    double step_size_, goal_bias_, goal_thresh_, resolution_ = 0.05;
-    double map_width_, map_height_, origin_x_, origin_y_;
-    int max_iter_, map_w_, map_h_;
-    std::mt19937 rng_;
+    <span style="color:var(--green)">// Данные</span>
+    <span style="color:var(--accent2)">nav_msgs::msg</span>::OccupancyGrid::SharedPtr map_;
+    <span style="color:var(--accent2)">double</span> step_size_, goal_bias_, goal_thresh_, resolution_ = 0.05;
+    <span style="color:var(--accent2)">double</span> map_width_, map_height_, origin_x_, origin_y_;
+    <span style="color:var(--accent2)">int</span> max_iter_, map_w_, map_h_;
+    <span style="color:var(--accent2)">std::mt19937</span> rng_;
 
-    rclcpp::Subscription&lt;nav_msgs::msg::OccupancyGrid&gt;::SharedPtr map_sub_;
-    rclcpp::Publisher&lt;nav_msgs::msg::Path&gt;::SharedPtr path_pub_;
+    <span style="color:var(--accent2)">rclcpp::Subscription</span>&lt;<span style="color:var(--accent2)">nav_msgs::msg</span>::OccupancyGrid&gt;::SharedPtr map_sub_;
+    <span style="color:var(--accent2)">rclcpp::Publisher</span>&lt;<span style="color:var(--accent2)">nav_msgs::msg</span>::Path&gt;::SharedPtr path_pub_;
 };
 </pre>
 

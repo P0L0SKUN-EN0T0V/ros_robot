@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаг 4 — Ищем путь: алгоритм A*</title>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .sidebar .section-title{color:var(--text2);font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .term{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:16px 20px;margin:12px 0}
+        .term strong{color:var(--accent2)}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.1em;font-family:'Courier New',monospace}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html">Справочник (Quick Ref)</a>
+        <div class="sep"></div>
+        <div class="section-title">Пошаговый гайд</div>
+        <a href="step-0-what-is-ros2.html">0. Что такое ROS2</a>
+        <a href="step-1-tools-gazebo-rviz.html">1. Gazebo и RViz</a>
+        <a href="step-2-sensors.html">2. Одометрия и лидар</a>
+        <a href="step-3-mapping.html">3. Строим карту</a>
+        <a href="step-4-astar.html" class="active">4. Алгоритм A*</a>
+        <a href="step-5-pure-pursuit.html">5. Pure Pursuit</a>
+        <a href="step-6-assembly.html">6. Собираем проект</a>
+        <div class="sep"></div>
+        <div class="section-title">Алгоритмы</div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Шаг 4: Ищем путь — A*</h1>
+        <p class="subtitle">Вторая ключевая функция: planAStar</p>
+
+        <!-- ============ ПОВТОРЕНИЕ ============ -->
+        <h2>Напоминание: что уже есть</h2>
+
+        <p>К этому моменту у нас есть:</p>
+        <ul>
+            <li>Карта <code>map_data_</code> — обновляется в реальном времени через <code>updateMapWithLaser</code>.</li>
+            <li>Позиция робота — <code>robot_x_</code>, <code>robot_y_</code> из одометрии.</li>
+            <li>Цель — <code>goal_x_</code>, <code>goal_y_</code> из <code>/goal_pose</code> (клик в RViz).</li>
+        </ul>
+
+        <p>Задача: найти путь от робота до цели по частично известной карте. Это делает <strong>A*</strong>.</p>
+
+        <div class="card highlight">
+            <p>Подробный разбор A* с анимациями — на <a href="algo-1-astar.html" style="color:var(--accent)">странице алгоритма</a>. Здесь — только то, что нужно для кода проекта.</p>
+        </div>
+
+        <!-- ============ СУТЬ ============ -->
+        <h2>A* за 30 секунд</h2>
+
+        <div class="formula-block">
+            f(n) = g(n) + h(n)
+        </div>
+
+        <table>
+            <tr><th>Буква</th><th>Что значит</th><th>Пример</th></tr>
+            <tr><td><code>g(n)</code></td><td>Стоимость пути от старта до клетки n</td><td>Прошли 5 клеток по прямой + 2 по диагонали</td></tr>
+            <tr><td><code>h(n)</code></td><td>Оценка расстояния от n до цели (эвристика)</td><td>Евклидово расстояние «по воздуху»</td></tr>
+            <tr><td><code>f(n)</code></td><td>Общая оценка «перспективности» клетки</td><td>Чем меньше f — тем перспективнее</td></tr>
+        </table>
+
+        <div class="analogy">Ты в лабиринте. На каждом перекрёстке выбираешь: куда идти? A* говорит: «Иди туда, где сумма пройденного пути и расстояния до выхода (по прямой) — наименьшая». Это не жадный выбор (тот бы всегда шёл к цели и упирался в стены) — A* учитывает и уже пройденное расстояние.</div>
+
+        <h3>Алгоритм по шагам</h3>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Кладём стартовую клетку в <strong>open list</strong> (очередь с приоритетами).</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Берём клетку с наименьшим <code>f</code> из open list.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Если это цель — готово, восстанавливаем путь.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">Иначе — смотрим всех соседей (8 направлений). Для каждого свободного соседа считаем <code>g</code> и <code>f</code>. Если путь через текущую клетку лучше — обновляем.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-text">Повторяем шаги 2-4 пока не найдём цель или open list не опустеет (путь невозможен).</div>
+        </div>
+
+        <!-- ============ КОД ============ -->
+        <h2>Код: planAStar</h2>
+
+        <p>Полная реализация A* для нашей карты. Это <strong>вторая ключевая функция</strong>:</p>
+
+        <pre><span style="color:#94a3b8">// Структура для хранения информации о клетке</span>
+struct Cell {
+    int x, y;
+    double g, f;
+    int parent_x, parent_y;
+};
+
+<span style="color:#94a3b8">// Эвристика — евклидово расстояние</span>
+double heuristic(int x1, int y1, int x2, int y2) {
+    double dx = x1 - x2;
+    double dy = y1 - y2;
+    return std::sqrt(dx * dx + dy * dy);
+}
+
+<span style="color:#94a3b8">// 8 направлений: вверх, вниз, влево, вправо + 4 диагонали</span>
+const int DX[] = {-1, -1, -1,  0, 0,  1, 1, 1};
+const int DY[] = {-1,  0,  1, -1, 1, -1, 0, 1};
+
+<span style="color:#94a3b8">// Возвращает путь как вектор пар (x, y) в координатах сетки</span>
+std::vector&lt;std::pair&lt;int,int&gt;&gt; planAStar(int sx, int sy, int gx, int gy) {
+    <span style="color:#94a3b8">// Проверяем, что старт и цель валидны</span>
+    if (!isFree(sx, sy) || !isFree(gx, gy)) return {};
+
+    <span style="color:#94a3b8">// g-значения для каждой клетки (изначально бесконечность)</span>
+    std::vector&lt;std::vector&lt;double&gt;&gt; g_val(MAP_SIZE,
+        std::vector&lt;double&gt;(MAP_SIZE, std::numeric_limits&lt;double&gt;::infinity()));
+
+    <span style="color:#94a3b8">// Карта родителей для восстановления пути</span>
+    std::vector&lt;std::vector&lt;std::pair&lt;int,int&gt;&gt;&gt; parent(MAP_SIZE,
+        std::vector&lt;std::pair&lt;int,int&gt;&gt;(MAP_SIZE, {-1, -1}));
+
+    <span style="color:#94a3b8">// Closed set — уже обработанные клетки</span>
+    std::vector&lt;std::vector&lt;bool&gt;&gt; closed(MAP_SIZE,
+        std::vector&lt;bool&gt;(MAP_SIZE, false));
+
+    <span style="color:#94a3b8">// Open list — очередь с приоритетом (min-heap по f)</span>
+    <span style="color:#94a3b8">// {f, x, y}</span>
+    using PQItem = std::tuple&lt;double, int, int&gt;;
+    std::priority_queue&lt;PQItem, std::vector&lt;PQItem&gt;, std::greater&lt;PQItem&gt;&gt; open;
+
+    g_val[sy][sx] = 0.0;
+    double f0 = heuristic(sx, sy, gx, gy);
+    open.push({f0, sx, sy});
+
+    while (!open.empty()) {
+        auto [f, cx, cy] = open.top();
+        open.pop();
+
+        <span style="color:#94a3b8">// Уже обработана?</span>
+        if (closed[cy][cx]) continue;
+        closed[cy][cx] = true;
+
+        <span style="color:#94a3b8">// Нашли цель!</span>
+        if (cx == gx && cy == gy) {
+            <span style="color:#94a3b8">// Восстанавливаем путь от цели к старту</span>
+            std::vector&lt;std::pair&lt;int,int&gt;&gt; path;
+            int px = gx, py = gy;
+            while (px != -1 && py != -1) {
+                path.push_back({px, py});
+                auto [ppx, ppy] = parent[py][px];
+                px = ppx; py = ppy;
+            }
+            std::reverse(path.begin(), path.end());
+            return path;
+        }
+
+        <span style="color:#94a3b8">// Проверяем 8 соседей</span>
+        for (int d = 0; d &lt; 8; d++) {
+            int nx = cx + DX[d];
+            int ny = cy + DY[d];
+
+            if (!isFree(nx, ny) || closed[ny][nx]) continue;
+
+            <span style="color:#94a3b8">// Стоимость шага: 1.0 по прямой, 1.414 по диагонали</span>
+            double step_cost = (DX[d] != 0 && DY[d] != 0) ? 1.414 : 1.0;
+            double new_g = g_val[cy][cx] + step_cost;
+
+            if (new_g &lt; g_val[ny][nx]) {
+                g_val[ny][nx] = new_g;
+                double new_f = new_g + heuristic(nx, ny, gx, gy);
+                parent[ny][nx] = {cx, cy};
+                open.push({new_f, nx, ny});
+            }
+        }
+    }
+
+    <span style="color:#94a3b8">// Путь не найден</span>
+    return {};
+}</pre>
+
+        <!-- ============ КОГДА ВЫЗЫВАТЬ ============ -->
+        <h2>Когда вызывать planAStar</h2>
+
+        <p>A* нужно запускать в двух случаях:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text"><strong>Когда получена новая цель</strong> — пользователь кликнул в RViz. Нода получила <code>/goal_pose</code>.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text"><strong>Периодически (перепланирование)</strong> — потому что карта обновляется. Робот может обнаружить новую стену на пути и нужен новый маршрут.</div>
+        </div>
+
+        <pre><span style="color:#94a3b8">// Callback цели</span>
+void goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
+    goal_x_ = msg->pose.position.x;
+    goal_y_ = msg->pose.position.y;
+    has_goal_ = true;
+
+    replan();  <span style="color:#94a3b8">// Сразу ищем путь</span>
+}
+
+<span style="color:#94a3b8">// Перепланирование — вызывается по таймеру (например, каждые 0.5 сек)</span>
+void replan() {
+    if (!has_goal_) return;
+
+    <span style="color:#94a3b8">// Переводим координаты робота и цели из метров в клетки</span>
+    int sx = worldToGrid(robot_x_, ORIGIN_X);
+    int sy = worldToGrid(robot_y_, ORIGIN_Y);
+    int gx = worldToGrid(goal_x_, ORIGIN_X);
+    int gy = worldToGrid(goal_y_, ORIGIN_Y);
+
+    current_path_ = planAStar(sx, sy, gx, gy);
+
+    if (current_path_.empty()) {
+        RCLCPP_WARN(this->get_logger(), <span style="color:#4ade80">"A* не нашёл путь!"</span>);
+    } else {
+        publishPath();  <span style="color:#94a3b8">// Отправляем в /global_plan для RViz</span>
+    }
+}</pre>
+
+        <!-- ============ ПУБЛИКАЦИЯ ПУТИ ============ -->
+        <h2>Публикация пути в /global_plan</h2>
+
+        <pre>void publishPath() {
+    auto path_msg = nav_msgs::msg::Path();
+    path_msg.header.stamp = this->get_clock()->now();
+    path_msg.header.frame_id = <span style="color:#4ade80">"odom"</span>;
+
+    for (auto& [gx, gy] : current_path_) {
+        geometry_msgs::msg::PoseStamped pose;
+        pose.header = path_msg.header;
+        <span style="color:#94a3b8">// Обратное преобразование: клетки → метры</span>
+        pose.pose.position.x = ORIGIN_X + gx * RESOLUTION + RESOLUTION / 2;
+        pose.pose.position.y = ORIGIN_Y + gy * RESOLUTION + RESOLUTION / 2;
+        path_msg.poses.push_back(pose);
+    }
+
+    path_pub_->publish(path_msg);
+}</pre>
+
+        <p>В RViz добавь отображение: <em>Add</em> → <em>By topic</em> → <code>/global_plan</code> → <code>Path</code>. Увидишь зелёную линию от робота до цели.</p>
+
+        <!-- ============ ОСОБЕННОСТИ ============ -->
+        <h2>Особенности A* на частичной карте</h2>
+
+        <div class="card warn">
+            <p><strong>Путь может идти через «туман».</strong> Помнишь из прошлого шага? <code>isFree</code> считает неизвестные клетки проходимыми. Поэтому A* спокойно прокладывает путь через них. Когда робот доедет ближе и лидар увидит стену — карта обновится, и <code>replan()</code> построит новый путь.</p>
+        </div>
+
+        <div class="card success">
+            <p><strong>Это и есть суть проекта:</strong> робот едет → видит больше → карта обновляется → путь перестраивается. Цикл «scan → map → plan → drive → scan → ...» крутится постоянно.</p>
+        </div>
+
+        <!-- ============ ИТОГИ ============ -->
+        <h2>Итоги шага</h2>
+
+        <div class="card highlight">
+            <ul>
+                <li><strong>A*</strong> ищет кратчайший путь на сетке, используя <code>f = g + h</code>.</li>
+                <li><strong>planAStar</strong> — принимает координаты старта и цели (в клетках), возвращает путь.</li>
+                <li><strong>Перепланирование</strong> — запускается периодически, потому что карта обновляется.</li>
+                <li><strong>Путь через туман</strong> — нормальное поведение. Робот исследует мир.</li>
+            </ul>
+            <p>Путь найден — но робот стоит на месте. В следующем шаге научим его <strong>ехать по пути</strong> с помощью Pure Pursuit.</p>
+        </div>
+
+        <div class="nav-bottom">
+            <a href="step-3-mapping.html">← Шаг 3: Строим карту</a>
+            <a href="step-5-pure-pursuit.html">Шаг 5: Pure Pursuit →</a>
+        </div>
+    </div>
+</body>
+</html>

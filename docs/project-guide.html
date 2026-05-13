@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пошаговый гайд — ROS2 Navigation Project</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .card.danger{border-left:4px solid var(--red)}
+        .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8em;font-weight:600;margin:2px 4px 2px 0}
+        .tag.blue{background:rgba(108,158,255,.15);color:var(--accent)}
+        .tag.purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+        .tag.green{background:rgba(74,222,128,.15);color:var(--green)}
+        .tag.orange{background:rgba(251,146,60,.15);color:var(--orange)}
+        ul,ol{padding-left:24px;margin:8px 0}li{margin:6px 0}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media(max-width:700px){.grid{grid-template-columns:1fr}}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}tr:hover{background:rgba(108,158,255,.05)}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:12px 0;line-height:1.5}
+        .num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);font-weight:700;font-size:.85em;margin-right:8px;flex-shrink:0}
+        .step-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+        .step-header h3{margin:0}
+        .checkpoint{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);border-radius:8px;padding:14px 18px;margin:16px 0;font-size:.92em}
+        .checkpoint::before{content:'✓ Контрольная точка';display:block;color:var(--green);font-weight:700;font-size:.85em;margin-bottom:4px}
+        .pipeline{display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center;margin:20px 0}
+        .pipe-box{background:var(--card);border:2px solid var(--accent);border-radius:10px;padding:12px 18px;text-align:center;font-size:.9em;min-width:110px}
+        .pipe-box.sensor{border-color:var(--green)}
+        .pipe-box.algo{border-color:var(--accent2)}
+        .pipe-box.output{border-color:var(--orange)}
+        .pipe-arrow{color:var(--text2);font-size:1.4em;margin:0 6px}
+        .toc{list-style:none;padding:0}.toc li{margin:6px 0}.toc a{color:var(--accent);text-decoration:none}.toc a:hover{text-decoration:underline}
+        .toc .sub{padding-left:24px;font-size:.9em}
+        .file-tree{font-family:'Courier New',monospace;font-size:.88em;line-height:1.9;padding:4px 0}
+        .file-tree .dir{color:var(--accent)}
+        .file-tree .file{color:var(--text2)}
+        .file-tree .desc{color:var(--text2);font-family:'Segoe UI',system-ui,sans-serif;font-size:.85em;opacity:.7}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a;padding:20px}.card{border:1px solid #ddd;background:#f9f9f9}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb;border-color:#ddd}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html" class="active">Пошаговый гайд</a>
+        <div class="sep"></div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Пошаговый гайд по проекту</h1>
+        <p class="subtitle">От нуля до работающего робота — инкрементально, с проверками на каждом шаге</p>
+
+        <div class="card highlight">
+            <p><strong>Для кого этот гайд:</strong> ты не знаешь ROS2, не понимаешь что от тебя хотят, и хочешь разобраться по шагам. Каждый шаг — минимальный рабочий код, который можно запустить и проверить <em>до</em> перехода к следующему.</p>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0">Содержание</h3>
+            <ol class="toc">
+                <li><a href="#big-picture">Общая картина — что от нас хотят</a></li>
+                <li><a href="#install">Что установить</a></li>
+                <li><a href="#structure">Структура проекта</a></li>
+                <li class="sub"><a href="#step-odom">Шаг 1 — Одометрия: «где я?»</a></li>
+                <li class="sub"><a href="#step-lidar">Шаг 2 — Лидар: «что вокруг?»</a></li>
+                <li class="sub"><a href="#step-map">Шаг 3 — Карта: «рисуем по ходу»</a></li>
+                <li class="sub"><a href="#step-astar">Шаг 4 — A*: «куда ехать?»</a></li>
+                <li class="sub"><a href="#step-pursuit">Шаг 5 — Pure Pursuit: «как ехать?»</a></li>
+                <li class="sub"><a href="#step-tf">Шаг 6 — TF2 и координаты</a></li>
+                <li class="sub"><a href="#step-launch">Шаг 7 — Собираем и запускаем</a></li>
+                <li><a href="#debug">Типичные ошибки и отладка</a></li>
+                <li><a href="#checklist">Чеклист перед сдачей</a></li>
+            </ol>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SECTION 1: BIG PICTURE                                       -->
+        <!-- ============================================================ -->
+        <h2 id="big-picture">1. Общая картина — что от нас хотят</h2>
+
+        <p>Задача проекта в одном предложении:</p>
+        <div class="card highlight">
+            <p style="font-size:1.05em"><strong>Робот стартует в незнакомом мире. Он не знает карту. Ты ставишь ему цель в RViz — и он сам строит карту лидаром, прокладывает путь через A*, и едет по нему через Pure Pursuit.</strong></p>
+        </div>
+
+        <h3>Pipeline — как данные текут</h3>
+        <div class="pipeline">
+            <div class="pipe-box sensor">Лидар<br><small>/scan</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box algo">Карта<br><small>OccupancyGrid</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box algo">A*<br><small>глобальный путь</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box output">Pure Pursuit<br><small>/cmd_vel</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box output">Робот едет</div>
+        </div>
+
+        <p>Параллельно:</p>
+        <div class="pipeline">
+            <div class="pipe-box sensor">Одометрия<br><small>/odom</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box">Позиция робота<br><small>x, y, yaw</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box algo">Все алгоритмы<br><small>используют позицию</small></div>
+        </div>
+
+        <div class="card warn">
+            <p><strong>Ключевой момент:</strong> карта не дана заранее! Робот начинает с пустой сетки (все клетки = «неизвестно»). Лидар сканирует окружение → лучи отмечают свободные и занятые клетки → A* строит путь по тому, что уже известно. Неизвестные клетки считаются проходимыми — так робот может исследовать.</p>
+        </div>
+
+        <h3>Три компонента системы</h3>
+        <div class="grid">
+            <div class="card">
+                <h3 style="margin-top:0;color:var(--green)">Gazebo (симулятор)</h3>
+                <p>Виртуальный мир с роботом TurtleBot3. Публикует данные сенсоров: одометрию, лидар, TF-трансформации. Принимает команды скоростей.</p>
+                <p><span class="tag green">Готов из коробки</span> — ничего писать не надо.</p>
+            </div>
+            <div class="card">
+                <h3 style="margin-top:0;color:var(--accent2)">Наш узел (навигация)</h3>
+                <p>Один C++ узел <code>global_planner_node</code>. Подписывается на сенсоры, строит карту, планирует путь A*, управляет роботом через Pure Pursuit.</p>
+                <p><span class="tag purple">Это пишем мы</span> — основная работа.</p>
+            </div>
+        </div>
+        <div class="card" style="max-width:400px">
+            <h3 style="margin-top:0;color:var(--accent)">RViz (визуализация)</h3>
+            <p>Показывает карту, путь, робота. Через «2D Goal Pose» ставим цель — клик мышкой.</p>
+            <p><span class="tag blue">Инструмент</span> — настроить и использовать.</p>
+        </div>
+
+        <h3>Что публикует кто</h3>
+        <table>
+            <tr><th>Топик</th><th>Тип сообщения</th><th>Кто публикует</th><th>Кто читает</th></tr>
+            <tr><td><code>/odom</code></td><td>nav_msgs/Odometry</td><td>Gazebo</td><td>Наш узел</td></tr>
+            <tr><td><code>/scan</code></td><td>sensor_msgs/LaserScan</td><td>Gazebo</td><td>Наш узел</td></tr>
+            <tr><td><code>/tf</code></td><td>tf2_msgs/TFMessage</td><td>Gazebo</td><td>RViz</td></tr>
+            <tr><td><code>/goal_pose</code></td><td>geometry_msgs/PoseStamped</td><td>RViz (ты кликаешь)</td><td>Наш узел</td></tr>
+            <tr><td><code>/cmd_vel</code></td><td>geometry_msgs/Twist</td><td>Наш узел</td><td>Gazebo</td></tr>
+            <tr><td><code>/map</code></td><td>nav_msgs/OccupancyGrid</td><td>Наш узел</td><td>RViz</td></tr>
+            <tr><td><code>/global_plan</code></td><td>nav_msgs/Path</td><td>Наш узел</td><td>RViz</td></tr>
+        </table>
+
+        <!-- ============================================================ -->
+        <!-- SECTION 2: INSTALL                                           -->
+        <!-- ============================================================ -->
+        <h2 id="install">2. Что установить</h2>
+
+        <div class="card highlight">
+            <p><strong>ОС:</strong> Ubuntu 22.04 (рекомендуется). ROS2 Humble — LTS-версия.</p>
+        </div>
+
+        <h3>2.1. ROS2 Humble</h3>
+<pre>
+<span style="color:var(--green)"># Добавить репозиторий ROS2</span>
+sudo apt update &amp;&amp; sudo apt install -y software-properties-common curl
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+  -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+  http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
+  | sudo tee /etc/apt/sources.list.d/ros2.list
+
+<span style="color:var(--green)"># Установить</span>
+sudo apt update
+sudo apt install -y ros-humble-desktop
+
+<span style="color:var(--green)"># Добавить в .bashrc (чтобы не писать каждый раз)</span>
+echo "source /opt/ros/humble/setup.bash" &gt;&gt; ~/.bashrc
+source ~/.bashrc</pre>
+
+        <h3>2.2. Gazebo + TurtleBot3</h3>
+<pre>
+sudo apt install -y ros-humble-gazebo-ros-pkgs
+sudo apt install -y ros-humble-turtlebot3-gazebo ros-humble-turtlebot3-description
+
+<span style="color:var(--green)"># Выбрать модель робота (burger — самая простая)</span>
+echo "export TURTLEBOT3_MODEL=burger" &gt;&gt; ~/.bashrc
+source ~/.bashrc</pre>
+
+        <h3>2.3. Инструменты сборки</h3>
+<pre>
+sudo apt install -y python3-colcon-common-extensions python3-rosdep
+sudo rosdep init   <span style="color:var(--green)"># только один раз</span>
+rosdep update</pre>
+
+        <div class="checkpoint">
+            <p>Запусти <code>ros2 topic list</code> — должен вывести хотя бы <code>/parameter_events</code> и <code>/rosout</code>.</p>
+            <p>Запусти <code>ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py</code> — должен открыться Gazebo с роботом.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SECTION 3: PROJECT STRUCTURE                                 -->
+        <!-- ============================================================ -->
+        <h2 id="structure">3. Структура проекта</h2>
+
+        <p>Создаём ROS2-пакет. Вся навигация — в одном узле.</p>
+
+<pre>
+<span style="color:var(--green)"># Создать workspace и пакет</span>
+mkdir -p ~/ros2_ws/src &amp;&amp; cd ~/ros2_ws/src
+ros2 pkg create ros2_navigation_project --build-type ament_cmake \
+  --dependencies rclcpp nav_msgs sensor_msgs geometry_msgs tf2_ros</pre>
+
+        <div class="card">
+            <div class="file-tree">
+                <span class="dir">ros2_navigation_project/</span><br>
+                ├── <span class="dir">include/</span><br>
+                │   └── <span class="file">planner_node.hpp</span> <span class="desc">← объявление класса</span><br>
+                ├── <span class="dir">src/</span><br>
+                │   └── <span class="file">planner_node.cpp</span> <span class="desc">← вся логика здесь</span><br>
+                ├── <span class="file">CMakeLists.txt</span> <span class="desc">← правила сборки</span><br>
+                └── <span class="file">package.xml</span> <span class="desc">← зависимости пакета</span>
+            </div>
+        </div>
+
+        <h3>Скелет класса (planner_node.hpp)</h3>
+        <p>Один класс — один узел. Все подписки, издатели, таймеры и данные — внутри.</p>
+
+<pre>
+<span style="color:var(--accent)">#pragma once</span>
+<span style="color:var(--accent)">#include</span> &lt;rclcpp/rclcpp.hpp&gt;
+<span style="color:var(--accent)">#include</span> &lt;nav_msgs/msg/odometry.hpp&gt;
+<span style="color:var(--accent)">#include</span> &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
+<span style="color:var(--accent)">#include</span> &lt;nav_msgs/msg/path.hpp&gt;
+<span style="color:var(--accent)">#include</span> &lt;sensor_msgs/msg/laser_scan.hpp&gt;
+<span style="color:var(--accent)">#include</span> &lt;geometry_msgs/msg/twist.hpp&gt;
+<span style="color:var(--accent)">#include</span> &lt;geometry_msgs/msg/pose_stamped.hpp&gt;
+<span style="color:var(--accent)">#include</span> &lt;tf2_ros/static_transform_broadcaster.h&gt;
+<span style="color:var(--accent)">#include</span> &lt;vector&gt;
+<span style="color:var(--accent)">#include</span> &lt;deque&gt;
+<span style="color:var(--accent)">#include</span> &lt;mutex&gt;
+
+<span style="color:var(--accent)">class</span> <span style="color:var(--accent2)">GlobalPlannerNode</span> : <span style="color:var(--accent)">public</span> rclcpp::Node {
+<span style="color:var(--accent)">public</span>:
+    GlobalPlannerNode();
+
+<span style="color:var(--accent)">private</span>:
+    <span style="color:var(--green)">// === Подписчики ===</span>
+    rclcpp::Subscription&lt;nav_msgs::msg::Odometry&gt;::SharedPtr odom_sub_;
+    rclcpp::Subscription&lt;sensor_msgs::msg::LaserScan&gt;::SharedPtr scan_sub_;
+    rclcpp::Subscription&lt;geometry_msgs::msg::PoseStamped&gt;::SharedPtr goal_sub_;
+
+    <span style="color:var(--green)">// === Издатели ===</span>
+    rclcpp::Publisher&lt;geometry_msgs::msg::Twist&gt;::SharedPtr cmd_vel_pub_;
+    rclcpp::Publisher&lt;nav_msgs::msg::OccupancyGrid&gt;::SharedPtr map_pub_;
+    rclcpp::Publisher&lt;nav_msgs::msg::Path&gt;::SharedPtr path_pub_;
+
+    <span style="color:var(--green)">// === Таймеры ===</span>
+    rclcpp::TimerBase::SharedPtr control_timer_;  <span style="color:var(--green)">// 10 Гц — Pure Pursuit</span>
+    rclcpp::TimerBase::SharedPtr map_timer_;       <span style="color:var(--green)">// 1 Гц — публикация карты</span>
+
+    <span style="color:var(--green)">// === Состояние робота ===</span>
+    <span style="color:var(--accent2)">double</span> current_x_ = 0, current_y_ = 0, current_yaw_ = 0;
+    std::vector&lt;<span style="color:var(--accent2)">float</span>&gt; scan_ranges_;
+    std::mutex data_mutex_;
+
+    <span style="color:var(--green)">// === Карта ===</span>
+    <span style="color:var(--accent2)">int</span> map_width_ = 200, map_height_ = 200;    <span style="color:var(--green)">// клетки</span>
+    <span style="color:var(--accent2)">double</span> map_resolution_ = 0.05;              <span style="color:var(--green)">// 5 см/клетка</span>
+    <span style="color:var(--accent2)">double</span> map_origin_x_, map_origin_y_;        <span style="color:var(--green)">// мировые координаты угла карты</span>
+    std::vector&lt;<span style="color:var(--accent2)">int8_t</span>&gt; map_data_;              <span style="color:var(--green)">// 0=free, 100=wall, -1=unknown</span>
+
+    <span style="color:var(--green)">// === План ===</span>
+    std::deque&lt;std::pair&lt;<span style="color:var(--accent2)">double</span>,<span style="color:var(--accent2)">double</span>&gt;&gt; global_plan_;
+    <span style="color:var(--accent2)">bool</span> has_goal_ = <span style="color:var(--accent)">false</span>;
+    <span style="color:var(--accent2)">double</span> goal_x_ = 0, goal_y_ = 0;
+
+    <span style="color:var(--green)">// === Callback-функции (Шаги 1-5) ===</span>
+    <span style="color:var(--accent2)">void</span> odomCallback(<span style="color:var(--accent)">const</span> nav_msgs::msg::Odometry::SharedPtr msg);
+    <span style="color:var(--accent2)">void</span> scanCallback(<span style="color:var(--accent)">const</span> sensor_msgs::msg::LaserScan::SharedPtr msg);
+    <span style="color:var(--accent2)">void</span> goalCallback(<span style="color:var(--accent)">const</span> geometry_msgs::msg::PoseStamped::SharedPtr msg);
+    <span style="color:var(--accent2)">void</span> controlLoop();
+
+    <span style="color:var(--green)">// === Алгоритмы ===</span>
+    <span style="color:var(--accent2)">void</span> updateMapWithLaser();                 <span style="color:var(--green)">// Шаг 3</span>
+    std::deque&lt;std::pair&lt;<span style="color:var(--accent2)">double</span>,<span style="color:var(--accent2)">double</span>&gt;&gt;
+        planAStar(<span style="color:var(--accent2)">double</span> sx, <span style="color:var(--accent2)">double</span> sy,
+                  <span style="color:var(--accent2)">double</span> gx, <span style="color:var(--accent2)">double</span> gy);   <span style="color:var(--green)">// Шаг 4</span>
+    <span style="color:var(--accent2)">void</span> purePursuitControl();                 <span style="color:var(--green)">// Шаг 5</span>
+
+    <span style="color:var(--green)">// === Вспомогательные ===</span>
+    <span style="color:var(--accent2)">void</span> publishMap();
+    <span style="color:var(--accent2)">void</span> publishPath();
+    <span style="color:var(--accent2)">bool</span> isFree(<span style="color:var(--accent2)">int</span> mx, <span style="color:var(--accent2)">int</span> my);
+};</pre>
+
+        <div class="card success">
+            <p>Не пугайся размера — мы будем заполнять этот класс <strong>по одному методу</strong>. Сейчас это просто карта территории.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- STEP 1: ODOMETRY                                             -->
+        <!-- ============================================================ -->
+        <h2 id="step-odom">Шаг 1 — Одометрия: «где я?»</h2>
+
+        <div class="step-header">
+            <span class="num">1</span>
+            <h3>Цель: узнать текущую позицию робота (x, y, yaw)</h3>
+        </div>
+
+        <p>Gazebo публикует позицию робота в топик <code>/odom</code> с частотой ~50 Гц. Нам нужно подписаться и извлечь три числа: координаты (x, y) и угол поворота (yaw).</p>
+
+        <div class="card highlight">
+            <p><strong>Зачем:</strong> все остальные алгоритмы (карта, A*, Pure Pursuit) используют текущую позицию робота. Без одометрии ничего не работает.</p>
+        </div>
+
+        <h3>Кватернион → yaw</h3>
+        <p>Ориентация приходит как кватернион (x, y, z, w) — это 3D-поворот. Нам нужен только угол вокруг оси Z (yaw). Формула:</p>
+        <p>$$\text{yaw} = \text{atan2}\big(2(wz + xy),\ 1 - 2(y^2 + z^2)\big)$$</p>
+
+        <h3>Код</h3>
+<pre>
+<span style="color:var(--green)">// В конструкторе: подписка на /odom</span>
+odom_sub_ = this-&gt;create_subscription&lt;nav_msgs::msg::Odometry&gt;(
+    "/odom", 10,
+    [this](<span style="color:var(--accent)">const</span> nav_msgs::msg::Odometry::SharedPtr msg) {
+        odomCallback(msg);
+    });
+
+<span style="color:var(--green)">// Callback</span>
+<span style="color:var(--accent2)">void</span> GlobalPlannerNode::odomCallback(
+    <span style="color:var(--accent)">const</span> nav_msgs::msg::Odometry::SharedPtr msg)
+{
+    std::lock_guard&lt;std::mutex&gt; lock(data_mutex_);
+    current_x_ = msg-&gt;pose.pose.position.x;
+    current_y_ = msg-&gt;pose.pose.position.y;
+
+    <span style="color:var(--green)">// Кватернион → yaw</span>
+    <span style="color:var(--accent2)">auto</span>&amp; q = msg-&gt;pose.pose.orientation;
+    current_yaw_ = std::atan2(
+        2.0 * (q.w * q.z + q.x * q.y),
+        1.0 - 2.0 * (q.y * q.y + q.z * q.z));
+}</pre>
+
+        <div class="checkpoint">
+            <p>Добавь в callback строку <code>RCLCPP_INFO(get_logger(), "x=%.2f y=%.2f yaw=%.2f", current_x_, current_y_, current_yaw_);</code></p>
+            <p>Запусти Gazebo + свой узел. В терминале должны бежать координаты. Покрути робота через <code>ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{angular: {z: 0.5}}"</code> — yaw должен меняться.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- STEP 2: LIDAR                                                -->
+        <!-- ============================================================ -->
+        <h2 id="step-lidar">Шаг 2 — Лидар: «что вокруг?»</h2>
+
+        <div class="step-header">
+            <span class="num">2</span>
+            <h3>Цель: получить массив расстояний до препятствий</h3>
+        </div>
+
+        <p>Лидар TurtleBot3 — это 360° лазерный сканер. Он посылает ~360 лучей и для каждого возвращает расстояние до ближайшего препятствия.</p>
+
+        <div class="card">
+            <h3 style="margin-top:0">Структура LaserScan</h3>
+            <table>
+                <tr><th>Поле</th><th>Тип</th><th>Что это</th></tr>
+                <tr><td><code>angle_min</code></td><td>float</td><td>Начальный угол (обычно 0 или -π)</td></tr>
+                <tr><td><code>angle_max</code></td><td>float</td><td>Конечный угол (обычно 2π или π)</td></tr>
+                <tr><td><code>angle_increment</code></td><td>float</td><td>Шаг между лучами (~0.0175 рад ≈ 1°)</td></tr>
+                <tr><td><code>ranges[]</code></td><td>float[]</td><td>Массив расстояний — <strong>это главное</strong></td></tr>
+                <tr><td><code>range_min</code></td><td>float</td><td>Мин. дальность (&lt; этого — шум)</td></tr>
+                <tr><td><code>range_max</code></td><td>float</td><td>Макс. дальность (&gt; этого — нет данных)</td></tr>
+            </table>
+        </div>
+
+        <h3>Код</h3>
+<pre>
+<span style="color:var(--green)">// В конструкторе: подписка на /scan</span>
+scan_sub_ = this-&gt;create_subscription&lt;sensor_msgs::msg::LaserScan&gt;(
+    "/scan", 10,
+    [this](<span style="color:var(--accent)">const</span> sensor_msgs::msg::LaserScan::SharedPtr msg) {
+        scanCallback(msg);
+    });
+
+<span style="color:var(--green)">// Callback — просто сохраняем данные</span>
+<span style="color:var(--accent2)">void</span> GlobalPlannerNode::scanCallback(
+    <span style="color:var(--accent)">const</span> sensor_msgs::msg::LaserScan::SharedPtr msg)
+{
+    std::lock_guard&lt;std::mutex&gt; lock(data_mutex_);
+    scan_ranges_ = msg-&gt;ranges;
+
+    <span style="color:var(--green)">// Сразу обновляем карту свежими данными лидара</span>
+    updateMapWithLaser();
+}</pre>
+
+        <div class="card warn">
+            <p><strong>Важно:</strong> <code>ranges[i]</code> может быть <code>inf</code> (луч улетел в пустоту) или <code>nan</code> (ошибка датчика). Всегда проверяй: <code>if (r &gt; range_min &amp;&amp; r &lt; range_max)</code> перед использованием.</p>
+        </div>
+
+        <h3>Как луч превращается в точку на карте</h3>
+        <p>Каждый луч <code>i</code> имеет угол и расстояние. Глобальные координаты точки препятствия:</p>
+        <p>$$w_x = x_{\text{робот}} + r_i \cdot \cos(\text{yaw} + \alpha_i)$$</p>
+        <p>$$w_y = y_{\text{робот}} + r_i \cdot \sin(\text{yaw} + \alpha_i)$$</p>
+        <p>где $\alpha_i = \text{angle\_min} + i \cdot \text{angle\_increment}$</p>
+
+        <div class="checkpoint">
+            <p>Добавь лог: <code>RCLCPP_INFO(get_logger(), "scan: %zu rays, front=%.2f m", scan_ranges_.size(), scan_ranges_[0]);</code></p>
+            <p>Должно показывать ~360 лучей. Поставь препятствие перед роботом в Gazebo — <code>front</code> уменьшится.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- STEP 3: MAP                                                  -->
+        <!-- ============================================================ -->
+        <h2 id="step-map">Шаг 3 — Карта: «рисуем по ходу»</h2>
+
+        <div class="step-header">
+            <span class="num">3</span>
+            <h3>Цель: превратить лучи лидара в OccupancyGrid</h3>
+        </div>
+
+        <p>Карта — это сетка клеток. Каждая клетка хранит одно из трёх значений:</p>
+
+        <div class="grid">
+            <div class="card" style="text-align:center">
+                <div style="font-size:2em;margin-bottom:8px">⬜</div>
+                <code>0</code> — свободно<br>
+                <small>Луч прошёл сквозь</small>
+            </div>
+            <div class="card" style="text-align:center">
+                <div style="font-size:2em;margin-bottom:8px">⬛</div>
+                <code>100</code> — стена<br>
+                <small>Луч упёрся сюда</small>
+            </div>
+        </div>
+        <div class="card" style="text-align:center;max-width:200px">
+            <div style="font-size:2em;margin-bottom:8px">❓</div>
+            <code>-1</code> — неизвестно<br>
+            <small>Луч сюда не доставал</small>
+        </div>
+
+        <h3>Инициализация</h3>
+<pre>
+<span style="color:var(--green)">// В конструкторе</span>
+map_data_.assign(map_width_ * map_height_, -1);  <span style="color:var(--green)">// всё неизвестно</span>
+map_origin_x_ = -(map_width_ * map_resolution_) / 2.0;   <span style="color:var(--green)">// центрируем карту</span>
+map_origin_y_ = -(map_height_ * map_resolution_) / 2.0;</pre>
+
+        <h3>updateMapWithLaser — ядро построения карты</h3>
+        <p>Для каждого валидного луча:</p>
+        <ol>
+            <li>Вычисляем мировые координаты точки препятствия (формулы из Шага 2)</li>
+            <li>Переводим в индексы карты: <code>mx = (wx - origin_x) / resolution</code></li>
+            <li>Помечаем клетку препятствия как <code>100</code></li>
+            <li><strong>Ray tracing:</strong> проходим по всем клеткам между роботом и препятствием, помечая их как <code>0</code> (свободно)</li>
+        </ol>
+
+<pre>
+<span style="color:var(--accent2)">void</span> GlobalPlannerNode::updateMapWithLaser() {
+    <span style="color:var(--accent)">if</span> (scan_ranges_.empty()) <span style="color:var(--accent)">return</span>;
+
+    <span style="color:var(--accent2)">double</span> angle = -M_PI;  <span style="color:var(--green)"># angle_min для TurtleBot3</span>
+    <span style="color:var(--accent2)">double</span> angle_inc = 2.0 * M_PI / scan_ranges_.size();
+
+    <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">size_t</span> i = 0; i &lt; scan_ranges_.size(); i++) {
+        <span style="color:var(--accent2)">double</span> r = scan_ranges_[i];
+        <span style="color:var(--accent)">if</span> (r &lt; 0.12 || r &gt; 3.5 || std::isinf(r) || std::isnan(r)) {
+            angle += angle_inc;
+            <span style="color:var(--accent)">continue</span>;
+        }
+
+        <span style="color:var(--green)">// Мировые координаты конца луча</span>
+        <span style="color:var(--accent2)">double</span> wx = current_x_ + r * std::cos(current_yaw_ + angle);
+        <span style="color:var(--accent2)">double</span> wy = current_y_ + r * std::sin(current_yaw_ + angle);
+
+        <span style="color:var(--green)">// Индексы карты: робот и препятствие</span>
+        <span style="color:var(--accent2)">int</span> rx = (<span style="color:var(--accent2)">int</span>)((current_x_ - map_origin_x_) / map_resolution_);
+        <span style="color:var(--accent2)">int</span> ry = (<span style="color:var(--accent2)">int</span>)((current_y_ - map_origin_y_) / map_resolution_);
+        <span style="color:var(--accent2)">int</span> mx = (<span style="color:var(--accent2)">int</span>)((wx - map_origin_x_) / map_resolution_);
+        <span style="color:var(--accent2)">int</span> my = (<span style="color:var(--accent2)">int</span>)((wy - map_origin_y_) / map_resolution_);
+
+        <span style="color:var(--green)">// Ray tracing (Bresenham): свободные клетки между роботом и стеной</span>
+        <span style="color:var(--accent2)">int</span> dx = std::abs(mx - rx), dy = std::abs(my - ry);
+        <span style="color:var(--accent2)">int</span> sx = (rx &lt; mx) ? 1 : -1;
+        <span style="color:var(--accent2)">int</span> sy = (ry &lt; my) ? 1 : -1;
+        <span style="color:var(--accent2)">int</span> err = dx - dy;
+        <span style="color:var(--accent2)">int</span> cx = rx, cy = ry;
+
+        <span style="color:var(--accent)">while</span> (cx != mx || cy != my) {
+            <span style="color:var(--accent)">if</span> (cx &gt;= 0 &amp;&amp; cx &lt; map_width_ &amp;&amp; cy &gt;= 0 &amp;&amp; cy &lt; map_height_)
+                map_data_[cy * map_width_ + cx] = 0;  <span style="color:var(--green)">// свободно</span>
+            <span style="color:var(--accent2)">int</span> e2 = 2 * err;
+            <span style="color:var(--accent)">if</span> (e2 &gt; -dy) { err -= dy; cx += sx; }
+            <span style="color:var(--accent)">if</span> (e2 &lt;  dx) { err += dx; cy += sy; }
+        }
+
+        <span style="color:var(--green)">// Конец луча = препятствие</span>
+        <span style="color:var(--accent)">if</span> (mx &gt;= 0 &amp;&amp; mx &lt; map_width_ &amp;&amp; my &gt;= 0 &amp;&amp; my &lt; map_height_)
+            map_data_[my * map_width_ + mx] = 100;  <span style="color:var(--green)">// стена</span>
+
+        angle += angle_inc;
+    }
+}</pre>
+
+        <div class="card highlight">
+            <p><strong>Ray tracing (Bresenham)</strong> — алгоритм рисования линии по пикселям. Мы «рисуем линию» от робота до препятствия, помечая каждую клетку на пути как свободную. Это та же идея, что в <a href="algo-5-theta-star.html" style="color:var(--accent)">Theta* (line of sight)</a>.</p>
+        </div>
+
+        <h3>Публикация карты в RViz</h3>
+<pre>
+<span style="color:var(--accent2)">void</span> GlobalPlannerNode::publishMap() {
+    nav_msgs::msg::OccupancyGrid grid;
+    grid.header.stamp = this-&gt;now();
+    grid.header.frame_id = "map";
+    grid.info.resolution = map_resolution_;
+    grid.info.width = map_width_;
+    grid.info.height = map_height_;
+    grid.info.origin.position.x = map_origin_x_;
+    grid.info.origin.position.y = map_origin_y_;
+    grid.data = map_data_;
+    map_pub_-&gt;publish(grid);
+}</pre>
+
+        <div class="checkpoint">
+            <p>Запусти узел, открой RViz, добавь дисплей <strong>Map</strong> (топик <code>/map</code>). Должна появляться карта, которая расширяется по мере вращения робота. Покрути его через <code>cmd_vel</code> — карта должна «раскрываться» по кругу.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- STEP 4: A*                                                   -->
+        <!-- ============================================================ -->
+        <h2 id="step-astar">Шаг 4 — A*: «куда ехать?»</h2>
+
+        <div class="step-header">
+            <span class="num">4</span>
+            <h3>Цель: найти путь от робота до цели по текущей карте</h3>
+        </div>
+
+        <div class="card warn">
+            <p><strong>Отличие от классического A*:</strong> карта — частичная. Робот ещё не видел большую часть мира. Поэтому неизвестные клетки (<code>-1</code>) считаются проходимыми — иначе робот не сможет исследовать.</p>
+        </div>
+
+        <p>Подробное описание A* с анимацией — на <a href="algo-1-astar.html" style="color:var(--accent)">странице алгоритма</a>. Здесь — адаптация под наш проект.</p>
+
+        <h3>isFree — проходима ли клетка?</h3>
+<pre>
+<span style="color:var(--accent2)">bool</span> GlobalPlannerNode::isFree(<span style="color:var(--accent2)">int</span> mx, <span style="color:var(--accent2)">int</span> my) {
+    <span style="color:var(--accent)">if</span> (mx &lt; 0 || mx &gt;= map_width_ || my &lt; 0 || my &gt;= map_height_)
+        <span style="color:var(--accent)">return false</span>;
+    <span style="color:var(--accent2)">int8_t</span> val = map_data_[my * map_width_ + mx];
+    <span style="color:var(--accent)">return</span> val == 0 || val == -1;  <span style="color:var(--green)">// свободно ИЛИ неизвестно</span>
+}</pre>
+
+        <h3>planAStar</h3>
+<pre>
+<span style="color:var(--accent)">struct</span> AStarNode {
+    <span style="color:var(--accent2)">int</span> x, y;
+    <span style="color:var(--accent2)">double</span> g, h;
+    <span style="color:var(--accent2)">int</span> px, py;  <span style="color:var(--green)">// координаты родителя</span>
+    <span style="color:var(--accent2)">double</span> f() <span style="color:var(--accent)">const</span> { <span style="color:var(--accent)">return</span> g + h; }
+};
+
+std::deque&lt;std::pair&lt;<span style="color:var(--accent2)">double</span>,<span style="color:var(--accent2)">double</span>&gt;&gt;
+GlobalPlannerNode::planAStar(<span style="color:var(--accent2)">double</span> sx, <span style="color:var(--accent2)">double</span> sy,
+                             <span style="color:var(--accent2)">double</span> gx, <span style="color:var(--accent2)">double</span> gy)
+{
+    <span style="color:var(--green)">// Мировые координаты → индексы карты</span>
+    <span style="color:var(--accent2)">int</span> startX = (<span style="color:var(--accent2)">int</span>)((sx - map_origin_x_) / map_resolution_);
+    <span style="color:var(--accent2)">int</span> startY = (<span style="color:var(--accent2)">int</span>)((sy - map_origin_y_) / map_resolution_);
+    <span style="color:var(--accent2)">int</span> goalX  = (<span style="color:var(--accent2)">int</span>)((gx - map_origin_x_) / map_resolution_);
+    <span style="color:var(--accent2)">int</span> goalY  = (<span style="color:var(--accent2)">int</span>)((gy - map_origin_y_) / map_resolution_);
+
+    <span style="color:var(--green)">// Безопасность: если старт на стене — пометить как free</span>
+    <span style="color:var(--accent)">if</span> (!isFree(startX, startY))
+        map_data_[startY * map_width_ + startX] = 0;
+
+    <span style="color:var(--green)">// Priority queue: min-heap по f</span>
+    <span style="color:var(--accent)">auto</span> cmp = [](<span style="color:var(--accent)">const</span> AStarNode&amp; a, <span style="color:var(--accent)">const</span> AStarNode&amp; b) {
+        <span style="color:var(--accent)">return</span> a.f() &gt; b.f();
+    };
+    std::priority_queue&lt;AStarNode, std::vector&lt;AStarNode&gt;,
+                        <span style="color:var(--accent)">decltype</span>(cmp)&gt; open(cmp);
+
+    <span style="color:var(--green)">// visited[y * width + x] = true</span>
+    std::vector&lt;<span style="color:var(--accent2)">bool</span>&gt; visited(map_width_ * map_height_, <span style="color:var(--accent)">false</span>);
+    std::vector&lt;<span style="color:var(--accent2)">int</span>&gt; parent(map_width_ * map_height_, -1);
+
+    <span style="color:var(--accent2)">auto</span> heuristic = [](<span style="color:var(--accent2)">int</span> x1, <span style="color:var(--accent2)">int</span> y1, <span style="color:var(--accent2)">int</span> x2, <span style="color:var(--accent2)">int</span> y2) {
+        <span style="color:var(--accent)">return</span> std::hypot(x2 - x1, y2 - y1);
+    };
+
+    open.push({startX, startY, 0.0,
+               heuristic(startX, startY, goalX, goalY),
+               -1, -1});
+
+    <span style="color:var(--green)">// 8 направлений</span>
+    <span style="color:var(--accent2)">int</span> dx[] = {1,-1,0,0, 1,1,-1,-1};
+    <span style="color:var(--accent2)">int</span> dy[] = {0,0,1,-1, 1,-1,1,-1};
+    <span style="color:var(--accent2)">double</span> dc[] = {1,1,1,1, 1.414,1.414,1.414,1.414};
+
+    <span style="color:var(--accent)">while</span> (!open.empty()) {
+        AStarNode cur = open.top(); open.pop();
+        <span style="color:var(--accent2)">int</span> idx = cur.y * map_width_ + cur.x;
+
+        <span style="color:var(--accent)">if</span> (visited[idx]) <span style="color:var(--accent)">continue</span>;
+        visited[idx] = <span style="color:var(--accent)">true</span>;
+        parent[idx] = cur.py * map_width_ + cur.px;
+
+        <span style="color:var(--green)">// Достигли цели?</span>
+        <span style="color:var(--accent)">if</span> (cur.x == goalX &amp;&amp; cur.y == goalY) {
+            <span style="color:var(--green)">// Восстановить путь</span>
+            std::deque&lt;std::pair&lt;<span style="color:var(--accent2)">double</span>,<span style="color:var(--accent2)">double</span>&gt;&gt; path;
+            <span style="color:var(--accent2)">int</span> ci = idx;
+            <span style="color:var(--accent)">while</span> (ci != -1 &amp;&amp; ci != cur.py * map_width_ + cur.px) {
+                <span style="color:var(--accent2)">int</span> py = ci / map_width_, px = ci % map_width_;
+                path.push_front({
+                    map_origin_x_ + (px + 0.5) * map_resolution_,
+                    map_origin_y_ + (py + 0.5) * map_resolution_
+                });
+                ci = parent[ci];
+            }
+            <span style="color:var(--accent)">return</span> path;
+        }
+
+        <span style="color:var(--green)">// Раскрыть 8 соседей</span>
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> d = 0; d &lt; 8; d++) {
+            <span style="color:var(--accent2)">int</span> nx = cur.x + dx[d], ny = cur.y + dy[d];
+            <span style="color:var(--accent)">if</span> (!isFree(nx, ny)) <span style="color:var(--accent)">continue</span>;
+            <span style="color:var(--accent)">if</span> (visited[ny * map_width_ + nx]) <span style="color:var(--accent)">continue</span>;
+
+            open.push({nx, ny, cur.g + dc[d],
+                       heuristic(nx, ny, goalX, goalY),
+                       cur.x, cur.y});
+        }
+    }
+
+    RCLCPP_WARN(get_logger(), "A* failed: no path found");
+    <span style="color:var(--accent)">return</span> {};  <span style="color:var(--green)">// нет пути</span>
+}</pre>
+
+        <h3>Вызов A* при получении цели</h3>
+<pre>
+<span style="color:var(--accent2)">void</span> GlobalPlannerNode::goalCallback(
+    <span style="color:var(--accent)">const</span> geometry_msgs::msg::PoseStamped::SharedPtr msg)
+{
+    goal_x_ = msg-&gt;pose.position.x;
+    goal_y_ = msg-&gt;pose.position.y;
+    has_goal_ = <span style="color:var(--accent)">true</span>;
+
+    global_plan_ = planAStar(current_x_, current_y_, goal_x_, goal_y_);
+
+    <span style="color:var(--accent)">if</span> (!global_plan_.empty()) {
+        RCLCPP_INFO(get_logger(), "Path found: %zu points", global_plan_.size());
+        publishPath();
+    }
+}</pre>
+
+        <div class="checkpoint">
+            <p>Запусти всё, в RViz добавь дисплей <strong>Path</strong> (топик <code>/global_plan</code>). Кликни 2D Goal Pose — должна появиться линия пути от робота до цели. Путь обходит стены, которые робот уже увидел лидаром.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- STEP 5: PURE PURSUIT                                         -->
+        <!-- ============================================================ -->
+        <h2 id="step-pursuit">Шаг 5 — Pure Pursuit: «как ехать?»</h2>
+
+        <div class="step-header">
+            <span class="num">5</span>
+            <h3>Цель: робот едет по пути, плавно поворачивая</h3>
+        </div>
+
+        <p>A* дал нам путь — набор точек. Pure Pursuit выбирает <strong>опорную точку</strong> на расстоянии <code>lookahead</code> вперёд по пути и рулит к ней.</p>
+
+        <div class="card highlight">
+            <p><strong>Аналогия:</strong> ты ведёшь машину. Ты не смотришь себе под колёса — ты смотришь на дорогу метров на 5-10 вперёд. Вот это и есть lookahead distance.</p>
+        </div>
+
+        <h3>Алгоритм</h3>
+        <ol>
+            <li>Найти ближайшую к роботу точку пути</li>
+            <li>Отмерить <code>lookahead_dist</code> (0.6 м) вперёд по пути</li>
+            <li>Вычислить угол от робота до опорной точки</li>
+            <li>Линейная скорость ∝ расстоянию до точки (макс 0.3 м/с)</li>
+            <li>Угловая скорость ∝ угловой ошибке (макс ±0.8 рад/с)</li>
+        </ol>
+
+<pre>
+<span style="color:var(--accent2)">void</span> GlobalPlannerNode::purePursuitControl() {
+    <span style="color:var(--accent)">if</span> (global_plan_.empty() || !has_goal_) <span style="color:var(--accent)">return</span>;
+
+    <span style="color:var(--accent2)">constexpr double</span> lookahead = 0.6;
+    <span style="color:var(--accent2)">constexpr double</span> max_linear = 0.3;
+    <span style="color:var(--accent2)">constexpr double</span> max_angular = 0.8;
+    <span style="color:var(--accent2)">constexpr double</span> Kp_ang = 1.5;
+
+    <span style="color:var(--green)">// 1. Найти ближайшую точку</span>
+    <span style="color:var(--accent2)">double</span> min_dist = 1e9;
+    <span style="color:var(--accent2)">size_t</span> closest = 0;
+    <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">size_t</span> i = 0; i &lt; global_plan_.size(); i++) {
+        <span style="color:var(--accent2)">double</span> d = std::hypot(global_plan_[i].first - current_x_,
+                             global_plan_[i].second - current_y_);
+        <span style="color:var(--accent)">if</span> (d &lt; min_dist) { min_dist = d; closest = i; }
+    }
+
+    <span style="color:var(--green)">// 2. Отмерить lookahead вперёд по пути</span>
+    <span style="color:var(--accent2)">double</span> acc = 0;
+    <span style="color:var(--accent2)">size_t</span> target = closest;
+    <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">size_t</span> i = closest; i + 1 &lt; global_plan_.size(); i++) {
+        acc += std::hypot(global_plan_[i+1].first - global_plan_[i].first,
+                          global_plan_[i+1].second - global_plan_[i].second);
+        target = i + 1;
+        <span style="color:var(--accent)">if</span> (acc &gt;= lookahead) <span style="color:var(--accent)">break</span>;
+    }
+
+    <span style="color:var(--accent2)">double</span> tx = global_plan_[target].first;
+    <span style="color:var(--accent2)">double</span> ty = global_plan_[target].second;
+
+    <span style="color:var(--green)">// 3. Угол к опорной точке</span>
+    <span style="color:var(--accent2)">double</span> angle_to_target = std::atan2(ty - current_y_, tx - current_x_);
+    <span style="color:var(--accent2)">double</span> angle_err = angle_to_target - current_yaw_;
+
+    <span style="color:var(--green)">// Нормализация в [-π, π]</span>
+    <span style="color:var(--accent)">while</span> (angle_err &gt;  M_PI) angle_err -= 2 * M_PI;
+    <span style="color:var(--accent)">while</span> (angle_err &lt; -M_PI) angle_err += 2 * M_PI;
+
+    <span style="color:var(--green)">// 4. Команды скоростей</span>
+    <span style="color:var(--accent2)">double</span> dist = std::hypot(tx - current_x_, ty - current_y_);
+    <span style="color:var(--accent2)">double</span> linear  = std::min(max_linear, dist);
+    <span style="color:var(--accent2)">double</span> angular = std::clamp(Kp_ang * angle_err, -max_angular, max_angular);
+
+    <span style="color:var(--green)">// 5. Безопасность: если стена прямо впереди — стоп и поворот</span>
+    <span style="color:var(--accent)">if</span> (!scan_ranges_.empty() &amp;&amp; scan_ranges_[0] &lt; 0.35) {
+        linear = 0;
+        angular = 0.5;  <span style="color:var(--green)">// поворот от стены</span>
+    }
+
+    <span style="color:var(--green)">// Достигли цели?</span>
+    <span style="color:var(--accent)">if</span> (std::hypot(goal_x_ - current_x_, goal_y_ - current_y_) &lt; 0.15) {
+        linear = 0; angular = 0;
+        has_goal_ = <span style="color:var(--accent)">false</span>;
+        RCLCPP_INFO(get_logger(), "Goal reached!");
+    }
+
+    geometry_msgs::msg::Twist cmd;
+    cmd.linear.x = linear;
+    cmd.angular.z = angular;
+    cmd_vel_pub_-&gt;publish(cmd);
+}</pre>
+
+        <div class="checkpoint">
+            <p>Кликни 2D Goal Pose — робот должен поехать по пути и остановиться у цели. Если путь проходит через неизвестную территорию, робот по дороге увидит новые стены → карта обновится → при следующем клике путь обойдёт их.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- STEP 6: TF2                                                  -->
+        <!-- ============================================================ -->
+        <h2 id="step-tf">Шаг 6 — TF2 и координаты</h2>
+
+        <div class="step-header">
+            <span class="num">6</span>
+            <h3>Цель: чтобы RViz правильно показывал робота на карте</h3>
+        </div>
+
+        <p>В ROS2 есть несколько систем координат (frames). Они связаны цепочкой трансформаций:</p>
+
+        <div class="pipeline">
+            <div class="pipe-box">map<br><small>глобальная</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box">odom<br><small>одометрия</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box">base_footprint<br><small>робот</small></div>
+            <span class="pipe-arrow">→</span>
+            <div class="pipe-box sensor">laser_frame<br><small>лидар</small></div>
+        </div>
+
+        <p>Gazebo публикует <code>odom → base_footprint</code> и <code>base_footprint → laser_frame</code>. Нам нужно добавить <code>map → odom</code> (в нашем проекте считаем их совпадающими — одометрия идеальная в симуляторе).</p>
+
+<pre>
+<span style="color:var(--green)">// В конструкторе: статическая трансформация map → odom</span>
+<span style="color:var(--accent)">auto</span> tf_broadcaster = std::make_shared&lt;tf2_ros::StaticTransformBroadcaster&gt;(this);
+geometry_msgs::msg::TransformStamped t;
+t.header.stamp = this-&gt;now();
+t.header.frame_id = "map";
+t.child_frame_id = "odom";
+t.transform.rotation.w = 1.0;  <span style="color:var(--green)">// единичный кватернион = нет поворота</span>
+tf_broadcaster-&gt;sendTransform(t);</pre>
+
+        <div class="card warn">
+            <p><strong>Зачем:</strong> без трансформации <code>map → odom</code> RViz не сможет отобразить робота на карте. Ты увидишь «Fixed Frame [map] does not exist» или робот будет в начале координат.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- STEP 7: LAUNCH                                               -->
+        <!-- ============================================================ -->
+        <h2 id="step-launch">Шаг 7 — Собираем и запускаем</h2>
+
+        <div class="step-header">
+            <span class="num">7</span>
+            <h3>Цель: рабочая система от начала до конца</h3>
+        </div>
+
+        <h3>CMakeLists.txt (ключевые строки)</h3>
+<pre>
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+add_executable(global_planner_node src/planner_node.cpp)
+ament_target_dependencies(global_planner_node
+  rclcpp nav_msgs sensor_msgs geometry_msgs tf2_ros)
+
+target_include_directories(global_planner_node
+  PRIVATE include)
+
+install(TARGETS global_planner_node
+  DESTINATION lib/${PROJECT_NAME})</pre>
+
+        <h3>Порядок запуска (3 терминала)</h3>
+        <div class="card">
+            <p><strong>Терминал 1 — Gazebo:</strong></p>
+            <pre style="margin:4px 0">ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py</pre>
+            <p><strong>Терминал 2 — Наш узел:</strong></p>
+<pre style="margin:4px 0">cd ~/ros2_ws &amp;&amp; colcon build --packages-select ros2_navigation_project
+source install/setup.bash
+ros2 run ros2_navigation_project global_planner_node</pre>
+            <p><strong>Терминал 3 — RViz:</strong></p>
+            <pre style="margin:4px 0">ros2 run rviz2 rviz2</pre>
+        </div>
+
+        <h3>Настройка RViz</h3>
+        <ol>
+            <li>Fixed Frame = <code>map</code></li>
+            <li>Add → By topic → <code>/map</code> (OccupancyGrid)</li>
+            <li>Add → By topic → <code>/global_plan</code> (Path)</li>
+            <li>Add → RobotModel (для отображения TurtleBot3)</li>
+            <li>Выбери инструмент <strong>2D Goal Pose</strong> и кликни в свободную область</li>
+        </ol>
+
+        <div class="checkpoint">
+            <p>Робот должен: увидеть карту лидаром → проложить путь A* к цели → поехать по нему через Pure Pursuit → по дороге обновлять карту.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- DEBUGGING                                                    -->
+        <!-- ============================================================ -->
+        <h2 id="debug">Типичные ошибки и отладка</h2>
+
+        <table>
+            <tr><th>Проблема</th><th>Причина и решение</th></tr>
+            <tr>
+                <td>Робот не двигается</td>
+                <td>Цель в стене → выбери другую точку. Или <code>/cmd_vel</code> не публикуется → проверь <code>ros2 topic echo /cmd_vel</code></td>
+            </tr>
+            <tr>
+                <td>A* не находит путь</td>
+                <td>Слишком много препятствий или цель за стеной. Попробуй ближнюю цель. Проверь что <code>isFree</code> пускает через unknown (-1)</td>
+            </tr>
+            <tr>
+                <td>Карта не появляется в RViz</td>
+                <td>Fixed Frame ≠ «map». Или <code>/map</code> не публикуется → проверь <code>ros2 topic hz /map</code></td>
+            </tr>
+            <tr>
+                <td>Робот крутится на месте</td>
+                <td>Стена слишком близко → локальный контроллер в аварийном повороте. Отодвинь цель или уменьши порог (0.35 м)</td>
+            </tr>
+            <tr>
+                <td>Робот в RViz не на карте</td>
+                <td>Нет трансформации <code>map → odom</code>. Проверь что TF broadcaster работает: <code>ros2 run tf2_tools view_frames</code></td>
+            </tr>
+            <tr>
+                <td>Ошибка компиляции</td>
+                <td><code>rosdep install --from-paths src --ignore-src -y</code> установит недостающие зависимости</td>
+            </tr>
+            <tr>
+                <td>«Goal cell not free»</td>
+                <td>Цель попала на клетку с препятствием. Кликни в другое место или добавь inflate (расширение стен) с меньшим радиусом</td>
+            </tr>
+        </table>
+
+        <h3>Полезные команды для отладки</h3>
+<pre>
+ros2 topic list               <span style="color:var(--green)"># какие топики есть</span>
+ros2 topic echo /odom          <span style="color:var(--green)"># данные одометрии в реальном времени</span>
+ros2 topic hz /scan            <span style="color:var(--green)"># частота лидара (должна быть ~5-10 Гц)</span>
+ros2 topic echo /cmd_vel       <span style="color:var(--green)"># что публикует наш контроллер</span>
+ros2 run tf2_tools view_frames <span style="color:var(--green)"># дерево трансформаций → PDF</span>
+ros2 node list                 <span style="color:var(--green)"># запущенные узлы</span></pre>
+
+        <!-- ============================================================ -->
+        <!-- CHECKLIST                                                    -->
+        <!-- ============================================================ -->
+        <h2 id="checklist">Чеклист перед сдачей</h2>
+
+        <div class="card success">
+            <h3 style="margin-top:0">Что должно работать:</h3>
+            <ul>
+                <li>☐ Gazebo запускается с TurtleBot3</li>
+                <li>☐ Узел подписывается на <code>/odom</code>, <code>/scan</code>, <code>/goal_pose</code></li>
+                <li>☐ Карта строится из лидара и видна в RViz (<code>/map</code>)</li>
+                <li>☐ При клике 2D Goal Pose — путь строится и виден (<code>/global_plan</code>)</li>
+                <li>☐ Робот едет по пути и останавливается у цели</li>
+                <li>☐ Робот не врезается в стены (локальное избегание)</li>
+                <li>☐ При новой цели — перепланирование с учётом обновлённой карты</li>
+                <li>☐ TF-дерево: <code>map → odom → base_footprint → laser_frame</code></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0">Что нужно уметь объяснить:</h3>
+            <ul>
+                <li>Как A* находит путь (g, h, f, priority queue)</li>
+                <li>Почему неизвестные клетки считаются проходимыми</li>
+                <li>Как лидар превращается в карту (ray tracing)</li>
+                <li>Что делает Pure Pursuit (lookahead, угловая ошибка)</li>
+                <li>Зачем нужен TF2 и какие frames используются</li>
+            </ul>
+        </div>
+
+        <div style="margin-top:48px;padding-top:24px;border-top:1px solid var(--border);color:var(--text2);font-size:.85em">
+            <p>Этот гайд — часть <a href="guide.html" style="color:var(--accent)">ROS2 Navigation Project</a>. Описания алгоритмов с анимациями — в sidebar слева.</p>
+        </div>
+    </div>
+</body>
+</html>

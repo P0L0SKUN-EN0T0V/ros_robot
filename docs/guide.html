@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROS2 Navigation Project</title>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .main{margin-left:260px;padding:40px;max-width:900px;width:100%}
+        h1{font-size:2.2em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);font-size:1.1em;margin-bottom:40px}
+        h2{font-size:1.5em;color:var(--accent);margin:40px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.15em;color:var(--accent2);margin:24px 0 12px}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.8em;font-weight:600;margin:2px 4px 2px 0}
+        .tag.blue{background:rgba(108,158,255,.15);color:var(--accent)}
+        .tag.purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+        .tag.green{background:rgba(74,222,128,.15);color:var(--green)}
+        .tag.orange{background:rgba(251,146,60,.15);color:var(--orange)}
+        ul{padding-left:24px;margin:8px 0}li{margin:6px 0}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0}}
+        @media(max-width:700px){.grid{grid-template-columns:1fr}}
+        .schema{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px 24px;margin:20px 0;text-align:center;font-family:'Courier New',monospace}
+        .schema .box{display:inline-block;border:2px solid var(--accent);border-radius:8px;padding:12px 20px;margin:8px}
+        .schema .box.sim{border-color:var(--green)}.schema .box.nav{border-color:var(--accent2)}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}tr:hover{background:rgba(108,158,255,.05)}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:12px 0;line-height:1.5}
+        .percent-bar{height:8px;border-radius:4px;background:var(--border);margin-top:6px}
+        .percent-bar .fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+        .toc{list-style:none;padding:0}.toc li{margin:6px 0}.toc a{color:var(--accent);text-decoration:none}.toc a:hover{text-decoration:underline}
+        .num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);font-weight:700;font-size:.85em;margin-right:8px}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a;padding:20px}.card{border:1px solid #ddd;background:#f9f9f9}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb;border-color:#ddd}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html">Пошаговый гайд</a>
+        <div class="sep"></div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>ROS2 Navigation Project</h1>
+        <p class="subtitle">Что это за проект, зачем он нужен, и как его сделать — простым языком</p>
+
+        <div class="card">
+            <h3 style="margin-top:0">Содержание</h3>
+            <ol class="toc">
+                <li><a href="#what">Что вообще делаем?</a></li>
+                <li><a href="#why">Зачем это нужно?</a></li>
+                <li><a href="#glossary">Словарь терминов</a></li>
+                <li><a href="#architecture">Архитектура проекта</a></li>
+                <li><a href="#container-sim">Контейнер 1: Симулятор</a></li>
+                <li><a href="#container-nav">Контейнер 2: Навигация</a></li>
+                <li><a href="#algorithms">Алгоритмы навигации</a></li>
+                <li><a href="#structure">Структура файлов</a></li>
+                <li><a href="#how-to-run">Как запустить</a></li>
+                <li><a href="#grading">Критерии оценки</a></li>
+                <li><a href="#result">Что получим в итоге</a></li>
+            </ol>
+        </div>
+
+        <h2 id="what">1. Что вообще делаем?</h2>
+        <div class="card highlight">
+            <p><strong>Задача в одном предложении:</strong> написать программу на C++, которая управляет виртуальным роботом в симуляторе — робот должен сам доехать из точки A в точку B, объезжая стены и препятствия.</p>
+        </div>
+        <p>Представь: есть виртуальная комната с роботом-тележкой. У робота есть лазерный сканер (видит стены) и одометр (знает, где находится). Твоя задача — написать «мозг» робота, который принимает эти данные и решает, куда ехать.</p>
+        <p>Всё это работает внутри <strong>Docker-контейнеров</strong> — изолированных виртуальных окружений, чтобы не засорять свой компьютер.</p>
+
+        <h2 id="why">2. Зачем это нужно?</h2>
+        <div class="card success">
+            <h3 style="margin-top:0">Чему научишься:</h3>
+            <ul>
+                <li><strong>ROS2</strong> — стандартная платформа для программирования роботов</li>
+                <li><strong>C++</strong> в реальном проекте — управление роботом</li>
+                <li><strong>Docker</strong> — контейнеризация</li>
+                <li><strong>Алгоритмы навигации</strong> — A*, RRT, Dijkstra</li>
+                <li><strong>Работа с сенсорами</strong> — лидар, одометрия</li>
+            </ul>
+        </div>
+        <p>Те же технологии используют Boston Dynamics, Amazon Robotics, Tesla. Разница — масштаб, принципы те же.</p>
+
+        <h2 id="glossary">3. Словарь терминов</h2>
+        <div class="card">
+            <table>
+                <tr><th style="width:180px">Термин</th><th>Что это</th></tr>
+                <tr><td><span class="tag blue">ROS2</span></td><td>Фреймворк для робототехники. Набор библиотек для общения между программами робота.</td></tr>
+                <tr><td><span class="tag blue">Humble</span></td><td>Версия ROS2. Стабильная, долгосрочная поддержка.</td></tr>
+                <tr><td><span class="tag blue">Node</span></td><td>Отдельная программа в ROS2. Читает сенсор, планирует путь или управляет моторами.</td></tr>
+                <tr><td><span class="tag blue">Topic</span></td><td>Канал связи. Одна нода публикует, другая подписывается.</td></tr>
+                <tr><td><span class="tag purple">Gazebo</span></td><td>3D-симулятор с физикой.</td></tr>
+                <tr><td><span class="tag purple">TurtleBot3</span></td><td>Учебный робот на двух колёсах с лидаром.</td></tr>
+                <tr><td><span class="tag green">/scan</span></td><td>Лидар — расстояние до объектов на 360°.</td></tr>
+                <tr><td><span class="tag green">/odom</span></td><td>Позиция робота (x, y) и угол.</td></tr>
+                <tr><td><span class="tag green">/cmd_vel</span></td><td>Команды движения (скорость).</td></tr>
+                <tr><td><span class="tag orange">Docker</span></td><td>Контейнеризация — программа + все зависимости.</td></tr>
+                <tr><td><span class="tag orange">docker-compose</span></td><td>Запуск нескольких контейнеров одной командой.</td></tr>
+                <tr><td><span class="tag orange">DDS</span></td><td>Протокол связи ROS2 между контейнерами.</td></tr>
+            </table>
+        </div>
+
+        <h2 id="architecture">4. Архитектура проекта</h2>
+        <div class="schema">
+            <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px">
+                <div class="box sim" style="text-align:left;min-width:240px">
+                    <strong style="color:var(--green)">Симулятор</strong><br>
+                    <span style="font-size:.8em;color:var(--text2);display:block;margin-top:4px">Gazebo + TurtleBot3<br>──────────────<br>Публикует: /scan, /odom, /tf<br>Принимает: /cmd_vel</span>
+                </div>
+                <div style="font-size:2em;color:var(--text2)">&hArr;<br><span style="font-size:.4em">Docker Network (DDS)</span></div>
+                <div class="box nav" style="text-align:left;min-width:240px">
+                    <strong style="color:var(--accent2)">Навигация</strong><br>
+                    <span style="font-size:.8em;color:var(--text2);display:block;margin-top:4px">Твой C++ код<br>──────────────<br>Читает: /scan, /odom<br>Публикует: /cmd_vel</span>
+                </div>
+            </div>
+        </div>
+        <div class="card warn">
+            <strong>Простыми словами:</strong> Симулятор = «тело» (колёса, сенсоры). Навигация = «мозг» (куда ехать). Общаются через топики.
+        </div>
+
+        <h2 id="container-sim">5. Контейнер 1: Симулятор</h2>
+        <div class="card">
+            <ul>
+                <li>ROS2 Humble + Gazebo</li>
+                <li>Модель робота (TurtleBot3)</li>
+                <li>Мир: комната со стенами и ящиками</li>
+            </ul>
+            <p style="margin-top:12px"><strong>Общий для всех</strong> — менять не нужно.</p>
+        </div>
+
+        <h2 id="container-nav">6. Контейнер 2: Навигация (твой код)</h2>
+        <div class="card highlight">
+            <ol>
+                <li><span class="num">1</span>Читает лидар → видит препятствия</li>
+                <li><span class="num">2</span>Читает одометрию → знает где находится</li>
+                <li><span class="num">3</span>Получает цель → знает куда ехать</li>
+                <li><span class="num">4</span>Строит карту проходимости</li>
+                <li><span class="num">5</span>Планирует путь (алгоритм)</li>
+                <li><span class="num">6</span>Едет по маршруту → <code>/cmd_vel</code></li>
+            </ol>
+        </div>
+        <div class="card warn">
+            <strong>Запрещено:</strong> Nav2, move_base. Только <code>rclcpp</code> и типы сообщений.
+        </div>
+
+        <h2 id="algorithms">7. Алгоритмы навигации</h2>
+        <p>Каждой группе свой. Кликни на алгоритм в боковом меню для подробного разбора.</p>
+        <div class="card">
+            <table>
+                <tr><th>№</th><th>Алгоритм</th><th>Суть</th><th>Сложность</th></tr>
+                <tr><td>1</td><td><a href="algo-1-astar.html" style="color:var(--accent)"><strong>A*</strong></a></td><td>Кратчайший путь с эвристикой</td><td><span class="tag green">Средняя</span></td></tr>
+                <tr><td>2</td><td><a href="algo-2-dijkstra.html" style="color:var(--accent)"><strong>Dijkstra</strong></a></td><td>Без эвристики — все направления</td><td><span class="tag green">Простая</span></td></tr>
+                <tr><td>3</td><td><a href="algo-3-rrt.html" style="color:var(--accent)"><strong>RRT</strong></a></td><td>Случайное дерево путей</td><td><span class="tag green">Средняя</span></td></tr>
+                <tr><td>4</td><td><a href="algo-4-rrt-star.html" style="color:var(--accent)"><strong>RRT*</strong></a></td><td>Оптимизированный RRT</td><td><span class="tag orange">Выше средней</span></td></tr>
+                <tr><td>5</td><td><a href="algo-5-theta-star.html" style="color:var(--accent)"><strong>Theta*</strong></a></td><td>A* с любым углом</td><td><span class="tag orange">Выше средней</span></td></tr>
+                <tr><td>6</td><td><a href="algo-6-dstar-lite.html" style="color:var(--accent)"><strong>D* Lite</strong></a></td><td>Инкрементальный перерасчёт</td><td><span class="tag orange">Высокая</span></td></tr>
+                <tr><td>7</td><td><a href="algo-7-jps.html" style="color:var(--accent)"><strong>JPS</strong></a></td><td>A* с прыжками</td><td><span class="tag orange">Выше средней</span></td></tr>
+                <tr><td>8</td><td><a href="algo-8-lpa-star.html" style="color:var(--accent)"><strong>LPA*</strong></a></td><td>Инкрементальный A*</td><td><span class="tag orange">Высокая</span></td></tr>
+                <tr><td>9</td><td><a href="algo-9-hybrid-astar.html" style="color:var(--accent)"><strong>Hybrid A*</strong></a></td><td>A* с кинематикой</td><td><span class="tag orange">Высокая</span></td></tr>
+                <tr><td>10</td><td><a href="algo-10-prm.html" style="color:var(--accent)"><strong>PRM</strong></a></td><td>Граф случайных точек</td><td><span class="tag green">Средняя</span></td></tr>
+            </table>
+        </div>
+
+        <h2 id="structure">8. Структура файлов</h2>
+        <div class="card">
+<pre style="margin:0">ros_robot/
+├── docker-compose.yml
+├── README.md
+├── simulation/
+│   ├── Dockerfile
+│   └── src/sim_pkg/
+├── navigation/
+│   ├── Dockerfile
+│   └── src/nav_pkg/
+│       ├── src/
+│       │   ├── planner_node.cpp
+│       │   ├── controller_node.cpp
+│       │   └── grid_map.cpp
+│       ├── include/
+│       ├── launch/
+│       └── CMakeLists.txt
+└── report/report.pdf</pre>
+        </div>
+
+        <h2 id="how-to-run">9. Как запустить</h2>
+        <div class="card">
+            <p><strong>Установить:</strong> Docker + Docker Compose + Git. ROS2/Gazebo ставить не нужно.</p>
+        </div>
+        <div class="card">
+<pre style="margin:0">git clone https://github.com/your-team/ros_robot.git
+cd ros_robot
+docker-compose up --build
+
+# Задать цель (другой терминал)
+docker exec -it navigation_container \
+  ros2 topic pub /goal_pose geometry_msgs/PoseStamped \
+  '{header: {frame_id: "map"}, pose: {position: {x: 3.0, y: 2.0}}}'
+
+docker-compose down</pre>
+        </div>
+
+        <h2 id="grading">10. Критерии оценки</h2>
+        <div class="card">
+            <div style="margin-bottom:16px"><strong>Работоспособность</strong> (3/5 попыток)<span style="float:right;color:var(--accent)">30%</span><div class="percent-bar"><div class="fill" style="width:30%"></div></div></div>
+            <div style="margin-bottom:16px"><strong>Качество C++ кода</strong><span style="float:right;color:var(--accent)">20%</span><div class="percent-bar"><div class="fill" style="width:20%"></div></div></div>
+            <div style="margin-bottom:16px"><strong>Оригинальность алгоритма</strong><span style="float:right;color:var(--accent)">20%</span><div class="percent-bar"><div class="fill" style="width:20%"></div></div></div>
+            <div style="margin-bottom:16px"><strong>Документация</strong><span style="float:right;color:var(--accent)">15%</span><div class="percent-bar"><div class="fill" style="width:15%"></div></div></div>
+            <div><strong>Docker</strong><span style="float:right;color:var(--accent)">15%</span><div class="percent-bar"><div class="fill" style="width:15%"></div></div></div>
+        </div>
+
+        <h2 id="result">11. Что получим в итоге</h2>
+        <div class="card success">
+            <ul>
+                <li>Git-репозиторий с кодом и README</li>
+                <li>Два Docker-образа одной командой</li>
+                <li>Робот <strong>сам</strong> едет к цели, объезжая препятствия</li>
+                <li>Свой алгоритм навигации на C++</li>
+                <li>Отчёт: актуальность, теория, результаты</li>
+            </ul>
+        </div>
+        <div class="card highlight">
+            <h3 style="margin-top:0">Навыки:</h3>
+            <div class="grid" style="margin-top:8px">
+                <div><span class="tag blue">ROS2</span> ноды, топики, launch<br><span class="tag blue">C++</span> ООП, RAII<br><span class="tag blue">Алгоритмы</span> поиск пути</div>
+                <div><span class="tag orange">Docker</span> образы, compose<br><span class="tag orange">Linux</span> CLI, CMake<br><span class="tag orange">Git</span> версионирование</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

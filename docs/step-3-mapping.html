@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаг 3 — Рисуем карту на ходу</title>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .sidebar .section-title{color:var(--text2);font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .term{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:16px 20px;margin:12px 0}
+        .term strong{color:var(--accent2)}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .diagram{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;margin:20px 0;text-align:center}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.05em;font-family:'Courier New',monospace}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        .grid-demo{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;max-width:400px;margin:16px auto}
+        .grid-demo .cell{width:100%;aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:600}
+        .grid-demo .cell.unknown{background:#2a2d3e;color:#94a3b8}
+        .grid-demo .cell.free{background:rgba(74,222,128,.15);color:#4ade80}
+        .grid-demo .cell.wall{background:rgba(248,113,113,.25);color:#f87171}
+        .grid-demo .cell.robot{background:rgba(108,158,255,.3);color:#6c9eff}
+        .grid-demo .cell.ray{background:rgba(251,146,60,.1);border:1px dashed rgba(251,146,60,.3)}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html">Справочник (Quick Ref)</a>
+        <div class="sep"></div>
+        <div class="section-title">Пошаговый гайд</div>
+        <a href="step-0-what-is-ros2.html">0. Что такое ROS2</a>
+        <a href="step-1-tools-gazebo-rviz.html">1. Gazebo и RViz</a>
+        <a href="step-2-sensors.html">2. Одометрия и лидар</a>
+        <a href="step-3-mapping.html" class="active">3. Строим карту</a>
+        <a href="step-4-astar.html">4. Алгоритм A*</a>
+        <a href="step-5-pure-pursuit.html">5. Pure Pursuit</a>
+        <a href="step-6-assembly.html">6. Собираем проект</a>
+        <div class="sep"></div>
+        <div class="section-title">Алгоритмы</div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Шаг 3: Рисуем карту на ходу</h1>
+        <p class="subtitle">OccupancyGrid, ray tracing и функция updateMapWithLaser</p>
+
+        <!-- ============ ИДЕЯ ============ -->
+        <h2>Главная идея</h2>
+
+        <p>Робот <strong>не знает карту заранее</strong>. Он начинает в полном тумане и открывает мир по мере движения — как в игре с «туманом войны».</p>
+
+        <div class="analogy">Представь, что ты в тёмной комнате с фонариком. Ты светишь — видишь кусок стены впереди. Поворачиваешься — видишь дверь слева. Идёшь к двери — открываешь новый коридор. Постепенно в голове складывается карта помещения. Наш робот делает то же самое, но вместо фонарика — лидар.</div>
+
+        <p>Карта хранится как <strong>OccupancyGrid</strong> — сетка клеток:</p>
+
+        <table>
+            <tr><th>Значение</th><th>Что значит</th><th>Цвет в RViz</th></tr>
+            <tr><td><code>-1</code></td><td>Неизвестно (туман войны)</td><td>Серый</td></tr>
+            <tr><td><code>0</code></td><td>Свободно (проехать можно)</td><td>Белый</td></tr>
+            <tr><td><code>100</code></td><td>Занято (стена / препятствие)</td><td>Чёрный</td></tr>
+        </table>
+
+        <!-- ============ GRID DEMO ============ -->
+        <h3>Пример: карта 8×8 после нескольких сканов</h3>
+
+        <div class="grid-demo">
+            <div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div>
+            <div class="cell unknown">?</div><div class="cell wall">100</div><div class="cell wall">100</div><div class="cell wall">100</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell unknown">?</div><div class="cell unknown">?</div>
+            <div class="cell unknown">?</div><div class="cell wall">100</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell unknown">?</div><div class="cell unknown">?</div>
+            <div class="cell unknown">?</div><div class="cell wall">100</div><div class="cell free">0</div><div class="cell robot">R</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell wall">100</div><div class="cell unknown">?</div>
+            <div class="cell unknown">?</div><div class="cell wall">100</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell wall">100</div><div class="cell unknown">?</div>
+            <div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell free">0</div><div class="cell wall">100</div><div class="cell wall">100</div><div class="cell unknown">?</div>
+            <div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell free">0</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div>
+            <div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div><div class="cell unknown">?</div>
+        </div>
+        <p style="text-align:center;color:var(--text2);font-size:.85em">
+            <span style="color:var(--green)">0 = свободно</span> · 
+            <span style="color:var(--red)">100 = стена</span> · 
+            <span style="color:var(--text2)">? = неизвестно</span> · 
+            <span style="color:var(--accent)">R = робот</span>
+        </p>
+
+        <p>Робот видит только то, что «осветил» лидаром. Всё остальное — <code>-1</code> (неизвестно).</p>
+
+        <!-- ============ RAY TRACING ============ -->
+        <h2>Ray tracing: рисуем лучом по сетке</h2>
+
+        <p>Каждый луч лидара говорит: «В направлении X на расстоянии R метров — стена». Но нам нужно обновить не только клетку стены, а <strong>все клетки между роботом и стеной</strong> — они же свободны (луч через них прошёл).</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text"><strong>Начальная точка</strong> — позиция робота (клетка на сетке).</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text"><strong>Конечная точка</strong> — место попадания луча (клетка стены).</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text"><strong>Все клетки на линии</strong> между ними → помечаем как <code>0</code> (свободно).</div>
+        </div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text"><strong>Конечная клетка</strong> → помечаем как <code>100</code> (стена).</div>
+        </div>
+
+        <div class="analogy">Представь, что ты смотришь сквозь ряд забора. Ты видишь стену в конце. Значит, все щели забора между тобой и стеной — пустые (луч прошёл), а в конце — стена (луч упёрся).</div>
+
+        <h3>Алгоритм Брезенхэма</h3>
+
+        <p>Как нарисовать линию на пиксельной сетке? Этот вопрос решили ещё в 1962 году. <strong>Алгоритм Брезенхэма</strong> (Bresenham's line) — быстрый способ перечислить все клетки на линии между двумя точками. Работает только с целыми числами (идеально для сетки).</p>
+
+        <div class="card highlight">
+            <p>Не нужно понимать его математику — просто знай, что он берёт две клетки (начало и конец) и возвращает список всех клеток на линии между ними. Мы используем его как «чёрный ящик».</p>
+        </div>
+
+        <!-- ============ КОД ============ -->
+        <h2>Код: updateMapWithLaser</h2>
+
+        <p>Это <strong>первая ключевая функция</strong> нашей ноды. Она вызывается для каждого луча лидара:</p>
+
+        <pre><span style="color:#94a3b8">// Параметры карты</span>
+const int MAP_SIZE = 200;            <span style="color:#94a3b8">// 200×200 клеток</span>
+const double RESOLUTION = 0.05;      <span style="color:#94a3b8">// 5 см на клетку</span>
+const double ORIGIN_X = -5.0;        <span style="color:#94a3b8">// карта начинается с -5 м</span>
+const double ORIGIN_Y = -5.0;
+
+std::vector&lt;int8_t&gt; map_data_(MAP_SIZE * MAP_SIZE, -1);  <span style="color:#94a3b8">// всё неизвестно</span>
+
+<span style="color:#94a3b8">// Преобразование: метры → индекс клетки</span>
+int worldToGrid(double coord, double origin) {
+    return static_cast&lt;int&gt;((coord - origin) / RESOLUTION);
+}
+
+<span style="color:#94a3b8">// Основная функция: обновить карту одним лучом</span>
+void updateMapWithLaser(double rx, double ry, double hx, double hy) {
+    <span style="color:#94a3b8">// rx,ry = позиция робота (метры)</span>
+    <span style="color:#94a3b8">// hx,hy = точка попадания луча (метры)</span>
+
+    int x0 = worldToGrid(rx, ORIGIN_X);
+    int y0 = worldToGrid(ry, ORIGIN_Y);
+    int x1 = worldToGrid(hx, ORIGIN_X);
+    int y1 = worldToGrid(hy, ORIGIN_Y);
+
+    <span style="color:#94a3b8">// Проверяем границы</span>
+    if (x1 &lt; 0 || x1 >= MAP_SIZE || y1 &lt; 0 || y1 >= MAP_SIZE) return;
+
+    <span style="color:#94a3b8">// === Алгоритм Брезенхэма ===</span>
+    int dx = abs(x1 - x0), dy = abs(y1 - y0);
+    int sx = (x0 &lt; x1) ? 1 : -1;
+    int sy = (y0 &lt; y1) ? 1 : -1;
+    int err = dx - dy;
+
+    int cx = x0, cy = y0;
+    while (cx != x1 || cy != y1) {
+        <span style="color:#94a3b8">// Все клетки на пути луча — свободны</span>
+        if (cx >= 0 && cx &lt; MAP_SIZE && cy >= 0 && cy &lt; MAP_SIZE) {
+            map_data_[cy * MAP_SIZE + cx] = <span style="color:#4ade80">0</span>;   <span style="color:#94a3b8">// свободно</span>
+        }
+
+        int e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; cx += sx; }
+        if (e2 &lt;  dx) { err += dx; cy += sy; }
+    }
+
+    <span style="color:#94a3b8">// Последняя клетка — стена</span>
+    map_data_[y1 * MAP_SIZE + x1] = <span style="color:#f87171">100</span>;  <span style="color:#94a3b8">// занято</span>
+}</pre>
+
+        <div class="card warn">
+            <p><strong>Порядок индексации:</strong> <code>map_data_</code> — одномерный массив размером MAP_SIZE × MAP_SIZE. Клетка (x, y) хранится по индексу <code>y * MAP_SIZE + x</code>. Это стандарт ROS2 для OccupancyGrid.</p>
+        </div>
+
+        <!-- ============ ИНТЕГРАЦИЯ ============ -->
+        <h2>Интеграция в scanCallback</h2>
+
+        <p>Теперь подключим <code>updateMapWithLaser</code> к callback-у лидара из предыдущего шага:</p>
+
+        <pre>void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    for (size_t i = 0; i &lt; msg->ranges.size(); i++) {
+        float r = msg->ranges[i];
+
+        <span style="color:#94a3b8">// Пропускаем невалидные</span>
+        if (std::isinf(r) || std::isnan(r)) continue;
+        if (r &lt; msg->range_min || r > msg->range_max) continue;
+
+        <span style="color:#94a3b8">// Угол луча в мировой СК</span>
+        double angle = robot_yaw_ + msg->angle_min + i * msg->angle_increment;
+
+        <span style="color:#94a3b8">// Координаты точки попадания</span>
+        double hit_x = robot_x_ + r * cos(angle);
+        double hit_y = robot_y_ + r * sin(angle);
+
+        <span style="color:#fb923c">// Обновляем карту этим лучом!</span>
+        <span style="color:#fb923c">updateMapWithLaser(robot_x_, robot_y_, hit_x, hit_y);</span>
+    }
+
+    <span style="color:#94a3b8">// После обработки всех лучей — публикуем обновлённую карту</span>
+    publishMap();
+}</pre>
+
+        <!-- ============ ПУБЛИКАЦИЯ ============ -->
+        <h2>Публикация карты в /map</h2>
+
+        <p>Чтобы RViz показал карту, нужно опубликовать её в топик <code>/map</code> в формате <code>OccupancyGrid</code>:</p>
+
+        <pre>void publishMap() {
+    auto grid = nav_msgs::msg::OccupancyGrid();
+
+    <span style="color:#94a3b8">// Заголовок</span>
+    grid.header.stamp = this->get_clock()->now();
+    grid.header.frame_id = <span style="color:#4ade80">"odom"</span>;
+
+    <span style="color:#94a3b8">// Параметры сетки</span>
+    grid.info.resolution = RESOLUTION;       <span style="color:#94a3b8">// 0.05 м на клетку</span>
+    grid.info.width = MAP_SIZE;              <span style="color:#94a3b8">// 200 клеток</span>
+    grid.info.height = MAP_SIZE;
+    grid.info.origin.position.x = ORIGIN_X;  <span style="color:#94a3b8">// -5.0</span>
+    grid.info.origin.position.y = ORIGIN_Y;
+
+    <span style="color:#94a3b8">// Данные карты</span>
+    grid.data = map_data_;
+
+    map_pub_->publish(grid);
+}</pre>
+
+        <p>После этого в RViz добавь отображение <code>/map</code> (Add → By topic → /map → Map) — увидишь, как карта появляется по мере движения робота.</p>
+
+        <!-- ============ ВАЖНЫЙ МОМЕНТ ============ -->
+        <h2>Важный момент: неизвестное = проходимо</h2>
+
+        <div class="card highlight">
+            <p>В нашем проекте неизвестные клетки (<code>-1</code>) считаются <strong>проходимыми</strong>. Почему? Потому что робот должен исследовать карту — ехать в неизведанные области. Если бы неизвестное = стена, робот никогда не поехал бы в туман войны.</p>
+            <p>Формально, функция <code>isFree</code> проверяет:</p>
+        </div>
+
+        <pre>bool isFree(int x, int y) {
+    if (x &lt; 0 || x >= MAP_SIZE || y &lt; 0 || y >= MAP_SIZE) return false;
+    int val = map_data_[y * MAP_SIZE + x];
+    return val == <span style="color:#4ade80">0</span> || val == <span style="color:#fb923c">-1</span>;  <span style="color:#94a3b8">// свободно ИЛИ неизвестно</span>
+}</pre>
+
+        <p>Это ключевая деталь из задания преподавателя. Без неё A* не сможет проложить путь через неисследованные зоны.</p>
+
+        <!-- ============ СХЕМА ПОТОКА ============ -->
+        <h2>Поток данных: от луча до карты</h2>
+
+        <div class="diagram">
+            <svg viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',sans-serif">
+                <rect x="10" y="30" width="120" height="60" rx="8" fill="#1a1d2e" stroke="#4ade80" stroke-width="2"/>
+                <text x="70" y="55" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="600">Лидар (/scan)</text>
+                <text x="70" y="72" text-anchor="middle" fill="#94a3b8" font-size="9">ranges[360]</text>
+
+                <line x1="130" y1="60" x2="170" y2="60" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+
+                <rect x="170" y="30" width="120" height="60" rx="8" fill="#1a1d2e" stroke="#fb923c" stroke-width="2"/>
+                <text x="230" y="55" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="600">scanCallback</text>
+                <text x="230" y="72" text-anchor="middle" fill="#94a3b8" font-size="9">angle + range</text>
+
+                <line x1="290" y1="60" x2="330" y2="60" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+
+                <rect x="330" y="30" width="140" height="60" rx="8" fill="#1a1d2e" stroke="#6c9eff" stroke-width="2"/>
+                <text x="400" y="55" text-anchor="middle" fill="#6c9eff" font-size="11" font-weight="600">updateMapWithLaser</text>
+                <text x="400" y="72" text-anchor="middle" fill="#94a3b8" font-size="9">Брезенхэм → сетка</text>
+
+                <line x1="470" y1="60" x2="510" y2="60" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+
+                <rect x="510" y="30" width="120" height="60" rx="8" fill="#1a1d2e" stroke="#a78bfa" stroke-width="2"/>
+                <text x="570" y="55" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="600">publishMap</text>
+                <text x="570" y="72" text-anchor="middle" fill="#94a3b8" font-size="9">/map → RViz</text>
+
+                <defs><marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/></marker></defs>
+            </svg>
+        </div>
+
+        <!-- ============ ПАРАМЕТРЫ ============ -->
+        <h2>Выбор параметров карты</h2>
+
+        <table>
+            <tr><th>Параметр</th><th>Значение</th><th>Почему</th></tr>
+            <tr>
+                <td><code>RESOLUTION</code></td>
+                <td>0.05 м (5 см)</td>
+                <td>Достаточно точно для навигации. Меньше — больше памяти и медленнее A*</td>
+            </tr>
+            <tr>
+                <td><code>MAP_SIZE</code></td>
+                <td>200 клеток</td>
+                <td>200 × 0.05 = 10 метров на сторону. Для учебного мира хватит</td>
+            </tr>
+            <tr>
+                <td><code>ORIGIN_X/Y</code></td>
+                <td>-5.0 м</td>
+                <td>Карта покрывает от -5 до +5 метров. Робот стартует примерно в центре</td>
+            </tr>
+        </table>
+
+        <!-- ============ ИТОГИ ============ -->
+        <h2>Итоги шага</h2>
+
+        <div class="card success">
+            <p>Теперь ты понимаешь:</p>
+            <ul>
+                <li><strong>OccupancyGrid</strong> — карта из клеток: 0 = свободно, 100 = стена, -1 = неизвестно.</li>
+                <li><strong>Ray tracing</strong> (Брезенхэм) — проводим линию от робота до точки попадания луча. Все клетки на пути = свободны, последняя = стена.</li>
+                <li><strong>updateMapWithLaser</strong> — наша функция, которая вызывается для каждого луча 360 раз за скан.</li>
+                <li><strong>Неизвестное = проходимо</strong> — иначе робот не сможет исследовать.</li>
+            </ul>
+            <p>В следующем шаге используем эту карту, чтобы <strong>найти путь через A*</strong>.</p>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="step-2-sensors.html">← Шаг 2: Одометрия и лидар</a>
+            <a href="step-4-astar.html">Шаг 4: Алгоритм A* →</a>
+        </div>
+    </div>
+</body>
+</html>

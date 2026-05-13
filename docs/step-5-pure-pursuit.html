@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаг 5 — Едем по пути: Pure Pursuit</title>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .sidebar .section-title{color:var(--text2);font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .term{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:16px 20px;margin:12px 0}
+        .term strong{color:var(--accent2)}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .diagram{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;margin:20px 0;text-align:center}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.05em;font-family:'Courier New',monospace}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html">Справочник (Quick Ref)</a>
+        <div class="sep"></div>
+        <div class="section-title">Пошаговый гайд</div>
+        <a href="step-0-what-is-ros2.html">0. Что такое ROS2</a>
+        <a href="step-1-tools-gazebo-rviz.html">1. Gazebo и RViz</a>
+        <a href="step-2-sensors.html">2. Одометрия и лидар</a>
+        <a href="step-3-mapping.html">3. Строим карту</a>
+        <a href="step-4-astar.html">4. Алгоритм A*</a>
+        <a href="step-5-pure-pursuit.html" class="active">5. Pure Pursuit</a>
+        <a href="step-6-assembly.html">6. Собираем проект</a>
+        <div class="sep"></div>
+        <div class="section-title">Алгоритмы</div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Шаг 5: Едем по пути</h1>
+        <p class="subtitle">Pure Pursuit — третья ключевая функция</p>
+
+        <!-- ============ ЗАДАЧА ============ -->
+        <h2>Задача</h2>
+
+        <p>A* нашёл путь — набор точек на карте. Но путь — это не движение. Нужен алгоритм, который превратит «список координат» в «команды для моторов»: насколько быстро ехать и насколько поворачивать.</p>
+
+        <div class="term">
+            <strong>Pure Pursuit</strong> — алгоритм следования по пути. Робот выбирает точку «впереди по маршруту» (lookahead point) и всё время поворачивается к ней. Как осёл, который бежит за морковкой на палке.
+        </div>
+
+        <div class="analogy">Когда ты ведёшь машину, ты не смотришь себе под колёса — ты смотришь на дорогу метров на 10-20 вперёд и рулишь к той точке. Если дорога поворачивает — ты плавно доворачиваешь. Это и есть Pure Pursuit.</div>
+
+        <!-- ============ КАК РАБОТАЕТ ============ -->
+        <h2>Как работает</h2>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text"><strong>Выбрать lookahead point</strong> — точку на пути, которая находится на расстоянии <code>L</code> (lookahead distance) от робота. Не самую ближнюю, а «впереди по маршруту».</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text"><strong>Посчитать угол к этой точке</strong> — разницу между текущим направлением робота и направлением на lookahead point.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text"><strong>Превратить угол в команду</strong> — если нужно повернуть немного → маленькая угловая скорость. Много → большая. Прямо → только линейная.</div>
+        </div>
+
+        <!-- ============ DIAGRAM ============ -->
+        <div class="diagram">
+            <svg viewBox="0 0 500 300" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',sans-serif;max-width:450px">
+                <!-- Path -->
+                <path d="M 80 240 Q 150 240 200 200 Q 250 160 300 140 Q 350 120 420 100" fill="none" stroke="#4ade80" stroke-width="3" stroke-dasharray="8 4"/>
+                <text x="430" y="95" fill="#4ade80" font-size="11" font-weight="600">путь</text>
+
+                <!-- Robot -->
+                <circle cx="150" cy="235" r="14" fill="#6c9eff" stroke="#e2e8f0" stroke-width="2"/>
+                <line x1="150" y1="235" x2="168" y2="220" stroke="#e2e8f0" stroke-width="2.5"/>
+                <text x="150" y="265" text-anchor="middle" fill="#6c9eff" font-size="10">робот</text>
+
+                <!-- Lookahead circle -->
+                <circle cx="150" cy="235" r="80" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/>
+                <text x="85" y="175" fill="#94a3b8" font-size="9">L = lookahead</text>
+
+                <!-- Lookahead point -->
+                <circle cx="225" cy="185" r="6" fill="#fb923c"/>
+                <text x="240" y="180" fill="#fb923c" font-size="10" font-weight="600">lookahead point</text>
+
+                <!-- Angle arc -->
+                <path d="M 168 220 A 30 30 0 0 0 170 214" fill="none" stroke="#a78bfa" stroke-width="2"/>
+                <text x="180" y="210" fill="#a78bfa" font-size="10">α</text>
+
+                <!-- Arrow to lookahead -->
+                <line x1="150" y1="235" x2="220" y2="188" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="4 2"/>
+
+                <!-- Goal -->
+                <circle cx="420" cy="100" r="8" fill="#a78bfa"/>
+                <text x="420" y="85" text-anchor="middle" fill="#a78bfa" font-size="10">цель</text>
+            </svg>
+        </div>
+
+        <!-- ============ ФОРМУЛЫ ============ -->
+        <h2>Формулы</h2>
+
+        <h3>Угол к lookahead point</h3>
+
+        <div class="formula-block">
+            target_angle = atan2(lookahead_y - robot_y, lookahead_x - robot_x)
+        </div>
+
+        <h3>Разница углов (ошибка)</h3>
+
+        <div class="formula-block">
+            alpha = target_angle - robot_yaw
+        </div>
+
+        <p>Важно нормализовать <code>alpha</code> в диапазон [-π, π], чтобы робот поворачивал в правильную сторону:</p>
+
+        <pre><span style="color:#94a3b8">// Нормализация угла в [-π, π]</span>
+double normalizeAngle(double a) {
+    while (a >  M_PI) a -= 2.0 * M_PI;
+    while (a &lt; -M_PI) a += 2.0 * M_PI;
+    return a;
+}</pre>
+
+        <h3>Команды движения</h3>
+
+        <div class="formula-block">
+            linear.x  = V * cos(alpha)    <span style="color:#94a3b8">← замедляемся при большом угле</span><br>
+            angular.z = K * alpha          <span style="color:#94a3b8">← поворот пропорционален ошибке</span>
+        </div>
+
+        <p>Где <code>V</code> — максимальная линейная скорость, <code>K</code> — коэффициент пропорциональности.</p>
+
+        <!-- ============ КОД ============ -->
+        <h2>Код: purePursuitControl</h2>
+
+        <pre><span style="color:#94a3b8">// Параметры</span>
+const double LOOKAHEAD_DIST = 0.3;  <span style="color:#94a3b8">// метры</span>
+const double MAX_LINEAR_VEL = 0.15; <span style="color:#94a3b8">// м/с</span>
+const double MAX_ANGULAR_VEL = 1.0; <span style="color:#94a3b8">// рад/с</span>
+const double GOAL_TOLERANCE = 0.15; <span style="color:#94a3b8">// считаем «приехали» если &lt; 15 см</span>
+
+void purePursuitControl() {
+    if (current_path_.empty() || !has_goal_) return;
+
+    <span style="color:#94a3b8">// Проверяем: может, уже приехали?</span>
+    double dist_to_goal = std::hypot(goal_x_ - robot_x_, goal_y_ - robot_y_);
+    if (dist_to_goal &lt; GOAL_TOLERANCE) {
+        <span style="color:#94a3b8">// Стоп!</span>
+        auto cmd = geometry_msgs::msg::Twist();
+        cmd_pub_->publish(cmd);  <span style="color:#94a3b8">// все нули = остановиться</span>
+        has_goal_ = false;
+        RCLCPP_INFO(this->get_logger(), <span style="color:#4ade80">"Цель достигнута!"</span>);
+        return;
+    }
+
+    <span style="color:#94a3b8">// Ищем lookahead point — первую точку пути дальше LOOKAHEAD_DIST от робота</span>
+    double lx = 0, ly = 0;
+    bool found = false;
+
+    for (auto& [gx, gy] : current_path_) {
+        <span style="color:#94a3b8">// Переводим клетку в метры</span>
+        double wx = ORIGIN_X + gx * RESOLUTION + RESOLUTION / 2;
+        double wy = ORIGIN_Y + gy * RESOLUTION + RESOLUTION / 2;
+        double d = std::hypot(wx - robot_x_, wy - robot_y_);
+
+        if (d >= LOOKAHEAD_DIST) {
+            lx = wx; ly = wy;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        <span style="color:#94a3b8">// Все точки ближе чем lookahead — берём последнюю</span>
+        auto& [gx, gy] = current_path_.back();
+        lx = ORIGIN_X + gx * RESOLUTION + RESOLUTION / 2;
+        ly = ORIGIN_Y + gy * RESOLUTION + RESOLUTION / 2;
+    }
+
+    <span style="color:#94a3b8">// Считаем угловую ошибку</span>
+    double target_angle = atan2(ly - robot_y_, lx - robot_x_);
+    double alpha = normalizeAngle(target_angle - robot_yaw_);
+
+    <span style="color:#94a3b8">// Формируем команду</span>
+    auto cmd = geometry_msgs::msg::Twist();
+    cmd.linear.x  = MAX_LINEAR_VEL * std::cos(alpha);  <span style="color:#94a3b8">// тормозим при повороте</span>
+    cmd.angular.z = std::clamp(2.0 * alpha, -MAX_ANGULAR_VEL, MAX_ANGULAR_VEL);
+
+    <span style="color:#94a3b8">// Не ехать назад</span>
+    if (cmd.linear.x &lt; 0) cmd.linear.x = 0;
+
+    cmd_pub_->publish(cmd);
+}</pre>
+
+        <!-- ============ ПАРАМЕТРЫ ============ -->
+        <h2>Настройка параметров</h2>
+
+        <table>
+            <tr><th>Параметр</th><th>Эффект увеличения</th><th>Типичное значение</th></tr>
+            <tr>
+                <td><code>LOOKAHEAD_DIST</code></td>
+                <td>Более плавные повороты, но робот может срезать углы</td>
+                <td>0.2–0.5 м</td>
+            </tr>
+            <tr>
+                <td><code>MAX_LINEAR_VEL</code></td>
+                <td>Робот едет быстрее, но хуже вписывается в повороты</td>
+                <td>0.1–0.22 м/с</td>
+            </tr>
+            <tr>
+                <td><code>K</code> (коэфф. angular)</td>
+                <td>Более резкие повороты. Слишком большой → осцилляции</td>
+                <td>1.0–3.0</td>
+            </tr>
+            <tr>
+                <td><code>GOAL_TOLERANCE</code></td>
+                <td>Менее точная остановка, но робот не будет «кружить» вокруг цели</td>
+                <td>0.1–0.2 м</td>
+            </tr>
+        </table>
+
+        <div class="card warn">
+            <p><strong>Если робот осциллирует</strong> (дёргается влево-вправо) — уменьши <code>K</code> или увеличь <code>LOOKAHEAD_DIST</code>. Если робот не вписывается в повороты — уменьши скорость или уменьши lookahead.</p>
+        </div>
+
+        <!-- ============ ЭКСТРЕННАЯ ОСТАНОВКА ============ -->
+        <h2>Бонус: экстренная остановка</h2>
+
+        <p>Преподаватель требует, чтобы робот останавливался при обнаружении близкого препятствия. Это просто:</p>
+
+        <pre><span style="color:#94a3b8">// В scanCallback, после обновления карты</span>
+void checkEmergencyStop(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    double min_range = std::numeric_limits&lt;double&gt;::infinity();
+
+    <span style="color:#94a3b8">// Проверяем лучи в переднем секторе (±30°)</span>
+    int center = msg->ranges.size() / 2;  <span style="color:#94a3b8">// центральный луч = вперёд</span>
+    int spread = 30;                        <span style="color:#94a3b8">// ±30 лучей (~±30°)</span>
+
+    for (int i = center - spread; i &lt;= center + spread; i++) {
+        if (i &lt; 0 || i >= (int)msg->ranges.size()) continue;
+        float r = msg->ranges[i];
+        if (!std::isinf(r) && !std::isnan(r) && r &lt; min_range) {
+            min_range = r;
+        }
+    }
+
+    <span style="color:#94a3b8">// Если что-то ближе 20 см — стоп</span>
+    if (min_range &lt; 0.20) {
+        auto cmd = geometry_msgs::msg::Twist();
+        cmd_pub_->publish(cmd);  <span style="color:#94a3b8">// стоп</span>
+        RCLCPP_WARN(this->get_logger(), <span style="color:#4ade80">"Препятствие! %.2f м"</span>, min_range);
+    }
+}</pre>
+
+        <!-- ============ ОБЩИЙ ЦИКЛ ============ -->
+        <h2>Общий цикл управления</h2>
+
+        <p>Все три функции работают вместе по таймеру:</p>
+
+        <pre><span style="color:#94a3b8">// В конструкторе ноды — таймер на 10 Hz</span>
+timer_ = this->create_wall_timer(100ms, [this]() {
+    if (has_goal_) {
+        replan();              <span style="color:#94a3b8">// 1. Обновить путь на актуальной карте</span>
+        purePursuitControl();  <span style="color:#94a3b8">// 2. Рассчитать и отправить cmd_vel</span>
+    }
+});</pre>
+
+        <div class="card success">
+            <p><strong>Полный цикл:</strong> /scan → updateMapWithLaser → replan (A*) → purePursuitControl → /cmd_vel → робот двигается → новый /scan → ...</p>
+        </div>
+
+        <!-- ============ ИТОГИ ============ -->
+        <h2>Итоги шага</h2>
+
+        <div class="card highlight">
+            <ul>
+                <li><strong>Pure Pursuit</strong> — выбирает точку «впереди» на пути и рулит к ней.</li>
+                <li><strong>Lookahead</strong> — ключевой параметр. Больше = плавнее, но менее точно.</li>
+                <li><strong>Результат</strong> — сообщение <code>Twist</code> в <code>/cmd_vel</code> (скорость + поворот).</li>
+                <li>Три ключевых функции написаны: <code>updateMapWithLaser</code>, <code>planAStar</code>, <code>purePursuitControl</code>.</li>
+            </ul>
+            <p>Осталось <strong>собрать всё в один файл</strong> и запустить — это в следующем шаге.</p>
+        </div>
+
+        <div class="nav-bottom">
+            <a href="step-4-astar.html">← Шаг 4: Алгоритм A*</a>
+            <a href="step-6-assembly.html">Шаг 6: Собираем проект →</a>
+        </div>
+    </div>
+</body>
+</html>

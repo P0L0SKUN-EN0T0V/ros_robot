@@ -43,6 +43,8 @@
         pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
         .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.15em}
         .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        
+        .section-title{color:var(--text2);font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600}
         @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
         @media(max-width:700px){.grid{grid-template-columns:1fr}}
         table{width:100%;border-collapse:collapse;margin:12px 0}
@@ -102,31 +104,8 @@
     </style>
 </head>
 <body>
-        <nav class="sidebar">
-        <h3>ROS2 Navigation</h3>
-        <a href="guide.html">Обзор проекта</a>
-        <div class="sep"></div>
-        <div class="section-title" style="color:#94a3b8;font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600">Пошаговый гайд</div>
-        <a href="step-0-what-is-ros2.html">0. Что такое ROS2</a>
-        <a href="step-1-tools-gazebo-rviz.html">1. Gazebo и RViz</a>
-        <a href="step-2-sensors.html">2. Одометрия и лидар</a>
-        <a href="step-3-mapping.html">3. Строим карту</a>
-        <a href="step-4-astar.html">4. Алгоритм A*</a>
-        <a href="step-5-pure-pursuit.html">5. Pure Pursuit</a>
-        <a href="step-6-assembly.html">6. Собираем проект</a>
-        <div class="sep"></div>
-        <div class="section-title" style="color:#94a3b8;font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600">Алгоритмы</div>
-        <a href="algo-1-astar.html">1. A*</a>
-        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
-        <a href="algo-3-rrt.html" class="active">3. RRT</a>
-        <a href="algo-4-rrt-star.html">4. RRT*</a>
-        <a href="algo-5-theta-star.html">5. Theta*</a>
-        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
-        <a href="algo-7-jps.html">7. Jump Point Search</a>
-        <a href="algo-8-lpa-star.html">8. LPA*</a>
-        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
-        <a href="algo-10-prm.html">10. PRM</a>
-    </nav>
+        <nav class="sidebar" id="sidebar"></nav>
+    <script src="nav.js"></script>
 
     <div class="main">
         <h1>RRT — Rapidly-exploring Random Tree</h1>

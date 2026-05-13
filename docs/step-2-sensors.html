@@ -140,12 +140,12 @@ pose.pose.orientation.w  →  <span style="color:#fb923c">0.924</span></pre>
         <p>В ROS2 есть готовая функция, чтобы не считать руками:</p>
 
         <pre><span style="color:#94a3b8">// C++ — извлекаем yaw из кватерниона</span>
-#include &lt;tf2/utils.h&gt;
+<span style="color:#6c9eff">#include</span> &lt;tf2/utils.h&gt;
 
 <span style="color:#94a3b8">// В callback одометрии:</span>
-void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
-    double x   = msg->pose.pose.position.x;
-    double y   = msg->pose.pose.position.y;
+<span style="color:#6c9eff">void</span> odomCallback(<span style="color:#6c9eff">const</span> nav_msgs::msg::Odometry::SharedPtr msg) {
+    <span style="color:#6c9eff">double</span> x   = msg->pose.pose.position.x;
+    <span style="color:#6c9eff">double</span> y   = msg->pose.pose.position.y;
 
     <span style="color:#94a3b8">// Извлекаем угол yaw (в радианах, от -π до +π)</span>
     tf2::Quaternion q(
@@ -154,7 +154,7 @@ void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
         msg->pose.pose.orientation.z,
         msg->pose.pose.orientation.w
     );
-    double yaw = tf2::getYaw(q);
+    <span style="color:#6c9eff">double</span> yaw = tf2::getYaw(q);
 
     <span style="color:#94a3b8">// Теперь мы знаем: робот в точке (x, y), смотрит под углом yaw</span>
 }</pre>
@@ -315,10 +315,10 @@ void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
         <p>Вот как в нашей ноде будут выглядеть callback-функции:</p>
 
         <pre><span style="color:#94a3b8">// Храним последнюю позицию робота</span>
-double robot_x_ = 0.0, robot_y_ = 0.0, robot_yaw_ = 0.0;
+<span style="color:#6c9eff">double</span> robot_x_ = 0.0, robot_y_ = 0.0, robot_yaw_ = 0.0;
 
 <span style="color:#94a3b8">// Callback одометрии — вызывается ~30 раз/сек</span>
-void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
+<span style="color:#6c9eff">void</span> odomCallback(<span style="color:#6c9eff">const</span> nav_msgs::msg::Odometry::SharedPtr msg) {
     robot_x_ = msg->pose.pose.position.x;
     robot_y_ = msg->pose.pose.position.y;
 
@@ -332,21 +332,21 @@ void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
 }
 
 <span style="color:#94a3b8">// Callback лидара — вызывается ~10 раз/сек</span>
-void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
-    for (size_t i = 0; i &lt; msg->ranges.size(); i++) {
-        float r = msg->ranges[i];
+<span style="color:#6c9eff">void</span> scanCallback(<span style="color:#6c9eff">const</span> sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    <span style="color:#6c9eff">for</span> (<span style="color:#6c9eff">size_t</span> i = 0; i &lt; msg->ranges.size(); i++) {
+        <span style="color:#6c9eff">float</span> r = msg->ranges[i];
 
         <span style="color:#94a3b8">// Фильтруем невалидные значения</span>
-        if (std::isinf(r) || std::isnan(r) || r &lt; msg->range_min || r > msg->range_max) {
-            continue;
+        <span style="color:#6c9eff">if</span> (std::isinf(r) || std::isnan(r) || r &lt; msg->range_min || r > msg->range_max) {
+            <span style="color:#6c9eff">continue</span>;
         }
 
         <span style="color:#94a3b8">// Угол этого луча в мировой СК</span>
-        double angle = robot_yaw_ + msg->angle_min + i * msg->angle_increment;
+        <span style="color:#6c9eff">double</span> angle = robot_yaw_ + msg->angle_min + i * msg->angle_increment;
 
         <span style="color:#94a3b8">// Координаты точки попадания (в метрах)</span>
-        double hit_x = robot_x_ + r * cos(angle);
-        double hit_y = robot_y_ + r * sin(angle);
+        <span style="color:#6c9eff">double</span> hit_x = robot_x_ + r * cos(angle);
+        <span style="color:#6c9eff">double</span> hit_y = robot_y_ + r * sin(angle);
 
         <span style="color:#94a3b8">// Дальше — обновляем карту (следующий шаг)</span>
         <span style="color:#94a3b8">// updateMapWithLaser(robot_x_, robot_y_, hit_x, hit_y);</span>

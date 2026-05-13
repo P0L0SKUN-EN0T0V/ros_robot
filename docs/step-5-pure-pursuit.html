@@ -161,10 +161,10 @@
         <p>Важно нормализовать <code>alpha</code> в диапазон [-π, π], чтобы робот поворачивал в правильную сторону:</p>
 
         <pre><span style="color:#94a3b8">// Нормализация угла в [-π, π]</span>
-double normalizeAngle(double a) {
-    while (a >  M_PI) a -= 2.0 * M_PI;
-    while (a &lt; -M_PI) a += 2.0 * M_PI;
-    return a;
+<span style="color:#6c9eff">double</span> normalizeAngle(<span style="color:#6c9eff">double</span> a) {
+    <span style="color:#6c9eff">while</span> (a >  M_PI) a -= 2.0 * M_PI;
+    <span style="color:#6c9eff">while</span> (a &lt; -M_PI) a += 2.0 * M_PI;
+    <span style="color:#6c9eff">return</span> a;
 }</pre>
 
         <h3>Команды движения</h3>
@@ -180,60 +180,60 @@ double normalizeAngle(double a) {
         <h2>Код: purePursuitControl</h2>
 
         <pre><span style="color:#94a3b8">// Параметры</span>
-const double LOOKAHEAD_DIST = 0.3;  <span style="color:#94a3b8">// метры</span>
-const double MAX_LINEAR_VEL = 0.15; <span style="color:#94a3b8">// м/с</span>
-const double MAX_ANGULAR_VEL = 1.0; <span style="color:#94a3b8">// рад/с</span>
-const double GOAL_TOLERANCE = 0.15; <span style="color:#94a3b8">// считаем «приехали» если &lt; 15 см</span>
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">double</span> LOOKAHEAD_DIST = 0.3;  <span style="color:#94a3b8">// метры</span>
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">double</span> MAX_LINEAR_VEL = 0.15; <span style="color:#94a3b8">// м/с</span>
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">double</span> MAX_ANGULAR_VEL = 1.0; <span style="color:#94a3b8">// рад/с</span>
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">double</span> GOAL_TOLERANCE = 0.15; <span style="color:#94a3b8">// считаем «приехали» если &lt; 15 см</span>
 
-void purePursuitControl() {
-    if (current_path_.empty() || !has_goal_) return;
+<span style="color:#6c9eff">void</span> purePursuitControl() {
+    <span style="color:#6c9eff">if</span> (current_path_.empty() || !has_goal_) <span style="color:#6c9eff">return</span>;
 
     <span style="color:#94a3b8">// Проверяем: может, уже приехали?</span>
-    double dist_to_goal = std::hypot(goal_x_ - robot_x_, goal_y_ - robot_y_);
-    if (dist_to_goal &lt; GOAL_TOLERANCE) {
+    <span style="color:#6c9eff">double</span> dist_to_goal = std::hypot(goal_x_ - robot_x_, goal_y_ - robot_y_);
+    <span style="color:#6c9eff">if</span> (dist_to_goal &lt; GOAL_TOLERANCE) {
         <span style="color:#94a3b8">// Стоп!</span>
-        auto cmd = geometry_msgs::msg::Twist();
+        <span style="color:#6c9eff">auto</span> cmd = geometry_msgs::msg::Twist();
         cmd_pub_->publish(cmd);  <span style="color:#94a3b8">// все нули = остановиться</span>
-        has_goal_ = false;
-        RCLCPP_INFO(this->get_logger(), <span style="color:#4ade80">"Цель достигнута!"</span>);
-        return;
+        has_goal_ = <span style="color:#6c9eff">false</span>;
+        RCLCPP_INFO(<span style="color:#6c9eff">this</span>->get_logger(), <span style="color:#4ade80">"Цель достигнута!"</span>);
+        <span style="color:#6c9eff">return</span>;
     }
 
     <span style="color:#94a3b8">// Ищем lookahead point — первую точку пути дальше LOOKAHEAD_DIST от робота</span>
-    double lx = 0, ly = 0;
-    bool found = false;
+    <span style="color:#6c9eff">double</span> lx = 0, ly = 0;
+    <span style="color:#6c9eff">bool</span> found = <span style="color:#6c9eff">false</span>;
 
-    for (auto& [gx, gy] : current_path_) {
+    <span style="color:#6c9eff">for</span> (<span style="color:#6c9eff">auto</span>& [gx, gy] : current_path_) {
         <span style="color:#94a3b8">// Переводим клетку в метры</span>
-        double wx = ORIGIN_X + gx * RESOLUTION + RESOLUTION / 2;
-        double wy = ORIGIN_Y + gy * RESOLUTION + RESOLUTION / 2;
-        double d = std::hypot(wx - robot_x_, wy - robot_y_);
+        <span style="color:#6c9eff">double</span> wx = ORIGIN_X + gx * RESOLUTION + RESOLUTION / 2;
+        <span style="color:#6c9eff">double</span> wy = ORIGIN_Y + gy * RESOLUTION + RESOLUTION / 2;
+        <span style="color:#6c9eff">double</span> d = std::hypot(wx - robot_x_, wy - robot_y_);
 
-        if (d >= LOOKAHEAD_DIST) {
+        <span style="color:#6c9eff">if</span> (d >= LOOKAHEAD_DIST) {
             lx = wx; ly = wy;
-            found = true;
-            break;
+            found = <span style="color:#6c9eff">true</span>;
+            <span style="color:#6c9eff">break</span>;
         }
     }
 
-    if (!found) {
+    <span style="color:#6c9eff">if</span> (!found) {
         <span style="color:#94a3b8">// Все точки ближе чем lookahead — берём последнюю</span>
-        auto& [gx, gy] = current_path_.back();
+        <span style="color:#6c9eff">auto</span>& [gx, gy] = current_path_.back();
         lx = ORIGIN_X + gx * RESOLUTION + RESOLUTION / 2;
         ly = ORIGIN_Y + gy * RESOLUTION + RESOLUTION / 2;
     }
 
     <span style="color:#94a3b8">// Считаем угловую ошибку</span>
-    double target_angle = atan2(ly - robot_y_, lx - robot_x_);
-    double alpha = normalizeAngle(target_angle - robot_yaw_);
+    <span style="color:#6c9eff">double</span> target_angle = atan2(ly - robot_y_, lx - robot_x_);
+    <span style="color:#6c9eff">double</span> alpha = normalizeAngle(target_angle - robot_yaw_);
 
     <span style="color:#94a3b8">// Формируем команду</span>
-    auto cmd = geometry_msgs::msg::Twist();
+    <span style="color:#6c9eff">auto</span> cmd = geometry_msgs::msg::Twist();
     cmd.linear.x  = MAX_LINEAR_VEL * std::cos(alpha);  <span style="color:#94a3b8">// тормозим при повороте</span>
     cmd.angular.z = std::clamp(2.0 * alpha, -MAX_ANGULAR_VEL, MAX_ANGULAR_VEL);
 
     <span style="color:#94a3b8">// Не ехать назад</span>
-    if (cmd.linear.x &lt; 0) cmd.linear.x = 0;
+    <span style="color:#6c9eff">if</span> (cmd.linear.x &lt; 0) cmd.linear.x = 0;
 
     cmd_pub_->publish(cmd);
 }</pre>
@@ -275,26 +275,26 @@ void purePursuitControl() {
         <p>Преподаватель требует, чтобы робот останавливался при обнаружении близкого препятствия. Это просто:</p>
 
         <pre><span style="color:#94a3b8">// В scanCallback, после обновления карты</span>
-void checkEmergencyStop(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
-    double min_range = std::numeric_limits&lt;double&gt;::infinity();
+<span style="color:#6c9eff">void</span> checkEmergencyStop(<span style="color:#6c9eff">const</span> sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    <span style="color:#6c9eff">double</span> min_range = std::numeric_limits&lt;<span style="color:#6c9eff">double</span>&gt;::infinity();
 
     <span style="color:#94a3b8">// Проверяем лучи в переднем секторе (±30°)</span>
-    int center = msg->ranges.size() / 2;  <span style="color:#94a3b8">// центральный луч = вперёд</span>
-    int spread = 30;                        <span style="color:#94a3b8">// ±30 лучей (~±30°)</span>
+    <span style="color:#6c9eff">int</span> center = msg->ranges.size() / 2;  <span style="color:#94a3b8">// центральный луч = вперёд</span>
+    <span style="color:#6c9eff">int</span> spread = 30;                        <span style="color:#94a3b8">// ±30 лучей (~±30°)</span>
 
-    for (int i = center - spread; i &lt;= center + spread; i++) {
-        if (i &lt; 0 || i >= (int)msg->ranges.size()) continue;
-        float r = msg->ranges[i];
-        if (!std::isinf(r) && !std::isnan(r) && r &lt; min_range) {
+    <span style="color:#6c9eff">for</span> (<span style="color:#6c9eff">int</span> i = center - spread; i &lt;= center + spread; i++) {
+        <span style="color:#6c9eff">if</span> (i &lt; 0 || i >= (<span style="color:#6c9eff">int</span>)msg->ranges.size()) <span style="color:#6c9eff">continue</span>;
+        <span style="color:#6c9eff">float</span> r = msg->ranges[i];
+        <span style="color:#6c9eff">if</span> (!std::isinf(r) && !std::isnan(r) && r &lt; min_range) {
             min_range = r;
         }
     }
 
     <span style="color:#94a3b8">// Если что-то ближе 20 см — стоп</span>
-    if (min_range &lt; 0.20) {
-        auto cmd = geometry_msgs::msg::Twist();
+    <span style="color:#6c9eff">if</span> (min_range &lt; 0.20) {
+        <span style="color:#6c9eff">auto</span> cmd = geometry_msgs::msg::Twist();
         cmd_pub_->publish(cmd);  <span style="color:#94a3b8">// стоп</span>
-        RCLCPP_WARN(this->get_logger(), <span style="color:#4ade80">"Препятствие! %.2f м"</span>, min_range);
+        RCLCPP_WARN(<span style="color:#6c9eff">this</span>->get_logger(), <span style="color:#4ade80">"Препятствие! %.2f м"</span>, min_range);
     }
 }</pre>
 
@@ -304,8 +304,8 @@ void checkEmergencyStop(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
         <p>Все три функции работают вместе по таймеру:</p>
 
         <pre><span style="color:#94a3b8">// В конструкторе ноды — таймер на 10 Hz</span>
-timer_ = this->create_wall_timer(100ms, [this]() {
-    if (has_goal_) {
+timer_ = <span style="color:#6c9eff">this</span>->create_wall_timer(100ms, [<span style="color:#6c9eff">this</span>]() {
+    <span style="color:#6c9eff">if</span> (has_goal_) {
         replan();              <span style="color:#94a3b8">// 1. Обновить путь на актуальной карте</span>
         purePursuitControl();  <span style="color:#94a3b8">// 2. Рассчитать и отправить cmd_vel</span>
     }

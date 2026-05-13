@@ -365,33 +365,33 @@
         <p>Не пугайся — сейчас просто посмотри на общую структуру. Детали разберём позже.</p>
 
         <pre><span style="color:#94a3b8">// Подключаем ROS2</span>
-#include &lt;rclcpp/rclcpp.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;rclcpp/rclcpp.hpp&gt;
 <span style="color:#94a3b8">// Подключаем типы сообщений</span>
-#include &lt;sensor_msgs/msg/laser_scan.hpp&gt;
-#include &lt;geometry_msgs/msg/twist.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;sensor_msgs/msg/laser_scan.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;geometry_msgs/msg/twist.hpp&gt;
 
 <span style="color:#94a3b8">// Наша нода — это класс, наследник от rclcpp::Node</span>
-class MyRobot : public rclcpp::Node {
-public:
+<span style="color:#6c9eff">class</span> MyRobot : <span style="color:#6c9eff">public</span> rclcpp::Node {
+<span style="color:#6c9eff">public</span>:
     MyRobot() : Node(<span style="color:#4ade80">"my_robot_node"</span>) {
 
         <span style="color:#94a3b8">// Подписываемся на /scan (данные лидара)</span>
-        scan_sub_ = this-&gt;create_subscription&lt;sensor_msgs::msg::LaserScan&gt;(
+        scan_sub_ = <span style="color:#6c9eff">this</span>-&gt;create_subscription&lt;sensor_msgs::msg::LaserScan&gt;(
             <span style="color:#4ade80">"/scan"</span>, 10,
-            [this](sensor_msgs::msg::LaserScan::SharedPtr msg) {
+            [<span style="color:#6c9eff">this</span>](sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 <span style="color:#94a3b8">// Эта функция вызывается каждый раз,</span>
                 <span style="color:#94a3b8">// когда Gazebo присылает новые данные лидара</span>
-                RCLCPP_INFO(this-&gt;get_logger(), <span style="color:#4ade80">"Лидар: %zu лучей"</span>, msg-&gt;ranges.size());
+                RCLCPP_INFO(<span style="color:#6c9eff">this</span>-&gt;get_logger(), <span style="color:#4ade80">"Лидар: %zu лучей"</span>, msg-&gt;ranges.size());
             }
         );
 
         <span style="color:#94a3b8">// Создаём publisher для /cmd_vel (команды движения)</span>
-        cmd_pub_ = this-&gt;create_publisher&lt;geometry_msgs::msg::Twist&gt;(
+        cmd_pub_ = <span style="color:#6c9eff">this</span>-&gt;create_publisher&lt;geometry_msgs::msg::Twist&gt;(
             <span style="color:#4ade80">"/cmd_vel"</span>, 10
         );
     }
 
-private:
+<span style="color:#6c9eff">private</span>:
     rclcpp::Subscription&lt;sensor_msgs::msg::LaserScan&gt;::SharedPtr scan_sub_;
     rclcpp::Publisher&lt;geometry_msgs::msg::Twist&gt;::SharedPtr cmd_pub_;
 };</pre>

@@ -166,47 +166,47 @@
         <p>Это <strong>первая ключевая функция</strong> нашей ноды. Она вызывается для каждого луча лидара:</p>
 
         <pre><span style="color:#94a3b8">// Параметры карты</span>
-const int MAP_SIZE = 200;            <span style="color:#94a3b8">// 200×200 клеток</span>
-const double RESOLUTION = 0.05;      <span style="color:#94a3b8">// 5 см на клетку</span>
-const double ORIGIN_X = -5.0;        <span style="color:#94a3b8">// карта начинается с -5 м</span>
-const double ORIGIN_Y = -5.0;
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">int</span> MAP_SIZE = 200;            <span style="color:#94a3b8">// 200×200 клеток</span>
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">double</span> RESOLUTION = 0.05;      <span style="color:#94a3b8">// 5 см на клетку</span>
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">double</span> ORIGIN_X = -5.0;        <span style="color:#94a3b8">// карта начинается с -5 м</span>
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">double</span> ORIGIN_Y = -5.0;
 
-std::vector&lt;int8_t&gt; map_data_(MAP_SIZE * MAP_SIZE, -1);  <span style="color:#94a3b8">// всё неизвестно</span>
+std::vector&lt;<span style="color:#6c9eff">int</span>8_t&gt; map_data_(MAP_SIZE * MAP_SIZE, -1);  <span style="color:#94a3b8">// всё неизвестно</span>
 
 <span style="color:#94a3b8">// Преобразование: метры → индекс клетки</span>
-int worldToGrid(double coord, double origin) {
-    return static_cast&lt;int&gt;((coord - origin) / RESOLUTION);
+<span style="color:#6c9eff">int</span> worldToGrid(<span style="color:#6c9eff">double</span> coord, <span style="color:#6c9eff">double</span> origin) {
+    <span style="color:#6c9eff">return</span> <span style="color:#6c9eff">static_cast</span>&lt;<span style="color:#6c9eff">int</span>&gt;((coord - origin) / RESOLUTION);
 }
 
 <span style="color:#94a3b8">// Основная функция: обновить карту одним лучом</span>
-void updateMapWithLaser(double rx, double ry, double hx, double hy) {
+<span style="color:#6c9eff">void</span> updateMapWithLaser(<span style="color:#6c9eff">double</span> rx, <span style="color:#6c9eff">double</span> ry, <span style="color:#6c9eff">double</span> hx, <span style="color:#6c9eff">double</span> hy) {
     <span style="color:#94a3b8">// rx,ry = позиция робота (метры)</span>
     <span style="color:#94a3b8">// hx,hy = точка попадания луча (метры)</span>
 
-    int x0 = worldToGrid(rx, ORIGIN_X);
-    int y0 = worldToGrid(ry, ORIGIN_Y);
-    int x1 = worldToGrid(hx, ORIGIN_X);
-    int y1 = worldToGrid(hy, ORIGIN_Y);
+    <span style="color:#6c9eff">int</span> x0 = worldToGrid(rx, ORIGIN_X);
+    <span style="color:#6c9eff">int</span> y0 = worldToGrid(ry, ORIGIN_Y);
+    <span style="color:#6c9eff">int</span> x1 = worldToGrid(hx, ORIGIN_X);
+    <span style="color:#6c9eff">int</span> y1 = worldToGrid(hy, ORIGIN_Y);
 
     <span style="color:#94a3b8">// Проверяем границы</span>
-    if (x1 &lt; 0 || x1 >= MAP_SIZE || y1 &lt; 0 || y1 >= MAP_SIZE) return;
+    <span style="color:#6c9eff">if</span> (x1 &lt; 0 || x1 >= MAP_SIZE || y1 &lt; 0 || y1 >= MAP_SIZE) <span style="color:#6c9eff">return</span>;
 
     <span style="color:#94a3b8">// === Алгоритм Брезенхэма ===</span>
-    int dx = abs(x1 - x0), dy = abs(y1 - y0);
-    int sx = (x0 &lt; x1) ? 1 : -1;
-    int sy = (y0 &lt; y1) ? 1 : -1;
-    int err = dx - dy;
+    <span style="color:#6c9eff">int</span> dx = abs(x1 - x0), dy = abs(y1 - y0);
+    <span style="color:#6c9eff">int</span> sx = (x0 &lt; x1) ? 1 : -1;
+    <span style="color:#6c9eff">int</span> sy = (y0 &lt; y1) ? 1 : -1;
+    <span style="color:#6c9eff">int</span> err = dx - dy;
 
-    int cx = x0, cy = y0;
-    while (cx != x1 || cy != y1) {
+    <span style="color:#6c9eff">int</span> cx = x0, cy = y0;
+    <span style="color:#6c9eff">while</span> (cx != x1 || cy != y1) {
         <span style="color:#94a3b8">// Все клетки на пути луча — свободны</span>
-        if (cx >= 0 && cx &lt; MAP_SIZE && cy >= 0 && cy &lt; MAP_SIZE) {
+        <span style="color:#6c9eff">if</span> (cx >= 0 && cx &lt; MAP_SIZE && cy >= 0 && cy &lt; MAP_SIZE) {
             map_data_[cy * MAP_SIZE + cx] = <span style="color:#4ade80">0</span>;   <span style="color:#94a3b8">// свободно</span>
         }
 
-        int e2 = 2 * err;
-        if (e2 > -dy) { err -= dy; cx += sx; }
-        if (e2 &lt;  dx) { err += dx; cy += sy; }
+        <span style="color:#6c9eff">int</span> e2 = 2 * err;
+        <span style="color:#6c9eff">if</span> (e2 > -dy) { err -= dy; cx += sx; }
+        <span style="color:#6c9eff">if</span> (e2 &lt;  dx) { err += dx; cy += sy; }
     }
 
     <span style="color:#94a3b8">// Последняя клетка — стена</span>
@@ -222,20 +222,20 @@ void updateMapWithLaser(double rx, double ry, double hx, double hy) {
 
         <p>Теперь подключим <code>updateMapWithLaser</code> к callback-у лидара из предыдущего шага:</p>
 
-        <pre>void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
-    for (size_t i = 0; i &lt; msg->ranges.size(); i++) {
-        float r = msg->ranges[i];
+        <pre><span style="color:#6c9eff">void</span> scanCallback(<span style="color:#6c9eff">const</span> sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    <span style="color:#6c9eff">for</span> (<span style="color:#6c9eff">size_t</span> i = 0; i &lt; msg->ranges.size(); i++) {
+        <span style="color:#6c9eff">float</span> r = msg->ranges[i];
 
         <span style="color:#94a3b8">// Пропускаем невалидные</span>
-        if (std::isinf(r) || std::isnan(r)) continue;
-        if (r &lt; msg->range_min || r > msg->range_max) continue;
+        <span style="color:#6c9eff">if</span> (std::isinf(r) || std::isnan(r)) <span style="color:#6c9eff">continue</span>;
+        <span style="color:#6c9eff">if</span> (r &lt; msg->range_min || r > msg->range_max) <span style="color:#6c9eff">continue</span>;
 
         <span style="color:#94a3b8">// Угол луча в мировой СК</span>
-        double angle = robot_yaw_ + msg->angle_min + i * msg->angle_increment;
+        <span style="color:#6c9eff">double</span> angle = robot_yaw_ + msg->angle_min + i * msg->angle_increment;
 
         <span style="color:#94a3b8">// Координаты точки попадания</span>
-        double hit_x = robot_x_ + r * cos(angle);
-        double hit_y = robot_y_ + r * sin(angle);
+        <span style="color:#6c9eff">double</span> hit_x = robot_x_ + r * cos(angle);
+        <span style="color:#6c9eff">double</span> hit_y = robot_y_ + r * sin(angle);
 
         <span style="color:#fb923c">// Обновляем карту этим лучом!</span>
         <span style="color:#fb923c">updateMapWithLaser(robot_x_, robot_y_, hit_x, hit_y);</span>
@@ -250,11 +250,11 @@ void updateMapWithLaser(double rx, double ry, double hx, double hy) {
 
         <p>Чтобы RViz показал карту, нужно опубликовать её в топик <code>/map</code> в формате <code>OccupancyGrid</code>:</p>
 
-        <pre>void publishMap() {
-    auto grid = nav_msgs::msg::OccupancyGrid();
+        <pre><span style="color:#6c9eff">void</span> publishMap() {
+    <span style="color:#6c9eff">auto</span> grid = nav_msgs::msg::OccupancyGrid();
 
     <span style="color:#94a3b8">// Заголовок</span>
-    grid.header.stamp = this->get_clock()->now();
+    grid.header.stamp = <span style="color:#6c9eff">this</span>->get_clock()->now();
     grid.header.frame_id = <span style="color:#4ade80">"odom"</span>;
 
     <span style="color:#94a3b8">// Параметры сетки</span>
@@ -280,9 +280,9 @@ void updateMapWithLaser(double rx, double ry, double hx, double hy) {
             <p>Формально, функция <code>isFree</code> проверяет:</p>
         </div>
 
-        <pre>bool isFree(int x, int y) {
-    if (x &lt; 0 || x >= MAP_SIZE || y &lt; 0 || y >= MAP_SIZE) return false;
-    int val = map_data_[y * MAP_SIZE + x];
+        <pre><span style="color:#6c9eff">bool</span> isFree(<span style="color:#6c9eff">int</span> x, <span style="color:#6c9eff">int</span> y) {
+    <span style="color:#6c9eff">if</span> (x &lt; 0 || x >= MAP_SIZE || y &lt; 0 || y >= MAP_SIZE) <span style="color:#6c9eff">return</span> <span style="color:#6c9eff">false</span>;
+    <span style="color:#6c9eff">int</span> val = map_data_[y * MAP_SIZE + x];
     return val == <span style="color:#4ade80">0</span> || val == <span style="color:#fb923c">-1</span>;  <span style="color:#94a3b8">// свободно ИЛИ неизвестно</span>
 }</pre>
 

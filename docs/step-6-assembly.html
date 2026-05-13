@@ -102,31 +102,31 @@
 
         <p>Вот полная структура <code>global_planner_node.cpp</code> — всё, что мы написали в шагах 2-5, собрано воедино:</p>
 
-        <pre>#include &lt;rclcpp/rclcpp.hpp&gt;
-#include &lt;sensor_msgs/msg/laser_scan.hpp&gt;
-#include &lt;nav_msgs/msg/odometry.hpp&gt;
-#include &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
-#include &lt;nav_msgs/msg/path.hpp&gt;
-#include &lt;geometry_msgs/msg/twist.hpp&gt;
-#include &lt;geometry_msgs/msg/pose_stamped.hpp&gt;
-#include &lt;tf2/utils.h&gt;
-#include &lt;cmath&gt;
-#include &lt;queue&gt;
-#include &lt;vector&gt;
-#include &lt;algorithm&gt;
+        <pre><span style="color:#6c9eff">#include</span> &lt;rclcpp/rclcpp.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;sensor_msgs/msg/laser_scan.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;nav_msgs/msg/odometry.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;nav_msgs/msg/path.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;geometry_msgs/msg/twist.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;geometry_msgs/msg/pose_stamped.hpp&gt;
+<span style="color:#6c9eff">#include</span> &lt;tf2/utils.h&gt;
+<span style="color:#6c9eff">#include</span> &lt;cmath&gt;
+<span style="color:#6c9eff">#include</span> &lt;queue&gt;
+<span style="color:#6c9eff">#include</span> &lt;vector&gt;
+<span style="color:#6c9eff">#include</span> &lt;algorithm&gt;
 
-using namespace std::chrono_literals;
+<span style="color:#6c9eff">using</span> <span style="color:#6c9eff">namespace</span> std::chrono_literals;
 
-class GlobalPlanner : public rclcpp::Node {
-public:
+<span style="color:#6c9eff">class</span> GlobalPlanner : <span style="color:#6c9eff">public</span> rclcpp::Node {
+<span style="color:#6c9eff">public</span>:
     GlobalPlanner() : Node(<span style="color:#4ade80">"global_planner_node"</span>) {
         <span style="color:#94a3b8">// Subscribers</span>
         scan_sub_ = create_subscription&lt;sensor_msgs::msg::LaserScan&gt;(
-            <span style="color:#4ade80">"/scan"</span>, 10, [this](auto msg){ scanCallback(msg); });
+            <span style="color:#4ade80">"/scan"</span>, 10, [<span style="color:#6c9eff">this</span>](<span style="color:#6c9eff">auto</span> msg){ scanCallback(msg); });
         odom_sub_ = create_subscription&lt;nav_msgs::msg::Odometry&gt;(
-            <span style="color:#4ade80">"/odom"</span>, 10, [this](auto msg){ odomCallback(msg); });
+            <span style="color:#4ade80">"/odom"</span>, 10, [<span style="color:#6c9eff">this</span>](<span style="color:#6c9eff">auto</span> msg){ odomCallback(msg); });
         goal_sub_ = create_subscription&lt;geometry_msgs::msg::PoseStamped&gt;(
-            <span style="color:#4ade80">"/goal_pose"</span>, 10, [this](auto msg){ goalCallback(msg); });
+            <span style="color:#4ade80">"/goal_pose"</span>, 10, [<span style="color:#6c9eff">this</span>](<span style="color:#6c9eff">auto</span> msg){ goalCallback(msg); });
 
         <span style="color:#94a3b8">// Publishers</span>
         cmd_pub_  = create_publisher&lt;geometry_msgs::msg::Twist&gt;(<span style="color:#4ade80">"/cmd_vel"</span>, 10);
@@ -134,24 +134,24 @@ public:
         path_pub_ = create_publisher&lt;nav_msgs::msg::Path&gt;(<span style="color:#4ade80">"/global_plan"</span>, 10);
 
         <span style="color:#94a3b8">// Таймер управления (10 Hz)</span>
-        timer_ = create_wall_timer(100ms, [this](){ controlLoop(); });
+        timer_ = create_wall_timer(100ms, [<span style="color:#6c9eff">this</span>](){ controlLoop(); });
 
         RCLCPP_INFO(get_logger(), <span style="color:#4ade80">"Global Planner запущен!"</span>);
     }
 
-private:
+<span style="color:#6c9eff">private</span>:
     <span style="color:#94a3b8">// === Параметры карты ===</span>
-    static const int MAP_SIZE = 200;
-    static constexpr double RESOLUTION = 0.05;
-    static constexpr double ORIGIN_X = -5.0;
-    static constexpr double ORIGIN_Y = -5.0;
+    <span style="color:#6c9eff">static</span> <span style="color:#6c9eff">const</span> <span style="color:#6c9eff">int</span> MAP_SIZE = 200;
+    <span style="color:#6c9eff">static</span> <span style="color:#6c9eff">constexpr</span> <span style="color:#6c9eff">double</span> RESOLUTION = 0.05;
+    <span style="color:#6c9eff">static</span> <span style="color:#6c9eff">constexpr</span> <span style="color:#6c9eff">double</span> ORIGIN_X = -5.0;
+    <span style="color:#6c9eff">static</span> <span style="color:#6c9eff">constexpr</span> <span style="color:#6c9eff">double</span> ORIGIN_Y = -5.0;
 
     <span style="color:#94a3b8">// === Состояние ===</span>
-    std::vector&lt;int8_t&gt; map_data_{MAP_SIZE * MAP_SIZE, -1};
-    double robot_x_ = 0, robot_y_ = 0, robot_yaw_ = 0;
-    double goal_x_ = 0, goal_y_ = 0;
-    bool has_goal_ = false;
-    std::vector&lt;std::pair&lt;int,int&gt;&gt; current_path_;
+    std::vector&lt;<span style="color:#6c9eff">int</span>8_t&gt; map_data_{MAP_SIZE * MAP_SIZE, -1};
+    <span style="color:#6c9eff">double</span> robot_x_ = 0, robot_y_ = 0, robot_yaw_ = 0;
+    <span style="color:#6c9eff">double</span> goal_x_ = 0, goal_y_ = 0;
+    <span style="color:#6c9eff">bool</span> has_goal_ = <span style="color:#6c9eff">false</span>;
+    std::vector&lt;std::pair&lt;<span style="color:#6c9eff">int</span>,<span style="color:#6c9eff">int</span>&gt;&gt; current_path_;
 
     <span style="color:#94a3b8">// === ROS2 объекты ===</span>
     rclcpp::Subscription&lt;sensor_msgs::msg::LaserScan&gt;::SharedPtr scan_sub_;
@@ -163,40 +163,40 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
 
     <span style="color:#94a3b8">// === Callbacks (шаг 2) ===</span>
-    void odomCallback(/*...*/);
-    void scanCallback(/*...*/);
-    void goalCallback(/*...*/);
+    <span style="color:#6c9eff">void</span> odomCallback(/*...*/);
+    <span style="color:#6c9eff">void</span> scanCallback(/*...*/);
+    <span style="color:#6c9eff">void</span> goalCallback(/*...*/);
 
     <span style="color:#94a3b8">// === Карта (шаг 3) ===</span>
-    int worldToGrid(double coord, double origin);
-    void updateMapWithLaser(double rx, double ry, double hx, double hy);
-    void publishMap();
-    bool isFree(int x, int y);
+    <span style="color:#6c9eff">int</span> worldToGrid(<span style="color:#6c9eff">double</span> coord, <span style="color:#6c9eff">double</span> origin);
+    <span style="color:#6c9eff">void</span> updateMapWithLaser(<span style="color:#6c9eff">double</span> rx, <span style="color:#6c9eff">double</span> ry, <span style="color:#6c9eff">double</span> hx, <span style="color:#6c9eff">double</span> hy);
+    <span style="color:#6c9eff">void</span> publishMap();
+    <span style="color:#6c9eff">bool</span> isFree(<span style="color:#6c9eff">int</span> x, <span style="color:#6c9eff">int</span> y);
 
     <span style="color:#94a3b8">// === A* (шаг 4) ===</span>
-    double heuristic(int x1, int y1, int x2, int y2);
-    std::vector&lt;std::pair&lt;int,int&gt;&gt; planAStar(int sx, int sy, int gx, int gy);
-    void replan();
-    void publishPath();
+    <span style="color:#6c9eff">double</span> heuristic(<span style="color:#6c9eff">int</span> x1, <span style="color:#6c9eff">int</span> y1, <span style="color:#6c9eff">int</span> x2, <span style="color:#6c9eff">int</span> y2);
+    std::vector&lt;std::pair&lt;<span style="color:#6c9eff">int</span>,<span style="color:#6c9eff">int</span>&gt;&gt; planAStar(<span style="color:#6c9eff">int</span> sx, <span style="color:#6c9eff">int</span> sy, <span style="color:#6c9eff">int</span> gx, <span style="color:#6c9eff">int</span> gy);
+    <span style="color:#6c9eff">void</span> replan();
+    <span style="color:#6c9eff">void</span> publishPath();
 
     <span style="color:#94a3b8">// === Pure Pursuit (шаг 5) ===</span>
-    double normalizeAngle(double a);
-    void purePursuitControl();
+    <span style="color:#6c9eff">double</span> normalizeAngle(<span style="color:#6c9eff">double</span> a);
+    <span style="color:#6c9eff">void</span> purePursuitControl();
 
     <span style="color:#94a3b8">// === Главный цикл ===</span>
-    void controlLoop() {
-        if (has_goal_) {
+    <span style="color:#6c9eff">void</span> controlLoop() {
+        <span style="color:#6c9eff">if</span> (has_goal_) {
             replan();
             purePursuitControl();
         }
     }
 };
 
-int main(int argc, char** argv) {
+<span style="color:#6c9eff">int</span> main(<span style="color:#6c9eff">int</span> argc, <span style="color:#6c9eff">char</span>** argv) {
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared&lt;GlobalPlanner&gt;());
     rclcpp::shutdown();
-    return 0;
+    <span style="color:#6c9eff">return</span> 0;
 }</pre>
 
         <div class="card warn">
@@ -236,14 +236,14 @@ ament_package()</pre>
         <p>Создай <code>launch/planner.launch.py</code> — он запускает Gazebo, RViz и нашу ноду одной командой:</p>
 
         <pre><span style="color:#94a3b8"># launch/planner.launch.py</span>
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
-import os
+<span style="color:#6c9eff">from</span> launch <span style="color:#6c9eff">import</span> LaunchDescription
+<span style="color:#6c9eff">from</span> launch.actions <span style="color:#6c9eff">import</span> IncludeLaunchDescription
+<span style="color:#6c9eff">from</span> launch.launch_description_sources <span style="color:#6c9eff">import</span> PythonLaunchDescriptionSource
+<span style="color:#6c9eff">from</span> launch_ros.actions <span style="color:#6c9eff">import</span> Node
+<span style="color:#6c9eff">from</span> ament_index_python.packages <span style="color:#6c9eff">import</span> get_package_share_directory
+<span style="color:#6c9eff">import</span> os
 
-def generate_launch_description():
+<span style="color:#6c9eff">def</span> generate_launch_description():
     <span style="color:#94a3b8"># Запускаем Gazebo с TurtleBot3</span>
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -270,7 +270,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    return LaunchDescription([gazebo, planner, rviz])</pre>
+    <span style="color:#6c9eff">return</span> LaunchDescription([gazebo, planner, rviz])</pre>
 
         <!-- ============ СБОРКА И ЗАПУСК ============ -->
         <h2>Сборка и запуск</h2>

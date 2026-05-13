@@ -143,85 +143,85 @@
         <p>Полная реализация A* для нашей карты. Это <strong>вторая ключевая функция</strong>:</p>
 
         <pre><span style="color:#94a3b8">// Структура для хранения информации о клетке</span>
-struct Cell {
-    int x, y;
-    double g, f;
-    int parent_x, parent_y;
+<span style="color:#6c9eff">struct</span> Cell {
+    <span style="color:#6c9eff">int</span> x, y;
+    <span style="color:#6c9eff">double</span> g, f;
+    <span style="color:#6c9eff">int</span> parent_x, parent_y;
 };
 
 <span style="color:#94a3b8">// Эвристика — евклидово расстояние</span>
-double heuristic(int x1, int y1, int x2, int y2) {
-    double dx = x1 - x2;
-    double dy = y1 - y2;
-    return std::sqrt(dx * dx + dy * dy);
+<span style="color:#6c9eff">double</span> heuristic(<span style="color:#6c9eff">int</span> x1, <span style="color:#6c9eff">int</span> y1, <span style="color:#6c9eff">int</span> x2, <span style="color:#6c9eff">int</span> y2) {
+    <span style="color:#6c9eff">double</span> dx = x1 - x2;
+    <span style="color:#6c9eff">double</span> dy = y1 - y2;
+    <span style="color:#6c9eff">return</span> std::sqrt(dx * dx + dy * dy);
 }
 
 <span style="color:#94a3b8">// 8 направлений: вверх, вниз, влево, вправо + 4 диагонали</span>
-const int DX[] = {-1, -1, -1,  0, 0,  1, 1, 1};
-const int DY[] = {-1,  0,  1, -1, 1, -1, 0, 1};
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">int</span> DX[] = {-1, -1, -1,  0, 0,  1, 1, 1};
+<span style="color:#6c9eff">const</span> <span style="color:#6c9eff">int</span> DY[] = {-1,  0,  1, -1, 1, -1, 0, 1};
 
 <span style="color:#94a3b8">// Возвращает путь как вектор пар (x, y) в координатах сетки</span>
-std::vector&lt;std::pair&lt;int,int&gt;&gt; planAStar(int sx, int sy, int gx, int gy) {
+std::vector&lt;std::pair&lt;<span style="color:#6c9eff">int</span>,<span style="color:#6c9eff">int</span>&gt;&gt; planAStar(<span style="color:#6c9eff">int</span> sx, <span style="color:#6c9eff">int</span> sy, <span style="color:#6c9eff">int</span> gx, <span style="color:#6c9eff">int</span> gy) {
     <span style="color:#94a3b8">// Проверяем, что старт и цель валидны</span>
-    if (!isFree(sx, sy) || !isFree(gx, gy)) return {};
+    <span style="color:#6c9eff">if</span> (!isFree(sx, sy) || !isFree(gx, gy)) <span style="color:#6c9eff">return</span> {};
 
     <span style="color:#94a3b8">// g-значения для каждой клетки (изначально бесконечность)</span>
-    std::vector&lt;std::vector&lt;double&gt;&gt; g_val(MAP_SIZE,
-        std::vector&lt;double&gt;(MAP_SIZE, std::numeric_limits&lt;double&gt;::infinity()));
+    std::vector&lt;std::vector&lt;<span style="color:#6c9eff">double</span>&gt;&gt; g_val(MAP_SIZE,
+        std::vector&lt;<span style="color:#6c9eff">double</span>&gt;(MAP_SIZE, std::numeric_limits&lt;<span style="color:#6c9eff">double</span>&gt;::infinity()));
 
     <span style="color:#94a3b8">// Карта родителей для восстановления пути</span>
-    std::vector&lt;std::vector&lt;std::pair&lt;int,int&gt;&gt;&gt; parent(MAP_SIZE,
-        std::vector&lt;std::pair&lt;int,int&gt;&gt;(MAP_SIZE, {-1, -1}));
+    std::vector&lt;std::vector&lt;std::pair&lt;<span style="color:#6c9eff">int</span>,<span style="color:#6c9eff">int</span>&gt;&gt;&gt; parent(MAP_SIZE,
+        std::vector&lt;std::pair&lt;<span style="color:#6c9eff">int</span>,<span style="color:#6c9eff">int</span>&gt;&gt;(MAP_SIZE, {-1, -1}));
 
     <span style="color:#94a3b8">// Closed set — уже обработанные клетки</span>
-    std::vector&lt;std::vector&lt;bool&gt;&gt; closed(MAP_SIZE,
-        std::vector&lt;bool&gt;(MAP_SIZE, false));
+    std::vector&lt;std::vector&lt;<span style="color:#6c9eff">bool</span>&gt;&gt; closed(MAP_SIZE,
+        std::vector&lt;<span style="color:#6c9eff">bool</span>&gt;(MAP_SIZE, <span style="color:#6c9eff">false</span>));
 
     <span style="color:#94a3b8">// Open list — очередь с приоритетом (min-heap по f)</span>
     <span style="color:#94a3b8">// {f, x, y}</span>
-    using PQItem = std::tuple&lt;double, int, int&gt;;
+    <span style="color:#6c9eff">using</span> PQItem = std::tuple&lt;<span style="color:#6c9eff">double</span>, <span style="color:#6c9eff">int</span>, <span style="color:#6c9eff">int</span>&gt;;
     std::priority_queue&lt;PQItem, std::vector&lt;PQItem&gt;, std::greater&lt;PQItem&gt;&gt; open;
 
     g_val[sy][sx] = 0.0;
-    double f0 = heuristic(sx, sy, gx, gy);
+    <span style="color:#6c9eff">double</span> f0 = heuristic(sx, sy, gx, gy);
     open.push({f0, sx, sy});
 
-    while (!open.empty()) {
-        auto [f, cx, cy] = open.top();
+    <span style="color:#6c9eff">while</span> (!open.empty()) {
+        <span style="color:#6c9eff">auto</span> [f, cx, cy] = open.top();
         open.pop();
 
         <span style="color:#94a3b8">// Уже обработана?</span>
-        if (closed[cy][cx]) continue;
-        closed[cy][cx] = true;
+        <span style="color:#6c9eff">if</span> (closed[cy][cx]) <span style="color:#6c9eff">continue</span>;
+        closed[cy][cx] = <span style="color:#6c9eff">true</span>;
 
         <span style="color:#94a3b8">// Нашли цель!</span>
-        if (cx == gx && cy == gy) {
+        <span style="color:#6c9eff">if</span> (cx == gx && cy == gy) {
             <span style="color:#94a3b8">// Восстанавливаем путь от цели к старту</span>
-            std::vector&lt;std::pair&lt;int,int&gt;&gt; path;
-            int px = gx, py = gy;
-            while (px != -1 && py != -1) {
+            std::vector&lt;std::pair&lt;<span style="color:#6c9eff">int</span>,<span style="color:#6c9eff">int</span>&gt;&gt; path;
+            <span style="color:#6c9eff">int</span> px = gx, py = gy;
+            <span style="color:#6c9eff">while</span> (px != -1 && py != -1) {
                 path.push_back({px, py});
-                auto [ppx, ppy] = parent[py][px];
+                <span style="color:#6c9eff">auto</span> [ppx, ppy] = parent[py][px];
                 px = ppx; py = ppy;
             }
             std::reverse(path.begin(), path.end());
-            return path;
+            <span style="color:#6c9eff">return</span> path;
         }
 
         <span style="color:#94a3b8">// Проверяем 8 соседей</span>
-        for (int d = 0; d &lt; 8; d++) {
-            int nx = cx + DX[d];
-            int ny = cy + DY[d];
+        <span style="color:#6c9eff">for</span> (<span style="color:#6c9eff">int</span> d = 0; d &lt; 8; d++) {
+            <span style="color:#6c9eff">int</span> nx = cx + DX[d];
+            <span style="color:#6c9eff">int</span> ny = cy + DY[d];
 
-            if (!isFree(nx, ny) || closed[ny][nx]) continue;
+            <span style="color:#6c9eff">if</span> (!isFree(nx, ny) || closed[ny][nx]) <span style="color:#6c9eff">continue</span>;
 
             <span style="color:#94a3b8">// Стоимость шага: 1.0 по прямой, 1.414 по диагонали</span>
-            double step_cost = (DX[d] != 0 && DY[d] != 0) ? 1.414 : 1.0;
-            double new_g = g_val[cy][cx] + step_cost;
+            <span style="color:#6c9eff">double</span> step_cost = (DX[d] != 0 && DY[d] != 0) ? 1.414 : 1.0;
+            <span style="color:#6c9eff">double</span> new_g = g_val[cy][cx] + step_cost;
 
-            if (new_g &lt; g_val[ny][nx]) {
+            <span style="color:#6c9eff">if</span> (new_g &lt; g_val[ny][nx]) {
                 g_val[ny][nx] = new_g;
-                double new_f = new_g + heuristic(nx, ny, gx, gy);
+                <span style="color:#6c9eff">double</span> new_f = new_g + heuristic(nx, ny, gx, gy);
                 parent[ny][nx] = {cx, cy};
                 open.push({new_f, nx, ny});
             }
@@ -229,7 +229,7 @@ std::vector&lt;std::pair&lt;int,int&gt;&gt; planAStar(int sx, int sy, int gx, in
     }
 
     <span style="color:#94a3b8">// Путь не найден</span>
-    return {};
+    <span style="color:#6c9eff">return</span> {};
 }</pre>
 
         <!-- ============ КОГДА ВЫЗЫВАТЬ ============ -->
@@ -247,29 +247,29 @@ std::vector&lt;std::pair&lt;int,int&gt;&gt; planAStar(int sx, int sy, int gx, in
         </div>
 
         <pre><span style="color:#94a3b8">// Callback цели</span>
-void goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
+<span style="color:#6c9eff">void</span> goalCallback(<span style="color:#6c9eff">const</span> geometry_msgs::msg::PoseStamped::SharedPtr msg) {
     goal_x_ = msg->pose.position.x;
     goal_y_ = msg->pose.position.y;
-    has_goal_ = true;
+    has_goal_ = <span style="color:#6c9eff">true</span>;
 
     replan();  <span style="color:#94a3b8">// Сразу ищем путь</span>
 }
 
 <span style="color:#94a3b8">// Перепланирование — вызывается по таймеру (например, каждые 0.5 сек)</span>
-void replan() {
-    if (!has_goal_) return;
+<span style="color:#6c9eff">void</span> replan() {
+    <span style="color:#6c9eff">if</span> (!has_goal_) <span style="color:#6c9eff">return</span>;
 
     <span style="color:#94a3b8">// Переводим координаты робота и цели из метров в клетки</span>
-    int sx = worldToGrid(robot_x_, ORIGIN_X);
-    int sy = worldToGrid(robot_y_, ORIGIN_Y);
-    int gx = worldToGrid(goal_x_, ORIGIN_X);
-    int gy = worldToGrid(goal_y_, ORIGIN_Y);
+    <span style="color:#6c9eff">int</span> sx = worldToGrid(robot_x_, ORIGIN_X);
+    <span style="color:#6c9eff">int</span> sy = worldToGrid(robot_y_, ORIGIN_Y);
+    <span style="color:#6c9eff">int</span> gx = worldToGrid(goal_x_, ORIGIN_X);
+    <span style="color:#6c9eff">int</span> gy = worldToGrid(goal_y_, ORIGIN_Y);
 
     current_path_ = planAStar(sx, sy, gx, gy);
 
-    if (current_path_.empty()) {
-        RCLCPP_WARN(this->get_logger(), <span style="color:#4ade80">"A* не нашёл путь!"</span>);
-    } else {
+    <span style="color:#6c9eff">if</span> (current_path_.empty()) {
+        RCLCPP_WARN(<span style="color:#6c9eff">this</span>->get_logger(), <span style="color:#4ade80">"A* не нашёл путь!"</span>);
+    } <span style="color:#6c9eff">else</span> {
         publishPath();  <span style="color:#94a3b8">// Отправляем в /global_plan для RViz</span>
     }
 }</pre>
@@ -277,12 +277,12 @@ void replan() {
         <!-- ============ ПУБЛИКАЦИЯ ПУТИ ============ -->
         <h2>Публикация пути в /global_plan</h2>
 
-        <pre>void publishPath() {
-    auto path_msg = nav_msgs::msg::Path();
-    path_msg.header.stamp = this->get_clock()->now();
+        <pre><span style="color:#6c9eff">void</span> publishPath() {
+    <span style="color:#6c9eff">auto</span> path_msg = nav_msgs::msg::Path();
+    path_msg.header.stamp = <span style="color:#6c9eff">this</span>->get_clock()->now();
     path_msg.header.frame_id = <span style="color:#4ade80">"odom"</span>;
 
-    for (auto& [gx, gy] : current_path_) {
+    <span style="color:#6c9eff">for</span> (<span style="color:#6c9eff">auto</span>& [gx, gy] : current_path_) {
         geometry_msgs::msg::PoseStamped pose;
         pose.header = path_msg.header;
         <span style="color:#94a3b8">// Обратное преобразование: клетки → метры</span>

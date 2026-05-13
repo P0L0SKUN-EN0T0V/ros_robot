@@ -614,40 +614,135 @@
         </div>
 
         <!-- ============ ПСЕВДОКОД ============ -->
-        <h2>Псевдокод</h2>
+        <!-- ============ PYTHON ============ -->
+        <h2>Реализация на Python</h2>
 
-<pre>
-RRT(q_start, q_goal, map, max_iterations):
-    T.init(q_start)                     <span style="color:var(--orange)">// дерево с одним корнем</span>
+        <p>RRT работает в непрерывном пространстве — никаких сеток и клеток. Координаты — вещественные числа, препятствия — произвольные формы.</p>
 
-    <span style="color:var(--accent)">for</span> i = 1 to max_iterations:
-        <span style="color:var(--accent)">if</span> random() < p_goal:           <span style="color:var(--orange)">// goal bias (~5-10%)</span>
-            q_rand = q_goal
+<pre><span style="color:var(--accent)">import</span> math
+<span style="color:var(--accent)">import</span> random
+<span style="color:var(--accent)">from</span> dataclasses <span style="color:var(--accent)">import</span> dataclass
+
+<span style="color:var(--accent2)">Point</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">float</span>, <span style="color:var(--accent2)">float</span>]
+<span style="color:var(--accent2)">Obstacle</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">Point</span>, <span style="color:var(--accent2)">float</span>]    <span style="color:var(--green)"># (центр, радиус)</span>
+<span style="color:var(--accent2)">Bounds</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">float</span>, <span style="color:var(--accent2)">float</span>, <span style="color:var(--accent2)">float</span>, <span style="color:var(--accent2)">float</span>]  <span style="color:var(--green)"># xmin, ymin, xmax, ymax</span>
+
+
+@dataclass
+<span style="color:var(--accent)">class</span> <span style="color:var(--accent2)">Node</span>:
+    x: <span style="color:var(--accent2)">float</span>
+    y: <span style="color:var(--accent2)">float</span>
+    parent: <span style="color:var(--accent2)">int</span>    <span style="color:var(--green)"># индекс родителя в дереве (-1 для корня)</span>
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">distance</span>(a: <span style="color:var(--accent2)">Point</span>, b: <span style="color:var(--accent2)">Point</span>) -> <span style="color:var(--accent2)">float</span>:
+    <span style="color:var(--accent)">return</span> math.hypot(a[0] - b[0], a[1] - b[1])
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">steer</span>(from_pt: <span style="color:var(--accent2)">Point</span>, to_pt: <span style="color:var(--accent2)">Point</span>, step: <span style="color:var(--accent2)">float</span>) -> <span style="color:var(--accent2)">Point</span>:
+    <span style="color:var(--green)">"""Шагнуть от from_pt в сторону to_pt на расстояние step"""</span>
+    d: <span style="color:var(--accent2)">float</span> = distance(from_pt, to_pt)
+    <span style="color:var(--accent)">if</span> d &lt; step:
+        <span style="color:var(--accent)">return</span> to_pt
+    ratio: <span style="color:var(--accent2)">float</span> = step / d
+    <span style="color:var(--accent)">return</span> (from_pt[0] + ratio * (to_pt[0] - from_pt[0]),
+            from_pt[1] + ratio * (to_pt[1] - from_pt[1]))
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">collision_free</span>(
+    p1: <span style="color:var(--accent2)">Point</span>, p2: <span style="color:var(--accent2)">Point</span>,
+    obstacles: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Obstacle</span>],
+    steps: <span style="color:var(--accent2)">int</span> = 10
+) -> <span style="color:var(--accent2)">bool</span>:
+    <span style="color:var(--green)">"""Проверить отрезок p1→p2 на пересечение с препятствиями"""</span>
+    <span style="color:var(--accent)">for</span> i <span style="color:var(--accent)">in</span> <span style="color:var(--accent)">range</span>(steps + 1):
+        t: <span style="color:var(--accent2)">float</span> = i / steps
+        cx: <span style="color:var(--accent2)">float</span> = p1[0] + t * (p2[0] - p1[0])
+        cy: <span style="color:var(--accent2)">float</span> = p1[1] + t * (p2[1] - p1[1])
+        <span style="color:var(--accent)">for</span> (ox, oy), r <span style="color:var(--accent)">in</span> obstacles:
+            <span style="color:var(--accent)">if</span> math.hypot(cx - ox, cy - oy) &lt; r:
+                <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">False</span>
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">True</span>
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">rrt</span>(
+    start: <span style="color:var(--accent2)">Point</span>,
+    goal: <span style="color:var(--accent2)">Point</span>,
+    bounds: <span style="color:var(--accent2)">Bounds</span>,
+    obstacles: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Obstacle</span>],
+    step_size: <span style="color:var(--accent2)">float</span> = 0.5,
+    goal_bias: <span style="color:var(--accent2)">float</span> = 0.05,
+    goal_thresh: <span style="color:var(--accent2)">float</span> = 0.5,
+    max_iter: <span style="color:var(--accent2)">int</span> = 5000
+) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Point</span>] | <span style="color:var(--accent)">None</span>:
+    <span style="color:var(--green)">"""RRT в 2D с круглыми препятствиями. Возвращает путь или None."""</span>
+
+    tree: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Node</span>] = [Node(start[0], start[1], -1)]
+    xmin, ymin, xmax, ymax = bounds
+
+    <span style="color:var(--accent)">for</span> _ <span style="color:var(--accent)">in</span> <span style="color:var(--accent)">range</span>(max_iter):
+        <span style="color:var(--green)"># 1. Sample — случайная точка (с goal bias)</span>
+        <span style="color:var(--accent)">if</span> random.random() &lt; goal_bias:
+            rand_pt: <span style="color:var(--accent2)">Point</span> = goal
         <span style="color:var(--accent)">else</span>:
-            q_rand = random_point(map)  <span style="color:var(--orange)">// случайная точка</span>
+            rand_pt = (random.uniform(xmin, xmax),
+                       random.uniform(ymin, ymax))
 
-        q_near = nearest(T, q_rand)     <span style="color:var(--orange)">// ближайший узел дерева</span>
+        <span style="color:var(--green)"># 2. Nearest — ближайший узел дерева</span>
+        nearest_idx: <span style="color:var(--accent2)">int</span> = 0
+        min_dist: <span style="color:var(--accent2)">float</span> = <span style="color:var(--accent)">float</span>(<span style="color:var(--green)">'inf'</span>)
+        <span style="color:var(--accent)">for</span> j, node <span style="color:var(--accent)">in</span> <span style="color:var(--accent)">enumerate</span>(tree):
+            d: <span style="color:var(--accent2)">float</span> = distance((node.x, node.y), rand_pt)
+            <span style="color:var(--accent)">if</span> d &lt; min_dist:
+                min_dist = d
+                nearest_idx = j
 
-        q_new = steer(q_near, q_rand, Δq)  <span style="color:var(--orange)">// шаг длиной Δq</span>
+        <span style="color:var(--green)"># 3. Steer — шаг фиксированной длины</span>
+        near: <span style="color:var(--accent2)">Node</span> = tree[nearest_idx]
+        new_pt: <span style="color:var(--accent2)">Point</span> = steer((near.x, near.y), rand_pt, step_size)
 
-        <span style="color:var(--accent)">if</span> collision_free(q_near, q_new, map):
-            T.add_node(q_new)
-            T.add_edge(q_near, q_new)
+        <span style="color:var(--green)"># 4. Collision check — отрезок свободен?</span>
+        <span style="color:var(--accent)">if not</span> collision_free((near.x, near.y), new_pt, obstacles):
+            <span style="color:var(--accent)">continue</span>
 
-            <span style="color:var(--accent)">if</span> distance(q_new, q_goal) < threshold:
-                T.add_edge(q_new, q_goal)
-                <span style="color:var(--accent)">return</span> reconstruct_path(T, q_start, q_goal)
+        <span style="color:var(--green)"># 5. Add to tree</span>
+        tree.append(Node(new_pt[0], new_pt[1], nearest_idx))
 
-    <span style="color:var(--accent)">return</span> FAILURE  <span style="color:var(--orange)">// путь не найден за max_iterations</span>
-</pre>
+        <span style="color:var(--green)"># 6. Goal check</span>
+        <span style="color:var(--accent)">if</span> distance(new_pt, goal) &lt; goal_thresh:
+            tree.append(Node(goal[0], goal[1], <span style="color:var(--accent)">len</span>(tree) - 1))
+            <span style="color:var(--green)"># Reconstruct path</span>
+            path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Point</span>] = []
+            idx: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">len</span>(tree) - 1
+            <span style="color:var(--accent)">while</span> idx != -1:
+                path.append((tree[idx].x, tree[idx].y))
+                idx = tree[idx].parent
+            path.reverse()
+            <span style="color:var(--accent)">return</span> path
+
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">None</span>                          <span style="color:var(--orange)"># не нашли за max_iter</span>
+
+
+<span style="color:var(--green)"># === Пример: карта 10×10 с тремя круглыми препятствиями ===</span>
+obstacles: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Obstacle</span>] = [
+    ((3.0, 3.0), 1.5),
+    ((7.0, 5.0), 1.0),
+    ((5.0, 8.0), 1.2),
+]
+path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Point</span>] | <span style="color:var(--accent)">None</span> = rrt(
+    start=(1.0, 1.0), goal=(9.0, 9.0),
+    bounds=(0, 0, 10, 10), obstacles=obstacles,
+    step_size=0.5, goal_bias=0.1, goal_thresh=0.5
+)
+<span style="color:var(--green)"># Путь: ~30 waypoints, длина ~14.6 (зависит от seed)</span></pre>
 
         <div class="card highlight">
             <strong>Ключевые параметры:</strong>
             <ul>
-                <li><code>Δq</code> (step size) — длина шага. Типично 0.3–1.0 м. Больше → быстрее, но грубее</li>
-                <li><code>p_goal</code> (goal bias) — вероятность «целиться» в цель. 5–10% — хороший баланс</li>
-                <li><code>max_iterations</code> — лимит итераций. 5000–50000 в зависимости от сложности карты</li>
-                <li><code>threshold</code> — порог «близости» к цели. Обычно = Δq</li>
+                <li><code>step_size</code> (Δq) — длина шага. Типично 0.3–1.0 м. Больше → быстрее, но грубее</li>
+                <li><code>goal_bias</code> — вероятность «целиться» в цель. 5–10% — хороший баланс</li>
+                <li><code>max_iter</code> — лимит итераций. 5000–50000 в зависимости от сложности карты</li>
+                <li><code>goal_thresh</code> — порог «близости» к цели. Обычно = step_size</li>
             </ul>
         </div>
 
@@ -714,9 +809,9 @@ RRT(q_start, q_goal, map, max_iterations):
         </div>
 
         <!-- ============ C++ ROS2 ============ -->
-        <h2>Интеграция с ROS2 (C++)</h2>
+        <h2>Реализация на C++ (ROS2)</h2>
 
-        <p>Ниже — скелет ROS2-ноды, реализующей RRT-планировщик. Нода подписывается на карту (<code>/map</code>), получает стартовую и целевую позицию, строит дерево и публикует путь:</p>
+        <p>Полная ROS2-нода с RRT-планировщиком. Нода подписывается на карту (<code>/map</code>), получает стартовую и целевую позицию, строит дерево и публикует путь:</p>
 
 <pre>
 <span style="color:var(--accent2)">#include &lt;rclcpp/rclcpp.hpp&gt;</span>
@@ -750,6 +845,13 @@ RRT(q_start, q_goal, map, max_iterations):
         map_sub_ = this-&gt;create_subscription&lt;<span style="color:var(--accent2)">nav_msgs::msg</span>::OccupancyGrid&gt;(
             "/map", 10, [this](<span style="color:var(--accent2)">nav_msgs::msg</span>::OccupancyGrid::SharedPtr msg) {
                 map_ = msg;
+                map_w_ = msg-&gt;info.width;
+                map_h_ = msg-&gt;info.height;
+                resolution_ = msg-&gt;info.resolution;
+                origin_x_ = msg-&gt;info.origin.position.x;
+                origin_y_ = msg-&gt;info.origin.position.y;
+                map_width_  = map_w_ * resolution_;
+                map_height_ = map_h_ * resolution_;
             });
 
         path_pub_ = this-&gt;create_publisher&lt;<span style="color:var(--accent2)">nav_msgs::msg</span>::Path&gt;("/planned_path", 10);

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаг 1 — Инструменты: Gazebo и RViz</title>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .sidebar .section-title{color:var(--text2);font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        .card.danger{border-left:4px solid var(--red)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .term{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:16px 20px;margin:12px 0}
+        .term strong{color:var(--accent2)}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .cmd{background:#141620;border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin:10px 0;font-family:'Courier New',monospace;font-size:.9em;position:relative}
+        .cmd::before{content:"$";color:var(--green);margin-right:8px;font-weight:700}
+        .cmd .comment{color:var(--text2);font-size:.85em;display:block;margin-top:4px}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html">Справочник (Quick Ref)</a>
+        <div class="sep"></div>
+        <div class="section-title">Пошаговый гайд</div>
+        <a href="step-0-what-is-ros2.html">0. Что такое ROS2</a>
+        <a href="step-1-tools-gazebo-rviz.html" class="active">1. Gazebo и RViz</a>
+        <a href="step-2-sensors.html">2. Одометрия и лидар</a>
+        <a href="step-3-mapping.html">3. Строим карту</a>
+        <a href="step-4-astar.html">4. Алгоритм A*</a>
+        <a href="step-5-pure-pursuit.html">5. Pure Pursuit</a>
+        <a href="step-6-assembly.html">6. Собираем проект</a>
+        <div class="sep"></div>
+        <div class="section-title">Алгоритмы</div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Шаг 1: Gazebo и RViz</h1>
+        <p class="subtitle">Устанавливаем и запускаем — видим робота своими глазами</p>
+
+        <!-- ============ ОБЗОР ============ -->
+        <h2>Два инструмента — два назначения</h2>
+
+        <p>В предыдущем шаге мы узнали, что кроме нашей ноды есть «готовые» программы. Две главных:</p>
+
+        <div class="card highlight">
+            <h3>Gazebo — симулятор мира</h3>
+            <p>Gazebo создаёт виртуальный 3D-мир: комнаты, стены, мебель. В этом мире «живёт» виртуальный робот (TurtleBot3). У робота есть виртуальный лидар, который стреляет лазерными лучами и измеряет расстояния — точно как настоящий.</p>
+            <p>Gazebo автоматически публикует данные сенсоров в топики <code>/scan</code> и <code>/odom</code>, и исполняет команды движения из <code>/cmd_vel</code>.</p>
+        </div>
+
+        <div class="card highlight">
+            <h3>RViz — визуализатор данных</h3>
+            <p>RViz ничего не симулирует. Он просто <strong>подписывается на топики</strong> и рисует то, что видит: карту, путь, позицию робота, лучи лидара. Это как монитор — показывает информацию, но не создаёт её.</p>
+        </div>
+
+        <div class="analogy">Gazebo — это сцена театра (декорации, актёры, физика). RViz — это монитор видеонаблюдения за кулисами. Один создаёт реальность, другой показывает что происходит.</div>
+
+        <!-- ============ УСТАНОВКА ROS2 ============ -->
+        <h2>Установка ROS2 Humble</h2>
+
+        <p>Мы используем <strong>ROS2 Humble Hawksbill</strong> — стабильную LTS-версию. Работает на Ubuntu 22.04.</p>
+
+        <div class="card warn">
+            <p><strong>Важно:</strong> ROS2 официально поддерживает только Ubuntu. Если у тебя Windows — используй WSL2 (Windows Subsystem for Linux) с Ubuntu 22.04. Если macOS — нужна виртуальная машина.</p>
+        </div>
+
+        <h3>Шаг за шагом</h3>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">
+                <strong>Настраиваем источник пакетов</strong>
+                <div class="cmd">sudo apt update && sudo apt install -y software-properties-common curl</div>
+                <div class="cmd">sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg</div>
+                <div class="cmd">echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null</div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">
+                <strong>Устанавливаем ROS2 Humble (полная версия)</strong>
+                <div class="cmd">sudo apt update && sudo apt install -y ros-humble-desktop</div>
+                <p class="cmd comment">Это ~2 GB. Включает ROS2 + RViz + Gazebo Classic + демо-пакеты.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">
+                <strong>Устанавливаем инструменты сборки</strong>
+                <div class="cmd">sudo apt install -y python3-colcon-common-extensions python3-rosdep</div>
+                <p><code>colcon</code> — утилита для сборки ROS2-проектов (аналог make/cmake, но для ROS2).</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">
+                <strong>Активируем ROS2 в терминале</strong>
+                <div class="cmd">echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc</div>
+                <div class="cmd">source ~/.bashrc</div>
+                <p>Эта строка подгружает все ROS2-команды при открытии терминала. Без неё команды вроде <code>ros2</code> не будут работать.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-text">
+                <strong>Проверяем</strong>
+                <div class="cmd">ros2 --version</div>
+                <p>Должно вывести что-то вроде <code>ros2 0.20.x</code>. Если видишь ошибку «command not found» — перезапусти терминал.</p>
+            </div>
+        </div>
+
+        <!-- ============ TURTLEBOT3 ============ -->
+        <h2>Установка TurtleBot3</h2>
+
+        <p>TurtleBot3 — маленький учебный робот. Мы используем его виртуальную модель в Gazebo.</p>
+
+        <div class="cmd">sudo apt install -y ros-humble-turtlebot3-gazebo ros-humble-turtlebot3-description ros-humble-turtlebot3-teleop</div>
+
+        <p>Также нужно указать модель робота. Есть три варианта: <code>burger</code> (простой), <code>waffle</code> (с камерой), <code>waffle_pi</code>. Для нашего проекта подойдёт <code>burger</code> — у него есть лидар, и этого достаточно:</p>
+
+        <div class="cmd">echo "export TURTLEBOT3_MODEL=burger" >> ~/.bashrc</div>
+        <div class="cmd">source ~/.bashrc</div>
+
+        <!-- ============ ЗАПУСК GAZEBO ============ -->
+        <h2>Запускаем Gazebo</h2>
+
+        <p>Открой терминал и запусти:</p>
+
+        <div class="cmd">ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py</div>
+
+        <p>Что произойдёт:</p>
+        <ol>
+            <li>Откроется окно Gazebo с 3D-миром — стены, цилиндры, пол.</li>
+            <li>В центре (или рядом) появится маленький робот — TurtleBot3.</li>
+            <li>В терминале побегут логи — это нормально.</li>
+        </ol>
+
+        <div class="card warn">
+            <p><strong>Первый запуск — медленный.</strong> Gazebo скачивает модели (текстуры, меши). Может занять 1-3 минуты. Не закрывай — дождись, пока появится окно.</p>
+        </div>
+
+        <div class="card success">
+            <p><strong>Checkpoint:</strong> Видишь окно Gazebo с роботом и стенами? Отлично — симулятор работает. Если окно не появилось через 3 минуты — проверь, что <code>TURTLEBOT3_MODEL</code> задан: <code>echo $TURTLEBOT3_MODEL</code>.</p>
+        </div>
+
+        <!-- ============ ПРОВЕРКА ТОПИКОВ ============ -->
+        <h2>Проверяем: что публикует Gazebo</h2>
+
+        <p>Не закрывая Gazebo, открой <strong>второй терминал</strong> и выполни:</p>
+
+        <div class="cmd">ros2 topic list</div>
+
+        <p>Увидишь список всех активных топиков. Среди них будут:</p>
+
+        <pre>/clock
+/cmd_vel
+/imu
+/joint_states
+/odom
+/parameter_events
+/rosout
+/scan
+/tf
+/tf_static</pre>
+
+        <p>Нас интересуют:</p>
+        <ul>
+            <li><code>/scan</code> — данные лидара</li>
+            <li><code>/odom</code> — позиция робота</li>
+            <li><code>/cmd_vel</code> — сюда мы будем писать команды</li>
+        </ul>
+
+        <h3>Заглянем в данные лидара</h3>
+
+        <div class="cmd">ros2 topic echo /scan --once</div>
+
+        <p>Команда выведет одно сообщение типа <code>LaserScan</code>. Увидишь массив <code>ranges</code> — это расстояния в метрах от лидара до ближайших объектов для каждого угла. Числа ~0.1-3.5 — стены рядом, <code>inf</code> — ничего не обнаружено.</p>
+
+        <h3>Заглянем в одометрию</h3>
+
+        <div class="cmd">ros2 topic echo /odom --once</div>
+
+        <p>Увидишь <code>pose.pose.position.x</code>, <code>...y</code> — текущие координаты робота в метрах. И <code>orientation</code> — кватернион (куда робот повёрнут).</p>
+
+        <!-- ============ ТЕЛЕУПРАВЛЕНИЕ ============ -->
+        <h2>Покатаем робота вручную</h2>
+
+        <p>Чтобы убедиться, что робот «живой» и реагирует на команды, запустим телеуправление с клавиатуры:</p>
+
+        <div class="cmd">ros2 run turtlebot3_teleop teleop_keyboard</div>
+
+        <p>В терминале появятся инструкции:</p>
+        <ul>
+            <li><strong>w</strong> — вперёд</li>
+            <li><strong>x</strong> — назад</li>
+            <li><strong>a</strong> — повернуть налево</li>
+            <li><strong>d</strong> — повернуть направо</li>
+            <li><strong>s</strong> — стоп</li>
+        </ul>
+
+        <p>Попробуй покатать. В окне Gazebo увидишь, как робот двигается. Под капотом <code>teleop_keyboard</code> просто публикует сообщения <code>Twist</code> в топик <code>/cmd_vel</code> — точно так же, как будет делать наша нода.</p>
+
+        <div class="card success">
+            <p><strong>Checkpoint:</strong> Робот двигается при нажатии клавиш? Значит связка «топик → Gazebo → движение» работает. Наша нода будет делать то же самое — только автоматически.</p>
+        </div>
+
+        <!-- ============ RVIZ ============ -->
+        <h2>Запускаем RViz</h2>
+
+        <p>Не закрывая ни Gazebo, ни телеуправление, открой <strong>третий терминал</strong>:</p>
+
+        <div class="cmd">ros2 run rviz2 rviz2</div>
+
+        <p>Откроется окно RViz — пока пустое, с чёрным фоном и сеткой. Нужно добавить отображения:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text"><strong>Fixed Frame</strong> — в левой панели вверху (Global Options) измени <code>Fixed Frame</code> на <code>odom</code>.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text"><strong>Лидар</strong> — внизу нажми <em>Add</em> → вкладка <em>By topic</em> → найди <code>/scan</code> → выбери <code>LaserScan</code> → OK. Появятся красные точки — это то, что видит лидар.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text"><strong>Робот</strong> — нажми <em>Add</em> → вкладка <em>By display type</em> → <code>RobotModel</code> → OK. Появится модель робота.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text"><strong>Одометрия</strong> — <em>Add</em> → <em>By topic</em> → <code>/odom</code> → <code>Odometry</code> → OK. Появится стрелка — направление движения.</div>
+        </div>
+
+        <p>Теперь покатай робота в телеуправлении — увидишь, как в RViz обновляются точки лидара и стрелка одометрии.</p>
+
+        <div class="card warn">
+            <p><strong>Сохрани конфигурацию RViz:</strong> File → Save Config As → <code>my_config.rviz</code>. Иначе при следующем запуске придётся добавлять всё заново.</p>
+        </div>
+
+        <!-- ============ КАК ЦЕЛЬ ============ -->
+        <h2>Как ставить цель в RViz</h2>
+
+        <p>В нашем проекте мы будем задавать цель через RViz. Вот как:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">В верхней панели RViz найди кнопку <strong>«2D Goal Pose»</strong> (иконка зелёной стрелки).</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Кликни на карту и потяни — стрелка покажет направление. Отпусти.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">RViz опубликует сообщение <code>PoseStamped</code> в топик <code>/goal_pose</code>.</div>
+        </div>
+
+        <p>Сейчас ничего не произойдёт — потому что никто не подписан на <code>/goal_pose</code>. Но когда мы напишем нашу ноду, она будет слушать этот топик и строить путь к цели.</p>
+
+        <!-- ============ СТРУКТУРА ПРОЕКТА ============ -->
+        <h2>Создаём ROS2-проект</h2>
+
+        <p>ROS2 организует код в <strong>пакеты</strong> (packages). Пакет — это папка с кодом, файлами сборки и описанием. Создадим наш:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">
+                <strong>Создаём workspace (рабочую область)</strong>
+                <div class="cmd">mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src</div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">
+                <strong>Создаём пакет</strong>
+                <div class="cmd">ros2 pkg create --build-type ament_cmake global_planner --dependencies rclcpp sensor_msgs nav_msgs geometry_msgs tf2 tf2_ros</div>
+                <p>Что тут написано:</p>
+                <ul>
+                    <li><code>ament_cmake</code> — система сборки (для C++)</li>
+                    <li><code>global_planner</code> — имя нашего пакета</li>
+                    <li><code>--dependencies</code> — библиотеки, которые нам понадобятся</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">
+                <strong>Проверяем структуру</strong>
+                <pre>~/ros2_ws/
+└── src/
+    └── global_planner/
+        ├── CMakeLists.txt      ← настройки сборки
+        ├── package.xml         ← описание пакета и зависимости
+        ├── include/             ← заголовочные файлы (.hpp)
+        │   └── global_planner/
+        └── src/                 ← исходный код (.cpp)
+            └── (пока пусто — тут будет наш код)</pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">
+                <strong>Собираем (пока пустой пакет)</strong>
+                <div class="cmd">cd ~/ros2_ws && colcon build --packages-select global_planner</div>
+                <p>Если видишь <code>Finished <<< global_planner</code> — всё собралось.</p>
+                <div class="cmd">source install/setup.bash</div>
+                <p>Эта команда подгружает наш пакет в текущий терминал.</p>
+            </div>
+        </div>
+
+        <div class="card success">
+            <p><strong>Checkpoint:</strong> Пакет собрался без ошибок? Отлично. Теперь у нас есть каркас проекта — осталось написать код ноды.</p>
+        </div>
+
+        <!-- ============ ИТОГИ ============ -->
+        <h2>Итоги шага</h2>
+
+        <table>
+            <tr><th>Что сделали</th><th>Зачем</th></tr>
+            <tr><td>Установили ROS2 Humble</td><td>Фреймворк + все инструменты</td></tr>
+            <tr><td>Установили TurtleBot3</td><td>Модель робота для симуляции</td></tr>
+            <tr><td>Запустили Gazebo</td><td>Убедились: симулятор работает, робот есть</td></tr>
+            <tr><td>Проверили топики</td><td>Видим /scan, /odom — данные текут</td></tr>
+            <tr><td>Покатали робота через teleop</td><td>/cmd_vel работает — робот двигается</td></tr>
+            <tr><td>Запустили RViz</td><td>Видим лидар, одометрию — визуализация работает</td></tr>
+            <tr><td>Создали ROS2-пакет</td><td>Каркас для нашего кода</td></tr>
+        </table>
+
+        <div class="card highlight">
+            <p>В следующем шаге подробно разберём данные с сенсоров: как устроен лидар (что за массив <code>ranges</code>), как читать одометрию и как из кватерниона получить простой угол.</p>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="step-0-what-is-ros2.html">← Шаг 0: Что такое ROS2</a>
+            <a href="step-2-sensors.html">Шаг 2: Одометрия и лидар →</a>
+        </div>
+    </div>
+</body>
+</html>

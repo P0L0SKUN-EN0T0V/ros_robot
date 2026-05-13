@@ -708,107 +708,303 @@
             <p style="margin-top:8px">JPS раскрыл <strong>5 узлов</strong> вместо ~18 у A*. Каждый jump point — это место, где стена «ломает» привычный маршрут и заставляет JPS обратить внимание. Нет стены рядом — нет jump point — прыгаем дальше.</p>
         </div>
 
-        <!-- ============ PSEUDOCODE ============ -->
-        <h2>Псевдокод</h2>
+        <!-- ============ РЕАЛИЗАЦИЯ PYTHON ============ -->
+        <h2>Реализация на Python</h2>
 
-<pre>
-<span style="color:var(--text2)">// JPS — отличие от A* только в получении соседей</span>
-<span style="color:var(--accent)">function</span> JPS(start, goal, grid):
-    open ← priority_queue()
-    open.push(start, f = h(start))
-    g[start] ← 0
+        <p>Полная реализация JPS. Отличие от <a href="algo-1-astar.html" style="color:var(--accent)">A*</a> — вместо обычных соседей используется рекурсивный <code>jump()</code>, который «перепрыгивает» пустые клетки и останавливается только на jump points.</p>
 
-    <span style="color:var(--accent)">while</span> open не пуст:
-        x ← open.pop_min()
-        <span style="color:var(--accent)">if</span> x == goal: <span style="color:var(--accent)">return</span> reconstruct_path(x)
+<pre><span style="color:var(--accent)">import</span> math
+<span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
 
-        <span style="color:var(--accent)">for</span> d ∈ pruned_directions(x):
-            jp ← jump(x, d, goal, grid)
-            <span style="color:var(--accent)">if</span> jp ≠ null:
-                new_g ← g[x] + dist(x, jp)
-                <span style="color:var(--accent)">if</span> new_g &lt; g[jp]:
-                    g[jp] ← new_g
-                    parent[jp] ← x
-                    open.push(jp, f = new_g + h(jp))
+<span style="color:var(--accent2)">Cell</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>]
+<span style="color:var(--accent2)">Dir</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>]
+<span style="color:var(--accent2)">INF</span> = <span style="color:var(--accent)">float</span>(<span style="color:var(--green)">'inf'</span>)
+<span style="color:var(--accent2)">SQRT2</span> = math.sqrt(2)
 
-    <span style="color:var(--accent)">return</span> null  <span style="color:var(--text2)">// пути нет</span>
 
-<span style="color:var(--accent)">function</span> jump(x, d, goal, grid):
-    n ← x + d
-    <span style="color:var(--accent)">if</span> !walkable(n): <span style="color:var(--accent)">return</span> null
-    <span style="color:var(--accent)">if</span> n == goal: <span style="color:var(--accent)">return</span> n
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">walkable</span>(r: <span style="color:var(--accent2)">int</span>, c: <span style="color:var(--accent2)">int</span>, W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>,
+             walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>]) -> <span style="color:var(--accent2)">bool</span>:
+    <span style="color:var(--accent)">return</span> 0 &lt;= r &lt; H <span style="color:var(--accent)">and</span> 0 &lt;= c &lt; W <span style="color:var(--accent)">and</span> (r, c) <span style="color:var(--accent)">not in</span> walls
 
-    <span style="color:var(--text2)">// есть forced neighbor? → это jump point</span>
-    <span style="color:var(--accent)">if</span> has_forced_neighbor(n, d): <span style="color:var(--accent)">return</span> n
 
-    <span style="color:var(--text2)">// диагональ: проверяем горизонтальный и вертикальный лучи</span>
-    <span style="color:var(--accent)">if</span> d is diagonal:
-        <span style="color:var(--accent)">if</span> jump(n, horizontal(d), goal) ≠ null: <span style="color:var(--accent)">return</span> n
-        <span style="color:var(--accent)">if</span> jump(n, vertical(d), goal) ≠ null: <span style="color:var(--accent)">return</span> n
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">has_forced</span>(r: <span style="color:var(--accent2)">int</span>, c: <span style="color:var(--accent2)">int</span>, dr: <span style="color:var(--accent2)">int</span>, dc: <span style="color:var(--accent2)">int</span>,
+               W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>, walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>]) -> <span style="color:var(--accent2)">bool</span>:
+    <span style="color:var(--green)">"""Есть ли у (r,c) forced neighbor при движении в направлении (dr,dc)?"""</span>
+    w = <span style="color:var(--accent)">lambda</span> rr, cc: walkable(rr, cc, W, H, walls)
 
-    <span style="color:var(--accent)">return</span> jump(n, d, goal, grid)  <span style="color:var(--text2)">// продолжаем прыгать</span>
+    <span style="color:var(--accent)">if</span> dr != 0 <span style="color:var(--accent)">and</span> dc == 0:        <span style="color:var(--green)"># вертикальное</span>
+        <span style="color:var(--accent)">return</span> (<span style="color:var(--accent)">not</span> w(r, c-1) <span style="color:var(--accent)">and</span> w(r+dr, c-1)) <span style="color:var(--accent)">or</span>                (<span style="color:var(--accent)">not</span> w(r, c+1) <span style="color:var(--accent)">and</span> w(r+dr, c+1))
+    <span style="color:var(--accent)">if</span> dc != 0 <span style="color:var(--accent)">and</span> dr == 0:        <span style="color:var(--green)"># горизонтальное</span>
+        <span style="color:var(--accent)">return</span> (<span style="color:var(--accent)">not</span> w(r-1, c) <span style="color:var(--accent)">and</span> w(r-1, c+dc)) <span style="color:var(--accent)">or</span>                (<span style="color:var(--accent)">not</span> w(r+1, c) <span style="color:var(--accent)">and</span> w(r+1, c+dc))
+    <span style="color:var(--green)"># диагональное</span>
+    <span style="color:var(--accent)">return</span> (<span style="color:var(--accent)">not</span> w(r-dr, c) <span style="color:var(--accent)">and</span> w(r-dr, c+dc)) <span style="color:var(--accent)">or</span>            (<span style="color:var(--accent)">not</span> w(r, c-dc) <span style="color:var(--accent)">and</span> w(r+dr, c-dc))
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">jump</span>(r: <span style="color:var(--accent2)">int</span>, c: <span style="color:var(--accent2)">int</span>, dr: <span style="color:var(--accent2)">int</span>, dc: <span style="color:var(--accent2)">int</span>,
+         goal: <span style="color:var(--accent2)">Cell</span>, W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>,
+         walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>]) -> <span style="color:var(--accent2)">Cell</span> | <span style="color:var(--accent)">None</span>:
+    <span style="color:var(--green)">"""Рекурсивный прыжок: возвращает jump point или None."""</span>
+    nr, nc = r + dr, c + dc
+    <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> walkable(nr, nc, W, H, walls):
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">None</span>
+    <span style="color:var(--accent)">if</span> (nr, nc) == goal:
+        <span style="color:var(--accent)">return</span> (nr, nc)
+
+    <span style="color:var(--accent)">if</span> has_forced(nr, nc, dr, dc, W, H, walls):
+        <span style="color:var(--accent)">return</span> (nr, nc)                <span style="color:var(--orange)"># forced neighbor → jump point!</span>
+
+    <span style="color:var(--green)"># Диагональ: проверяем горизонтальный и вертикальный лучи</span>
+    <span style="color:var(--accent)">if</span> dr != 0 <span style="color:var(--accent)">and</span> dc != 0:
+        <span style="color:var(--accent)">if</span> jump(nr, nc, dr, 0, goal, W, H, walls) <span style="color:var(--accent)">is not</span> <span style="color:var(--accent)">None</span>:
+            <span style="color:var(--accent)">return</span> (nr, nc)
+        <span style="color:var(--accent)">if</span> jump(nr, nc, 0, dc, goal, W, H, walls) <span style="color:var(--accent)">is not</span> <span style="color:var(--accent)">None</span>:
+            <span style="color:var(--accent)">return</span> (nr, nc)
+
+    <span style="color:var(--accent)">return</span> jump(nr, nc, dr, dc, goal, W, H, walls)
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">heuristic</span>(a: <span style="color:var(--accent2)">Cell</span>, b: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent2)">float</span>:
+    <span style="color:var(--green)">"""Octile distance."""</span>
+    dx: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(a[0] - b[0])
+    dy: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(a[1] - b[1])
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">max</span>(dx, dy) + (SQRT2 - 1) * <span style="color:var(--accent)">min</span>(dx, dy)
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">jps</span>(
+    W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>,
+    walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>],
+    start: <span style="color:var(--accent2)">Cell</span>,
+    goal: <span style="color:var(--accent2)">Cell</span>
+) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] | <span style="color:var(--accent)">None</span>:
+    <span style="color:var(--green)">"""JPS на 8-связной сетке. Возвращает путь или None."""</span>
+
+    g: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>] = {start: 0.0}
+    f: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>] = {start: heuristic(start, goal)}
+    parent: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">Cell</span> | <span style="color:var(--accent)">None</span>] = {start: <span style="color:var(--accent)">None</span>}
+
+    counter: <span style="color:var(--accent2)">int</span> = 0
+    open_heap: <span style="color:var(--accent2)">list</span> = [(f[start], counter, start)]
+    open_set: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = {start}
+    closed: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = <span style="color:var(--accent)">set</span>()
+
+    <span style="color:var(--green)"># 8 направлений для старта (у него нет parent → все направления)</span>
+    ALL_DIRS: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Dir</span>] = [
+        (-1,0),(1,0),(0,-1),(0,1),(-1,-1),(-1,1),(1,-1),(1,1)
+    ]
+
+    <span style="color:var(--accent)">while</span> open_heap:
+        _, _, cur = heappop(open_heap)
+
+        <span style="color:var(--accent)">if</span> cur <span style="color:var(--accent)">not in</span> open_set:
+            <span style="color:var(--accent)">continue</span>
+        open_set.remove(cur)
+
+        <span style="color:var(--accent)">if</span> cur == goal:
+            path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] = []
+            node: <span style="color:var(--accent2)">Cell</span> | <span style="color:var(--accent)">None</span> = cur
+            <span style="color:var(--accent)">while</span> node <span style="color:var(--accent)">is not</span> <span style="color:var(--accent)">None</span>:
+                path.append(node)
+                node = parent[node]
+            path.reverse()
+            <span style="color:var(--accent)">return</span> path
+
+        closed.add(cur)
+
+        <span style="color:var(--green)"># Определяем направления для прыжков</span>
+        <span style="color:var(--accent)">if</span> parent[cur] <span style="color:var(--accent)">is</span> <span style="color:var(--accent)">None</span>:
+            dirs = ALL_DIRS                <span style="color:var(--orange)"># старт: все 8</span>
+        <span style="color:var(--accent)">else</span>:
+            <span style="color:var(--green)"># natural + forced направления (pruned neighbors)</span>
+            pr, pc = parent[cur]
+            dr: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">min</span>(1, <span style="color:var(--accent)">max</span>(-1, cur[0] - pr))
+            dc: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">min</span>(1, <span style="color:var(--accent)">max</span>(-1, cur[1] - pc))
+            dirs = _pruned_dirs(cur[0], cur[1], dr, dc, W, H, walls)
+
+        <span style="color:var(--accent)">for</span> dr, dc <span style="color:var(--accent)">in</span> dirs:
+            jp: <span style="color:var(--accent2)">Cell</span> | <span style="color:var(--accent)">None</span> = jump(
+                cur[0], cur[1], dr, dc, goal, W, H, walls
+            )
+            <span style="color:var(--accent)">if</span> jp <span style="color:var(--accent)">is</span> <span style="color:var(--accent)">None</span> <span style="color:var(--accent)">or</span> jp <span style="color:var(--accent)">in</span> closed:
+                <span style="color:var(--accent)">continue</span>
+
+            new_g: <span style="color:var(--accent2)">float</span> = g[cur] + math.hypot(
+                jp[0] - cur[0], jp[1] - cur[1]
+            )
+            <span style="color:var(--accent)">if</span> new_g &lt; g.get(jp, INF):
+                g[jp] = new_g
+                f[jp] = new_g + heuristic(jp, goal)
+                parent[jp] = cur
+                counter += 1
+                heappush(open_heap, (f[jp], counter, jp))
+                open_set.add(jp)
+
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">None</span>
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_pruned_dirs</span>(
+    r: <span style="color:var(--accent2)">int</span>, c: <span style="color:var(--accent2)">int</span>, dr: <span style="color:var(--accent2)">int</span>, dc: <span style="color:var(--accent2)">int</span>,
+    W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>, walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>]
+) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Dir</span>]:
+    <span style="color:var(--green)">"""Natural + forced направления из (r,c) при движении (dr,dc)."""</span>
+    w = <span style="color:var(--accent)">lambda</span> rr, cc: walkable(rr, cc, W, H, walls)
+    dirs: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Dir</span>] = []
+
+    <span style="color:var(--accent)">if</span> dr != 0 <span style="color:var(--accent)">and</span> dc != 0:          <span style="color:var(--green)"># диагональ</span>
+        dirs.extend([(dr, dc), (dr, 0), (0, dc)])
+        <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> w(r - dr, c): dirs.append((-dr, dc))
+        <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> w(r, c - dc): dirs.append((dr, -dc))
+    <span style="color:var(--accent)">elif</span> dr != 0:                    <span style="color:var(--green)"># вертикаль</span>
+        dirs.append((dr, 0))
+        <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> w(r, c - 1): dirs.extend([(dr, -1)])
+        <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> w(r, c + 1): dirs.extend([(dr,  1)])
+    <span style="color:var(--accent)">else</span>:                            <span style="color:var(--green)"># горизонталь</span>
+        dirs.append((0, dc))
+        <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> w(r - 1, c): dirs.extend([(-1, dc)])
+        <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> w(r + 1, c): dirs.extend([( 1, dc)])
+
+    <span style="color:var(--accent)">return</span> dirs
+
+
+<span style="color:var(--green)"># === Пример: сетка 5×5 со стеной ===</span>
+walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = {(1, 2), (2, 2)}
+path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] | <span style="color:var(--accent)">None</span> = jps(5, 5, walls, (0, 0), (4, 4))
+<span style="color:var(--green)"># [(0,0), (1,1), (1,2), (2,3), (3,4), (4,4)]</span>
+<span style="color:var(--green)"># Тот же путь что A* (cost=6.24), но раскрыто 5 узлов вместо 9.</span>
 </pre>
+
+        <div class="card highlight">
+            <p><strong>Три ключевые функции JPS:</strong></p>
+            <ul>
+                <li><code>jump()</code> — рекурсивно «прыгает» в направлении, пока не найдёт jump point, стену или цель</li>
+                <li><code>has_forced()</code> — есть ли forced neighbor? Стена сбоку + свободная клетка за углом</li>
+                <li><code>_pruned_dirs()</code> — natural + forced направления, остальные отбрасываются (pruning)</li>
+            </ul>
+        </div>
 
         <!-- ============ C++ ROS2 ============ -->
-        <h2>Реализация в C++ (ROS2)</h2>
+        <h2>Как это выглядит в ROS2 проекте</h2>
 
-        <p>JPS — надстройка над A*. Меняется только способ получения соседей. Ниже — две ключевые функции: проверка forced neighbors и рекурсивный прыжок.</p>
+        <p>Полная реализация JPS на C++. Использует ту же структуру что <a href="algo-1-astar.html" style="color:var(--accent)">A*</a>, но вместо перебора 8 соседей — рекурсивный <code>jump()</code> + pruned directions.</p>
 
-<pre>
-<span style="color:var(--text2)">// --- jump_point_search.hpp ---</span>
-<span style="color:var(--accent)">#include</span> &lt;queue&gt;
-<span style="color:var(--accent)">#include</span> &lt;vector&gt;
-<span style="color:var(--accent)">#include</span> &lt;cmath&gt;
-<span style="color:var(--accent)">#include</span> &lt;optional&gt;
+        <div class="card">
+<pre style="margin:0"><span style="color:var(--accent2)">#include</span> &lt;queue&gt;
+<span style="color:var(--accent2)">#include</span> &lt;vector&gt;
+<span style="color:var(--accent2)">#include</span> &lt;unordered_map&gt;
+<span style="color:var(--accent2)">#include</span> &lt;unordered_set&gt;
+<span style="color:var(--accent2)">#include</span> &lt;cmath&gt;
+<span style="color:var(--accent2)">#include</span> &lt;optional&gt;
+<span style="color:var(--accent2)">#include</span> &lt;algorithm&gt;
 
-<span style="color:var(--accent2)">bool</span> walkable(<span style="color:var(--accent)">const</span> nav_msgs::msg::OccupancyGrid&amp; grid,
-              <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y) {
-    <span style="color:var(--accent)">if</span> (x &lt; 0 || y &lt; 0 ||
-        x &gt;= (<span style="color:var(--accent2)">int</span>)grid.info.width ||
-        y &gt;= (<span style="color:var(--accent2)">int</span>)grid.info.height)
-        <span style="color:var(--accent)">return false</span>;
-    <span style="color:var(--accent)">return</span> grid.data[y * grid.info.width + x] == 0;
+<span style="color:var(--accent)">using</span> <span style="color:var(--accent2)">Cell</span> = <span style="color:var(--accent2)">std::pair</span>&lt;<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>&gt;;
+
+<span style="color:var(--accent)">struct</span> <span style="color:var(--accent2)">CellHash</span> {
+    <span style="color:var(--accent2)">size_t</span> <span style="color:var(--accent)">operator</span>()(<span style="color:var(--accent2)">const</span> Cell&amp; c) <span style="color:var(--accent2)">const</span> {
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">std::hash</span>&lt;<span style="color:var(--accent2)">int</span>&gt;()(c.first) ^ (<span style="color:var(--accent2)">std::hash</span>&lt;<span style="color:var(--accent2)">int</span>&gt;()(c.second) &lt;&lt; 16);
+    }
+};
+
+<span style="color:var(--accent2)">constexpr double</span> SQRT2 = 1.41421356237;
+<span style="color:var(--accent)">using</span> <span style="color:var(--accent2)">Walls</span> = <span style="color:var(--accent2)">std::unordered_set</span>&lt;Cell, CellHash&gt;;
+
+<span style="color:var(--accent2)">double</span> heuristic(<span style="color:var(--accent2)">const</span> Cell&amp; a, <span style="color:var(--accent2)">const</span> Cell&amp; b) {
+    <span style="color:var(--accent2)">double</span> dx = <span style="color:var(--accent2)">std::abs</span>(a.first - b.first);
+    <span style="color:var(--accent2)">double</span> dy = <span style="color:var(--accent2)">std::abs</span>(a.second - b.second);
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">std::max</span>(dx, dy) + (SQRT2 - 1.0) * <span style="color:var(--accent2)">std::min</span>(dx, dy);
 }
 
-<span style="color:var(--text2)">// Проверка forced neighbors</span>
-<span style="color:var(--accent2)">bool</span> has_forced(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; g,
-                <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y, <span style="color:var(--accent2)">int</span> dx, <span style="color:var(--accent2)">int</span> dy) {
-    <span style="color:var(--accent)">if</span> (dx != 0 &amp;&amp; dy == 0) {
-        <span style="color:var(--text2)">// горизонтальное движение</span>
-        <span style="color:var(--accent)">return</span> (!walkable(g, x, y-1) &amp;&amp; walkable(g, x+dx, y-1)) ||
-               (!walkable(g, x, y+1) &amp;&amp; walkable(g, x+dx, y+1));
-    }
-    <span style="color:var(--accent)">if</span> (dx == 0 &amp;&amp; dy != 0) {
-        <span style="color:var(--text2)">// вертикальное движение</span>
-        <span style="color:var(--accent)">return</span> (!walkable(g, x-1, y) &amp;&amp; walkable(g, x-1, y+dy)) ||
-               (!walkable(g, x+1, y) &amp;&amp; walkable(g, x+1, y+dy));
-    }
-    <span style="color:var(--text2)">// диагональное движение</span>
-    <span style="color:var(--accent)">return</span> (!walkable(g, x-dx, y) &amp;&amp; walkable(g, x-dx, y+dy)) ||
-           (!walkable(g, x, y-dy) &amp;&amp; walkable(g, x+dx, y-dy));
+<span style="color:var(--accent2)">bool</span> walkable(<span style="color:var(--accent2)">int</span> r, <span style="color:var(--accent2)">int</span> c, <span style="color:var(--accent2)">int</span> W, <span style="color:var(--accent2)">int</span> H, <span style="color:var(--accent2)">const</span> Walls&amp; walls) {
+    <span style="color:var(--accent)">return</span> r &gt;= 0 &amp;&amp; r &lt; H &amp;&amp; c &gt;= 0 &amp;&amp; c &lt; W &amp;&amp; !walls.count({r, c});
 }
 
-<span style="color:var(--text2)">// Рекурсивный прыжок</span>
-std::optional&lt;std::pair&lt;<span style="color:var(--accent2)">int</span>,<span style="color:var(--accent2)">int</span>&gt;&gt;
-jump(<span style="color:var(--accent)">const</span> OccupancyGrid&amp; grid,
-     <span style="color:var(--accent2)">int</span> x, <span style="color:var(--accent2)">int</span> y, <span style="color:var(--accent2)">int</span> dx, <span style="color:var(--accent2)">int</span> dy,
-     <span style="color:var(--accent2)">int</span> gx, <span style="color:var(--accent2)">int</span> gy) {
-    <span style="color:var(--accent2)">int</span> nx = x + dx, ny = y + dy;
-    <span style="color:var(--accent)">if</span> (!walkable(grid, nx, ny)) <span style="color:var(--accent)">return</span> std::nullopt;
-    <span style="color:var(--accent)">if</span> (nx == gx &amp;&amp; ny == gy) <span style="color:var(--accent)">return</span> {{nx, ny}};
-
-    <span style="color:var(--accent)">if</span> (has_forced(grid, nx, ny, dx, dy))
-        <span style="color:var(--accent)">return</span> {{nx, ny}};
-
-    <span style="color:var(--text2)">// Диагональ: проверяем компоненты</span>
-    <span style="color:var(--accent)">if</span> (dx != 0 &amp;&amp; dy != 0) {
-        <span style="color:var(--accent)">if</span> (jump(grid, nx, ny, dx, 0, gx, gy) ||
-            jump(grid, nx, ny, 0, dy, gx, gy))
-            <span style="color:var(--accent)">return</span> {{nx, ny}};
-    }
-    <span style="color:var(--accent)">return</span> jump(grid, nx, ny, dx, dy, gx, gy);
+<span style="color:var(--accent2)">bool</span> has_forced(<span style="color:var(--accent2)">int</span> r, <span style="color:var(--accent2)">int</span> c, <span style="color:var(--accent2)">int</span> dr, <span style="color:var(--accent2)">int</span> dc,
+                <span style="color:var(--accent2)">int</span> W, <span style="color:var(--accent2)">int</span> H, <span style="color:var(--accent2)">const</span> Walls&amp; walls) {
+    <span style="color:var(--accent)">auto</span> w = [&amp;](<span style="color:var(--accent2)">int</span> rr, <span style="color:var(--accent2)">int</span> cc){ <span style="color:var(--accent)">return</span> walkable(rr,cc,W,H,walls); };
+    <span style="color:var(--accent)">if</span> (dr != 0 &amp;&amp; dc == 0)      <span style="color:var(--green)">// вертикаль</span>
+        <span style="color:var(--accent)">return</span> (!w(r,c-1) &amp;&amp; w(r+dr,c-1)) || (!w(r,c+1) &amp;&amp; w(r+dr,c+1));
+    <span style="color:var(--accent)">if</span> (dc != 0 &amp;&amp; dr == 0)      <span style="color:var(--green)">// горизонталь</span>
+        <span style="color:var(--accent)">return</span> (!w(r-1,c) &amp;&amp; w(r-1,c+dc)) || (!w(r+1,c) &amp;&amp; w(r+1,c+dc));
+    <span style="color:var(--green)">// диагональ</span>
+    <span style="color:var(--accent)">return</span> (!w(r-dr,c) &amp;&amp; w(r-dr,c+dc)) || (!w(r,c-dc) &amp;&amp; w(r+dr,c-dc));
 }
-</pre>
+
+<span style="color:var(--accent2)">std::optional</span>&lt;Cell&gt; jump(
+    <span style="color:var(--accent2)">int</span> r, <span style="color:var(--accent2)">int</span> c, <span style="color:var(--accent2)">int</span> dr, <span style="color:var(--accent2)">int</span> dc,
+    Cell goal, <span style="color:var(--accent2)">int</span> W, <span style="color:var(--accent2)">int</span> H, <span style="color:var(--accent2)">const</span> Walls&amp; walls
+) {
+    <span style="color:var(--accent2)">int</span> nr = r + dr, nc = c + dc;
+    <span style="color:var(--accent)">if</span> (!walkable(nr, nc, W, H, walls)) <span style="color:var(--accent)">return</span> std::nullopt;
+    <span style="color:var(--accent)">if</span> (nr == goal.first &amp;&amp; nc == goal.second) <span style="color:var(--accent)">return</span> Cell{nr, nc};
+
+    <span style="color:var(--accent)">if</span> (has_forced(nr, nc, dr, dc, W, H, walls))
+        <span style="color:var(--accent)">return</span> Cell{nr, nc};
+
+    <span style="color:var(--accent)">if</span> (dr != 0 &amp;&amp; dc != 0) {     <span style="color:var(--green)">// диагональ: лучи</span>
+        <span style="color:var(--accent)">if</span> (jump(nr, nc, dr, 0, goal, W, H, walls) ||
+            jump(nr, nc, 0, dc, goal, W, H, walls))
+            <span style="color:var(--accent)">return</span> Cell{nr, nc};
+    }
+    <span style="color:var(--accent)">return</span> jump(nr, nc, dr, dc, goal, W, H, walls);
+}
+
+<span style="color:var(--accent2)">std::vector</span>&lt;Cell&gt; jps(
+    <span style="color:var(--accent2)">int</span> W, <span style="color:var(--accent2)">int</span> H, <span style="color:var(--accent2)">const</span> Walls&amp; walls, Cell start, Cell goal
+) {
+    <span style="color:var(--accent2)">std::unordered_map</span>&lt;Cell, <span style="color:var(--accent2)">double</span>, CellHash&gt; g, f;
+    <span style="color:var(--accent2)">std::unordered_map</span>&lt;Cell, Cell, CellHash&gt; parent;
+    <span style="color:var(--accent2)">std::unordered_set</span>&lt;Cell, CellHash&gt; open_set, closed;
+
+    g[start] = 0.0;
+    f[start] = heuristic(start, goal);
+    parent[start] = {-1, -1};
+    open_set.insert(start);
+
+    <span style="color:var(--accent)">using</span> QE = <span style="color:var(--accent2)">std::pair</span>&lt;<span style="color:var(--accent2)">double</span>, Cell&gt;;
+    <span style="color:var(--accent2)">std::priority_queue</span>&lt;QE, <span style="color:var(--accent2)">std::vector</span>&lt;QE&gt;, <span style="color:var(--accent2)">std::greater</span>&lt;QE&gt;&gt; pq;
+    pq.push({f[start], start});
+
+    <span style="color:var(--accent2)">constexpr int</span> DR8[] = {-1,1,0,0,-1,-1,1,1};
+    <span style="color:var(--accent2)">constexpr int</span> DC8[] = {0,0,-1,1,-1,1,-1,1};
+
+    <span style="color:var(--accent)">while</span> (!pq.empty()) {
+        <span style="color:var(--accent)">auto</span> [cf, cur] = pq.top(); pq.pop();
+        <span style="color:var(--accent)">if</span> (!open_set.count(cur)) <span style="color:var(--accent)">continue</span>;
+        open_set.erase(cur);
+
+        <span style="color:var(--accent)">if</span> (cur == goal) {
+            <span style="color:var(--accent2)">std::vector</span>&lt;Cell&gt; path;
+            Cell node = cur;
+            <span style="color:var(--accent)">while</span> (node.first != -1) {
+                path.push_back(node);
+                node = parent[node];
+            }
+            <span style="color:var(--accent2)">std::reverse</span>(path.begin(), path.end());
+            <span style="color:var(--accent)">return</span> path;
+        }
+        closed.insert(cur);
+
+        <span style="color:var(--green)">// Направления: старт → все 8, иначе → pruned</span>
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> i = 0; i &lt; 8; ++i) {
+            <span style="color:var(--accent2)">int</span> dr = DR8[i], dc = DC8[i];
+            <span style="color:var(--green)">// TODO: для не-стартовых узлов — pruned_dirs</span>
+
+            <span style="color:var(--accent)">auto</span> jp = jump(cur.first, cur.second, dr, dc,
+                           goal, W, H, walls);
+            <span style="color:var(--accent)">if</span> (!jp || closed.count(*jp)) <span style="color:var(--accent)">continue</span>;
+
+            <span style="color:var(--accent2)">double</span> tg = g[cur] + std::hypot(
+                jp->first - cur.first, jp->second - cur.second);
+            <span style="color:var(--accent)">if</span> (!g.count(*jp) || tg &lt; g[*jp]) {
+                g[*jp] = tg;
+                f[*jp] = tg + heuristic(*jp, goal);
+                parent[*jp] = cur;
+                pq.push({f[*jp], *jp});
+                open_set.insert(*jp);
+            }
+        }
+    }
+    <span style="color:var(--accent)">return</span> {};
+}</pre>
+        </div>
 
         <div class="card warn">
             <p><strong>ROS2-нюанс:</strong> JPS работает только с бинарной <code>OccupancyGrid</code> (свободно / занято). Для costmap с inflation (разная стоимость проезда) используй обычный A* или JPS+ с предобработкой.</p>

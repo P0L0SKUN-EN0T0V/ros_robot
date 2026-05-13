@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаг 2 — Глаза робота: одометрия и лидар</title>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .sidebar .section-title{color:var(--text2);font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .term{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:16px 20px;margin:12px 0}
+        .term strong{color:var(--accent2)}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .diagram{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;margin:20px 0;text-align:center}
+        .formula-block{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:20px 24px;margin:16px 0;text-align:center;font-size:1.05em;font-family:'Courier New',monospace}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html">Справочник (Quick Ref)</a>
+        <div class="sep"></div>
+        <div class="section-title">Пошаговый гайд</div>
+        <a href="step-0-what-is-ros2.html">0. Что такое ROS2</a>
+        <a href="step-1-tools-gazebo-rviz.html">1. Gazebo и RViz</a>
+        <a href="step-2-sensors.html" class="active">2. Одометрия и лидар</a>
+        <a href="step-3-mapping.html">3. Строим карту</a>
+        <a href="step-4-astar.html">4. Алгоритм A*</a>
+        <a href="step-5-pure-pursuit.html">5. Pure Pursuit</a>
+        <a href="step-6-assembly.html">6. Собираем проект</a>
+        <div class="sep"></div>
+        <div class="section-title">Алгоритмы</div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Шаг 2: Глаза робота</h1>
+        <p class="subtitle">Одометрия и лидар — откуда робот знает, где он и что вокруг</p>
+
+        <!-- ============ INTRO ============ -->
+        <h2>Два источника информации</h2>
+
+        <p>У нашего робота нет камеры (в модели burger). Зато есть два «органа чувств»:</p>
+
+        <table>
+            <tr><th>Сенсор</th><th>Что даёт</th><th>Топик</th><th>Аналогия</th></tr>
+            <tr>
+                <td><strong>Одометрия</strong></td>
+                <td>Позиция (x, y) и направление (yaw)</td>
+                <td><code>/odom</code></td>
+                <td>GPS + компас</td>
+            </tr>
+            <tr>
+                <td><strong>Лидар</strong></td>
+                <td>Расстояния до объектов вокруг</td>
+                <td><code>/scan</code></td>
+                <td>Ультразвуковой дальномер, только лазерный и на 360°</td>
+            </tr>
+        </table>
+
+        <!-- ============ ОДОМЕТРИЯ ============ -->
+        <h2>Одометрия (Odometry)</h2>
+
+        <div class="term">
+            <strong>Одометрия</strong> — данные о положении и ориентации робота в пространстве. Считается по оборотам колёс: если колесо повернулось на N оборотов, значит робот проехал X метров.
+        </div>
+
+        <div class="analogy">Представь, что ты идёшь с закрытыми глазами. Ты считаешь шаги и повороты: «10 шагов вперёд, поворот направо на 90°, ещё 5 шагов». Можешь примерно понять, где ты. Но со временем ошибка копится — и ты «уплываешь» от реальной позиции. Одометрия работает так же.</div>
+
+        <h3>Что приходит в /odom</h3>
+
+        <p>Сообщение типа <code>nav_msgs/msg/Odometry</code>. Нас интересуют три вещи:</p>
+
+        <div class="card">
+            <pre><span style="color:#94a3b8">// Позиция робота в метрах</span>
+pose.pose.position.x  →  <span style="color:#4ade80">1.523</span>   <span style="color:#94a3b8">// вперёд-назад</span>
+pose.pose.position.y  →  <span style="color:#4ade80">-0.847</span>  <span style="color:#94a3b8">// влево-вправо</span>
+
+<span style="color:#94a3b8">// Ориентация (кватернион) — куда «смотрит» робот</span>
+pose.pose.orientation.x  →  0.0
+pose.pose.orientation.y  →  0.0
+pose.pose.orientation.z  →  <span style="color:#fb923c">0.383</span>
+pose.pose.orientation.w  →  <span style="color:#fb923c">0.924</span></pre>
+        </div>
+
+        <h3>Что за кватернион?</h3>
+
+        <p>Ориентация приходит в виде <strong>кватерниона</strong> — четвёрки чисел (x, y, z, w). Это математический способ хранить вращение. Нам не нужно понимать математику — нужно только <strong>извлечь угол yaw</strong> (поворот вокруг вертикальной оси).</p>
+
+        <div class="formula-block">
+            yaw = atan2(2 * (w * z + x * y), 1 - 2 * (y² + z²))
+        </div>
+
+        <p>В ROS2 есть готовая функция, чтобы не считать руками:</p>
+
+        <pre><span style="color:#94a3b8">// C++ — извлекаем yaw из кватерниона</span>
+#include &lt;tf2/utils.h&gt;
+
+<span style="color:#94a3b8">// В callback одометрии:</span>
+void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
+    double x   = msg->pose.pose.position.x;
+    double y   = msg->pose.pose.position.y;
+
+    <span style="color:#94a3b8">// Извлекаем угол yaw (в радианах, от -π до +π)</span>
+    tf2::Quaternion q(
+        msg->pose.pose.orientation.x,
+        msg->pose.pose.orientation.y,
+        msg->pose.pose.orientation.z,
+        msg->pose.pose.orientation.w
+    );
+    double yaw = tf2::getYaw(q);
+
+    <span style="color:#94a3b8">// Теперь мы знаем: робот в точке (x, y), смотрит под углом yaw</span>
+}</pre>
+
+        <div class="card highlight">
+            <p><strong>yaw = 0</strong> → робот смотрит вправо (по оси X).<br>
+            <strong>yaw = π/2 ≈ 1.57</strong> → смотрит вверх (по оси Y).<br>
+            <strong>yaw = π ≈ 3.14</strong> → смотрит влево.<br>
+            <strong>yaw = -π/2 ≈ -1.57</strong> → смотрит вниз.</p>
+        </div>
+
+        <!-- ============ ЛИДАР ============ -->
+        <h2>Лидар (LiDAR)</h2>
+
+        <div class="term">
+            <strong>Лидар</strong> (Light Detection and Ranging) — лазерный дальномер, который крутится на 360° и измеряет расстояние до ближайших объектов в каждом направлении. На TurtleBot3 burger — это плоский 2D-лидар (один горизонтальный слой лучей).
+        </div>
+
+        <div class="analogy">Представь, что ты стоишь в тёмной комнате с фонариком. Ты медленно поворачиваешься на 360° и каждый градус записываешь: «на 0° — стена в 2 метрах, на 1° — стена в 2.1 м, на 90° — дверной проём, ничего не видно (inf)». Вот это и делает лидар, только 10 раз в секунду.</div>
+
+        <h3>Что приходит в /scan</h3>
+
+        <div class="card">
+            <pre>sensor_msgs/msg/LaserScan:
+  angle_min:       <span style="color:#4ade80">-3.14159</span>   <span style="color:#94a3b8">← начало: -180° (сзади слева)</span>
+  angle_max:       <span style="color:#4ade80"> 3.14159</span>   <span style="color:#94a3b8">← конец:  +180° (сзади справа)</span>
+  angle_increment: <span style="color:#4ade80"> 0.01745</span>   <span style="color:#94a3b8">← шаг: ~1° между лучами</span>
+  range_min:       <span style="color:#fb923c"> 0.12</span>      <span style="color:#94a3b8">← ближе этого лидар не видит</span>
+  range_max:       <span style="color:#fb923c"> 3.50</span>      <span style="color:#94a3b8">← дальше этого не видит</span>
+  ranges:          <span style="color:#6c9eff">[0.50, 0.52, 0.51, ..., inf, ..., 1.23]</span>
+                   <span style="color:#94a3b8">↑ массив из ~360 чисел</span></pre>
+        </div>
+
+        <h3>Как читать массив ranges</h3>
+
+        <p>Массив <code>ranges</code> — главная ценность. Каждый элемент — расстояние в метрах. Индекс определяет направление:</p>
+
+        <div class="formula-block">
+            angle_i = angle_min + i * angle_increment
+        </div>
+
+        <p>Пример: если <code>angle_min = -π</code> и <code>angle_increment = 0.01745</code> (~1°), то:</p>
+
+        <table>
+            <tr><th>Индекс i</th><th>Угол</th><th>Направление</th><th>ranges[i]</th></tr>
+            <tr><td>0</td><td>-180°</td><td>Прямо сзади</td><td>0.50 м</td></tr>
+            <tr><td>90</td><td>-90°</td><td>Справа</td><td>1.20 м</td></tr>
+            <tr><td>180</td><td>0°</td><td>Прямо вперёд</td><td>inf (пусто)</td></tr>
+            <tr><td>270</td><td>+90°</td><td>Слева</td><td>2.30 м</td></tr>
+            <tr><td>359</td><td>+179°</td><td>Почти сзади</td><td>0.48 м</td></tr>
+        </table>
+
+        <div class="card warn">
+            <p><strong>Внимание:</strong> значения <code>inf</code> (бесконечность) и <code>nan</code> — это нормально. <code>inf</code> = луч не попал ни в какой объект в пределах <code>range_max</code>. <code>nan</code> = ошибка измерения. Оба нужно фильтровать в коде.</p>
+        </div>
+
+        <!-- ============ SVG DIAGRAM ============ -->
+        <h3>Визуально: как лидар «видит» комнату</h3>
+
+        <div class="diagram">
+            <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',sans-serif;max-width:400px">
+                <!-- Room walls -->
+                <rect x="50" y="50" width="400" height="400" rx="4" fill="none" stroke="#2a2d3e" stroke-width="2"/>
+
+                <!-- Robot -->
+                <circle cx="250" cy="300" r="12" fill="#6c9eff" stroke="#e2e8f0" stroke-width="2"/>
+                <line x1="250" y1="300" x2="262" y2="288" stroke="#e2e8f0" stroke-width="2"/>
+                <text x="250" y="330" text-anchor="middle" fill="#6c9eff" font-size="11" font-weight="600">робот</text>
+
+                <!-- Lidar rays -->
+                <!-- Forward (0°) - long, open space -->
+                <line x1="250" y1="300" x2="250" y2="55" stroke="#4ade80" stroke-width="1" opacity=".3"/>
+                <circle cx="250" cy="55" r="3" fill="#4ade80"/>
+                <text x="260" y="72" fill="#4ade80" font-size="9">2.45 м</text>
+
+                <!-- Right wall (~-50°) -->
+                <line x1="250" y1="300" x2="445" y2="200" stroke="#4ade80" stroke-width="1" opacity=".3"/>
+                <circle cx="445" cy="200" r="3" fill="#4ade80"/>
+                <text x="410" y="190" fill="#4ade80" font-size="9">2.5 м</text>
+
+                <!-- Right closer (~-80°) -->
+                <line x1="250" y1="300" x2="445" y2="290" stroke="#4ade80" stroke-width="1" opacity=".3"/>
+                <circle cx="445" cy="290" r="3" fill="#4ade80"/>
+
+                <!-- Left wall (~50°) -->
+                <line x1="250" y1="300" x2="55" y2="200" stroke="#4ade80" stroke-width="1" opacity=".3"/>
+                <circle cx="55" cy="200" r="3" fill="#4ade80"/>
+                <text x="65" y="190" fill="#4ade80" font-size="9">2.5 м</text>
+
+                <!-- Back wall -->
+                <line x1="250" y1="300" x2="250" y2="445" stroke="#4ade80" stroke-width="1" opacity=".3"/>
+                <circle cx="250" cy="445" r="3" fill="#4ade80"/>
+                <text x="260" y="440" fill="#4ade80" font-size="9">1.45 м</text>
+
+                <!-- Obstacle box -->
+                <rect x="180" y="130" width="50" height="50" rx="4" fill="rgba(248,113,113,.2)" stroke="#f87171" stroke-width="2"/>
+                <text x="205" y="155" text-anchor="middle" fill="#f87171" font-size="10">стена</text>
+
+                <!-- Ray hitting obstacle -->
+                <line x1="250" y1="300" x2="220" y2="180" stroke="#fb923c" stroke-width="1.5" opacity=".6"/>
+                <circle cx="220" cy="180" r="3" fill="#fb923c"/>
+                <text x="230" y="175" fill="#fb923c" font-size="9">1.2 м</text>
+
+                <!-- Angle labels -->
+                <text x="250" y="46" text-anchor="middle" fill="#94a3b8" font-size="9">0° (вперёд)</text>
+                <text x="465" y="300" fill="#94a3b8" font-size="9">-90° (←)</text>
+                <text x="25" y="300" fill="#94a3b8" font-size="9" text-anchor="end">+90°</text>
+                <text x="250" y="470" text-anchor="middle" fill="#94a3b8" font-size="9">±180° (назад)</text>
+
+                <!-- Legend -->
+                <circle cx="70" cy="485" r="4" fill="#4ade80"/>
+                <text x="80" y="489" fill="#94a3b8" font-size="10">= точка, где луч попал в стену</text>
+            </svg>
+        </div>
+
+        <!-- ============ КООРДИНАТЫ ============ -->
+        <h2>Из луча лидара в координаты на карте</h2>
+
+        <p>Лидар даёт расстояние и угол. Но для карты нужны координаты (x, y) в мировой системе. Пересчёт:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">
+                <strong>Угол луча в мировой СК</strong>
+                <div class="formula-block">world_angle = yaw + angle_min + i * angle_increment</div>
+                <p><code>yaw</code> — куда смотрит робот (из одометрии), остальное — из LaserScan.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">
+                <strong>Координаты точки попадания</strong>
+                <div class="formula-block">
+                    hit_x = robot_x + ranges[i] * cos(world_angle)<br>
+                    hit_y = robot_y + ranges[i] * sin(world_angle)
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">
+                <strong>Из метров в клетки карты</strong>
+                <div class="formula-block">
+                    cell_x = (int)((hit_x - map_origin_x) / resolution)<br>
+                    cell_y = (int)((hit_y - map_origin_y) / resolution)
+                </div>
+                <p>Где <code>resolution</code> — размер клетки в метрах (обычно 0.05 = 5 см).</p>
+            </div>
+        </div>
+
+        <p>Этот пересчёт — основа функции <code>updateMapWithLaser</code>, которую мы напишем в следующем шаге.</p>
+
+        <!-- ============ КОД CALLBACK ============ -->
+        <h2>Код: подписки на /scan и /odom</h2>
+
+        <p>Вот как в нашей ноде будут выглядеть callback-функции:</p>
+
+        <pre><span style="color:#94a3b8">// Храним последнюю позицию робота</span>
+double robot_x_ = 0.0, robot_y_ = 0.0, robot_yaw_ = 0.0;
+
+<span style="color:#94a3b8">// Callback одометрии — вызывается ~30 раз/сек</span>
+void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
+    robot_x_ = msg->pose.pose.position.x;
+    robot_y_ = msg->pose.pose.position.y;
+
+    tf2::Quaternion q(
+        msg->pose.pose.orientation.x,
+        msg->pose.pose.orientation.y,
+        msg->pose.pose.orientation.z,
+        msg->pose.pose.orientation.w
+    );
+    robot_yaw_ = tf2::getYaw(q);
+}
+
+<span style="color:#94a3b8">// Callback лидара — вызывается ~10 раз/сек</span>
+void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    for (size_t i = 0; i &lt; msg->ranges.size(); i++) {
+        float r = msg->ranges[i];
+
+        <span style="color:#94a3b8">// Фильтруем невалидные значения</span>
+        if (std::isinf(r) || std::isnan(r) || r &lt; msg->range_min || r > msg->range_max) {
+            continue;
+        }
+
+        <span style="color:#94a3b8">// Угол этого луча в мировой СК</span>
+        double angle = robot_yaw_ + msg->angle_min + i * msg->angle_increment;
+
+        <span style="color:#94a3b8">// Координаты точки попадания (в метрах)</span>
+        double hit_x = robot_x_ + r * cos(angle);
+        double hit_y = robot_y_ + r * sin(angle);
+
+        <span style="color:#94a3b8">// Дальше — обновляем карту (следующий шаг)</span>
+        <span style="color:#94a3b8">// updateMapWithLaser(robot_x_, robot_y_, hit_x, hit_y);</span>
+    }
+}</pre>
+
+        <div class="card success">
+            <p><strong>Что происходит:</strong> Gazebo публикует /scan и /odom. Наша нода подписана на оба. Каждый раз, когда приходит новое сообщение, вызывается соответствующий callback. Мы сохраняем позицию робота и обрабатываем лучи лидара. Всё асинхронно — ROS2 сам вызывает наши функции в нужный момент.</p>
+        </div>
+
+        <!-- ============ ЧАСТОТА ============ -->
+        <h2>Как часто приходят данные</h2>
+
+        <table>
+            <tr><th>Топик</th><th>Частота</th><th>Примечание</th></tr>
+            <tr><td><code>/odom</code></td><td>~30 Hz</td><td>Обновляется часто — позиция почти в реальном времени</td></tr>
+            <tr><td><code>/scan</code></td><td>~5-10 Hz</td><td>Лидар крутится медленнее, но этого достаточно</td></tr>
+            <tr><td><code>/goal_pose</code></td><td>По клику</td><td>Приходит только когда мы нажмём «2D Goal Pose» в RViz</td></tr>
+        </table>
+
+        <p>Проверить частоту в реальном времени:</p>
+        <pre>ros2 topic hz /scan      <span style="color:#94a3b8"># покажет ~5-10 Hz</span>
+ros2 topic hz /odom      <span style="color:#94a3b8"># покажет ~30 Hz</span></pre>
+
+        <!-- ============ ИТОГИ ============ -->
+        <h2>Итоги шага</h2>
+
+        <div class="card highlight">
+            <p>Теперь ты понимаешь:</p>
+            <ul>
+                <li><strong>Одометрия</strong> даёт позицию (x, y) и направление (yaw) робота.</li>
+                <li><strong>Лидар</strong> даёт массив расстояний — 360° вокруг робота.</li>
+                <li>Из угла луча + расстояния можно вычислить точные координаты препятствия на карте.</li>
+                <li>Данные приходят автоматически через callback-функции — мы только подписываемся.</li>
+            </ul>
+            <p>В следующем шаге используем эти данные, чтобы <strong>построить карту на ходу</strong> — клетка за клеткой, луч за лучом.</p>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <a href="step-1-tools-gazebo-rviz.html">← Шаг 1: Gazebo и RViz</a>
+            <a href="step-3-mapping.html">Шаг 3: Строим карту →</a>
+        </div>
+    </div>
+</body>
+</html>

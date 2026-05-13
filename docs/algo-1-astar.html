@@ -634,7 +634,7 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
                     <li><strong>Оптимальность</strong> — при допустимой эвристике всегда находит кратчайший путь. Математически доказано.</li>
                     <li><strong>Полнота</strong> — если путь существует, A* его найдёт. Не зависнет.</li>
                     <li><strong>Гибкость</strong> — работает на любом графе: сетки, дорожные карты, навмеши в играх.</li>
-                    <li><strong>Простота</strong> — весь алгоритм помещается в 50 строк C++.</li>
+                    <li><strong>Простота</strong> — весь алгоритм помещается в ~60 строк C++.</li>
                     <li><strong>Проверен временем</strong> — с 1968 года используется повсеместно. Тонна документации и примеров.</li>
                 </ul>
             </div>
@@ -665,38 +665,99 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
             </ol>
         </div>
 
-        <h3>Ключевые фрагменты C++</h3>
-        <div class="card">
-<pre style="margin:0"><span style="color:var(--accent2)">struct</span> <span style="color:var(--accent2)">Cell</span> {
-    <span style="color:var(--accent2)">int</span> x, y;
-    <span style="color:var(--accent2)">double</span> g = 0, h = 0, f = 0;
-    <span style="color:var(--accent2)">Cell</span>* parent = <span style="color:var(--accent)">nullptr</span>;
 
-    <span style="color:var(--green)">// Для приоритетной очереди: меньший f — выше приоритет</span>
-    <span style="color:var(--accent2)">bool</span> operator>(<span style="color:var(--accent2)">const</span> <span style="color:var(--accent2)">Cell</span>& o) <span style="color:var(--accent2)">const</span> { <span style="color:var(--accent)">return</span> f > o.f; }
+        <h3>Реализация на C++ (ROS2)</h3>
+        <div class="card">
+<pre style="margin:0"><span style="color:var(--accent2)">#include</span> &lt;queue&gt;
+<span style="color:var(--accent2)">#include</span> &lt;vector&gt;
+<span style="color:var(--accent2)">#include</span> &lt;unordered_map&gt;
+<span style="color:var(--accent2)">#include</span> &lt;cmath&gt;
+<span style="color:var(--accent2)">#include</span> &lt;algorithm&gt;
+
+<span style="color:var(--accent)">using</span> <span style="color:var(--accent2)">Cell</span> = <span style="color:var(--accent2)">std::pair</span>&lt;<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>&gt;;
+
+<span style="color:var(--accent)">struct</span> <span style="color:var(--accent2)">CellHash</span> {
+    <span style="color:var(--accent2)">size_t</span> <span style="color:var(--accent)">operator</span>()(<span style="color:var(--accent2)">const</span> Cell&amp; c) <span style="color:var(--accent2)">const</span> {
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">std::hash</span>&lt;<span style="color:var(--accent2)">int</span>&gt;()(c.first) ^ (<span style="color:var(--accent2)">std::hash</span>&lt;<span style="color:var(--accent2)">int</span>&gt;()(c.second) &lt;&lt; 16);
+    }
 };
 
-<span style="color:var(--accent2)">double</span> heuristic(<span style="color:var(--accent2)">int</span> x1, <span style="color:var(--accent2)">int</span> y1, <span style="color:var(--accent2)">int</span> x2, <span style="color:var(--accent2)">int</span> y2) {
+<span style="color:var(--accent2)">constexpr double</span> SQRT2 = 1.41421356237;
+
+<span style="color:var(--accent2)">double</span> heuristic(<span style="color:var(--accent2)">const</span> Cell&amp; a, <span style="color:var(--accent2)">const</span> Cell&amp; b) {
     <span style="color:var(--green)">// Октильное расстояние — оптимально для 8-связной сетки</span>
-    <span style="color:var(--accent2)">double</span> dx = <span style="color:var(--accent2)">std::abs</span>(x1 - x2), dy = <span style="color:var(--accent2)">std::abs</span>(y1 - y2);
-    <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">std::max</span>(dx, dy) + (<span style="color:var(--accent2)">std::sqrt</span>(2.0) - 1.0) * <span style="color:var(--accent2)">std::min</span>(dx, dy);
+    <span style="color:var(--accent2)">double</span> dx = <span style="color:var(--accent2)">std::abs</span>(a.first - b.first);
+    <span style="color:var(--accent2)">double</span> dy = <span style="color:var(--accent2)">std::abs</span>(a.second - b.second);
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">std::max</span>(dx, dy) + (SQRT2 - 1.0) * <span style="color:var(--accent2)">std::min</span>(dx, dy);
 }
 
-<span style="color:var(--green)">// В ноде ROS2:</span>
-<span style="color:var(--accent2)">class</span> AStarPlanner : <span style="color:var(--accent)">public</span> <span style="color:var(--accent2)">rclcpp::Node</span> {
-    <span style="color:var(--accent2)">rclcpp::Subscription</span>&lt;<span style="color:var(--accent2)">sensor_msgs::msg</span>::LaserScan&gt;::SharedPtr scan_sub_;
-    <span style="color:var(--accent2)">rclcpp::Subscription</span>&lt;<span style="color:var(--accent2)">nav_msgs::msg</span>::Odometry&gt;::SharedPtr odom_sub_;
-    <span style="color:var(--accent2)">rclcpp::Publisher</span>&lt;<span style="color:var(--accent2)">geometry_msgs::msg</span>::Twist&gt;::SharedPtr vel_pub_;
+<span style="color:var(--accent2)">std::vector</span>&lt;Cell&gt; astar(
+    <span style="color:var(--accent2)">int</span> W, <span style="color:var(--accent2)">int</span> H,
+    <span style="color:var(--accent2)">const std::unordered_set</span>&lt;Cell, CellHash&gt;&amp; walls,
+    Cell start, Cell goal
+) {
+    <span style="color:var(--accent2)">std::unordered_map</span>&lt;Cell, <span style="color:var(--accent2)">double</span>, CellHash&gt; g, f;
+    <span style="color:var(--accent2)">std::unordered_map</span>&lt;Cell, Cell, CellHash&gt; parent;
+    <span style="color:var(--accent2)">std::unordered_set</span>&lt;Cell, CellHash&gt; open_set, closed;
 
-    <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">int</span>&gt;&gt; grid_;  <span style="color:var(--orange)">// 0=free, 1=wall</span>
+    g[start] = 0.0;
+    f[start] = heuristic(start, goal);
+    parent[start] = {-1, -1};  <span style="color:var(--green)">// sentinel</span>
+    open_set.insert(start);
 
-    <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">Cell</span>&gt; find_path(<span style="color:var(--accent2)">Cell</span> start, <span style="color:var(--accent2)">Cell</span> goal) {
-        <span style="color:var(--accent2)">std::priority_queue</span>&lt;<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">std::vector</span>&lt;<span style="color:var(--accent2)">Cell</span>&gt;,
-                            <span style="color:var(--accent2)">std::greater</span>&lt;<span style="color:var(--accent2)">Cell</span>&gt;&gt; open;
-        <span style="color:var(--accent2)">std::unordered_set</span>&lt;<span style="color:var(--accent2)">int</span>&gt; closed;
-        <span style="color:var(--green)">// ... реализация A* ...</span>
+    <span style="color:var(--green)">// (f, cell) — min-heap по f</span>
+    <span style="color:var(--accent)">using</span> <span style="color:var(--accent2)">QEntry</span> = <span style="color:var(--accent2)">std::pair</span>&lt;<span style="color:var(--accent2)">double</span>, Cell&gt;;
+    <span style="color:var(--accent2)">std::priority_queue</span>&lt;QEntry, <span style="color:var(--accent2)">std::vector</span>&lt;QEntry&gt;,
+                        <span style="color:var(--accent2)">std::greater</span>&lt;QEntry&gt;&gt; pq;
+    pq.push({f[start], start});
+
+    <span style="color:var(--green)">// 8 направлений: dr, dc, cost</span>
+    <span style="color:var(--accent2)">constexpr int</span> DR[] = {0,0,1,-1,1,1,-1,-1};
+    <span style="color:var(--accent2)">constexpr int</span> DC[] = {1,-1,0,0,1,-1,1,-1};
+
+    <span style="color:var(--accent)">while</span> (!pq.empty()) {
+        <span style="color:var(--accent)">auto</span> [cf, cur] = pq.top(); pq.pop();
+
+        <span style="color:var(--accent)">if</span> (!open_set.count(cur)) <span style="color:var(--accent)">continue</span>;  <span style="color:var(--green)">// stale</span>
+        open_set.erase(cur);
+
+        <span style="color:var(--accent)">if</span> (cur == goal) {                    <span style="color:var(--orange)">// Цель!</span>
+            <span style="color:var(--accent2)">std::vector</span>&lt;Cell&gt; path;
+            Cell node = cur;
+            <span style="color:var(--accent)">while</span> (node.first != -1) {
+                path.push_back(node);
+                node = parent[node];
+            }
+            <span style="color:var(--accent2)">std::reverse</span>(path.begin(), path.end());
+            <span style="color:var(--accent)">return</span> path;
+        }
+
+        closed.insert(cur);
+
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> i = 0; i &lt; 8; ++i) {
+            Cell nb = {cur.first + DR[i], cur.second + DC[i]};
+            <span style="color:var(--accent)">if</span> (nb.first &lt; 0 || nb.first &gt;= H ||
+                nb.second &lt; 0 || nb.second &gt;= W) <span style="color:var(--accent)">continue</span>;
+            <span style="color:var(--accent)">if</span> (walls.count(nb) || closed.count(nb)) <span style="color:var(--accent)">continue</span>;
+
+            <span style="color:var(--accent2)">double</span> cost = (DR[i] != 0 &amp;&amp; DC[i] != 0) ? SQRT2 : 1.0;
+            <span style="color:var(--accent2)">double</span> tg = g[cur] + cost;
+
+            <span style="color:var(--accent)">if</span> (!g.count(nb) || tg &lt; g[nb]) {
+                g[nb] = tg;
+                f[nb] = tg + heuristic(nb, goal);
+                parent[nb] = cur;
+                pq.push({f[nb], nb});
+                open_set.insert(nb);
+            }
+        }
     }
-};</pre>
+    <span style="color:var(--accent)">return</span> {};  <span style="color:var(--orange)">// путь не найден</span>
+}</pre>
+        </div>
+
+        <div class="card highlight">
+            <p><strong>В ROS2 проекте</strong> эта функция вызывается из ноды-планировщика. Нода подписывается на <code>/scan</code> (лидар) и <code>/odom</code> (позиция), строит Occupancy Grid, вызывает <code>astar()</code> и публикует маршрут. Поверх работает локальный контроллер (DWA), который генерирует <code>/cmd_vel</code>.</p>
         </div>
 
         <!-- ============ СРАВНЕНИЕ ============ -->

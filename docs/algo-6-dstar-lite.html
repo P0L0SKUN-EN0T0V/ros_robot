@@ -429,46 +429,153 @@
         })();
         </script>
 
-        <!-- ============ ПСЕВДОКОД ============ -->
-        <h2>Псевдокод</h2>
+        <!-- ============ PYTHON ============ -->
+        <h2>Реализация на Python</h2>
+        <p>Полная реализация — именно этот код генерировал данные для анимации выше.</p>
 
-<pre><span style="color:var(--green)">// Инициализация</span>
-for all s: g(s) = rhs(s) = ∞
-rhs(goal) = 0
-U.Insert(goal, CalcKey(goal))
-k_m = 0; s_robot = s_start
+<pre><span style="color:var(--accent)">import</span> math
+<span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
 
-<span style="color:var(--green)">// CalcKey(s)</span>
-return [min(g(s), rhs(s)) + h(s_robot, s) + k_m,
-        min(g(s), rhs(s))]
+<span style="color:var(--accent2)">INF</span> = <span style="color:var(--accent)">float</span>(<span style="color:var(--green)">'inf'</span>)
+<span style="color:var(--accent2)">SQRT2</span> = math.sqrt(2)
 
-<span style="color:var(--green)">// h — octile distance</span>
-h(a,b) = max(|dx|,|dy|) + (√2-1)·min(|dx|,|dy|)
+<span style="color:var(--accent)">class</span> <span style="color:var(--accent2)">DStarLite</span>:
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">__init__</span>(self, W, H, walls, start, goal):
+        self.W, self.H = W, H
+        self.walls = <span style="color:var(--accent)">set</span>(walls)
+        self.goal = goal
+        self.robot = start
+        self.km = 0
+        self.g = {}
+        self.rhs = {}
+        self.U = []           <span style="color:var(--green)"># min-heap: (key, cell)</span>
+        self.U_set = {}       <span style="color:var(--green)"># cell -> key (lazy deletion)</span>
 
-<span style="color:var(--green)">// ComputeShortestPath()</span>
-while U.TopKey() &lt; CalcKey(s_robot) OR
-      rhs(s_robot) ≠ g(s_robot):
-    u = U.Pop()
-    if g(u) &gt; rhs(u):             <span style="color:var(--orange)">// overconsistent</span>
-        g(u) = rhs(u)
-        for all s ∈ neighbors(u):
-            UpdateVertex(s)
-    else:                          <span style="color:var(--orange)">// underconsistent</span>
-        g(u) = ∞
-        UpdateVertex(u)
-        for all s ∈ neighbors(u):
-            UpdateVertex(s)
+        <span style="color:var(--green)"># Инициализация: всё ∞, кроме rhs(goal)=0</span>
+        <span style="color:var(--accent)">for</span> y <span style="color:var(--accent)">in</span> <span style="color:var(--accent)">range</span>(H):
+            <span style="color:var(--accent)">for</span> x <span style="color:var(--accent)">in</span> <span style="color:var(--accent)">range</span>(W):
+                self.g[(x, y)] = INF
+                self.rhs[(x, y)] = INF
+        self.rhs[goal] = 0
+        self._insert(goal, self._calc_key(goal))
 
-<span style="color:var(--green)">// Главный цикл</span>
-ComputeShortestPath()          <span style="color:var(--orange)">// первый поиск</span>
-while s_robot ≠ goal:
-    s_robot = argmin_{s'∈neighbors} g(s')+c(s_robot,s')
-    <span style="color:var(--orange)">// робот переместился</span>
-    if обнаружены изменения карты:
-        k_m += h(s_old, s_robot)
-        for each changed cell:
-            UpdateVertex(affected neighbors)
-        ComputeShortestPath()  <span style="color:var(--orange)">// инкрементальный!</span></pre>
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_h</span>(self, a, b):
+        <span style="color:var(--green)">"""Octile distance — эвристика для 8 направлений"""</span>
+        dx = <span style="color:var(--accent)">abs</span>(a[0] - b[0])
+        dy = <span style="color:var(--accent)">abs</span>(a[1] - b[1])
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">max</span>(dx, dy) + (SQRT2 - 1) * <span style="color:var(--accent)">min</span>(dx, dy)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_calc_key</span>(self, s):
+        <span style="color:var(--green)">"""key(s) = [min(g,rhs) + h(robot,s) + km, min(g,rhs)]"""</span>
+        m = <span style="color:var(--accent)">min</span>(self.g[s], self.rhs[s])
+        <span style="color:var(--accent)">return</span> (m + self._h(self.robot, s) + self.km, m)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_neighbors</span>(self, s):
+        <span style="color:var(--green)">"""8 направлений: кардинальные (cost=1) + диагональные (cost=sqrt2)"""</span>
+        dirs = [(1,0),(-1,0),(0,1),(0,-1),(1,1),(1,-1),(-1,1),(-1,-1)]
+        result = []
+        <span style="color:var(--accent)">for</span> dx, dy <span style="color:var(--accent)">in</span> dirs:
+            n = (s[0] + dx, s[1] + dy)
+            <span style="color:var(--accent)">if</span> 0 &lt;= n[0] &lt; self.W <span style="color:var(--accent)">and</span> 0 &lt;= n[1] &lt; self.H <span style="color:var(--accent)">and</span> n <span style="color:var(--accent)">not in</span> self.walls:
+                c = SQRT2 <span style="color:var(--accent)">if</span> (dx != 0 <span style="color:var(--accent)">and</span> dy != 0) <span style="color:var(--accent)">else</span> 1.0
+                result.append((n, c))
+        <span style="color:var(--accent)">return</span> result
+
+    <span style="color:var(--green)"># --- Priority Queue с lazy deletion ---</span>
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_insert</span>(self, s, key):
+        self.U_set[s] = key
+        heappush(self.U, (key, s))
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_remove</span>(self, s):
+        <span style="color:var(--accent)">if</span> s <span style="color:var(--accent)">in</span> self.U_set:
+            <span style="color:var(--accent)">del</span> self.U_set[s]
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_top_key</span>(self):
+        <span style="color:var(--accent)">while</span> self.U:
+            key, s = self.U[0]
+            <span style="color:var(--accent)">if</span> s <span style="color:var(--accent)">in</span> self.U_set <span style="color:var(--accent)">and</span> self.U_set[s] == key:
+                <span style="color:var(--accent)">return</span> key
+            heappop(self.U)         <span style="color:var(--green)"># stale entry</span>
+        <span style="color:var(--accent)">return</span> (INF, INF)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_pop</span>(self):
+        <span style="color:var(--accent)">while</span> self.U:
+            key, s = heappop(self.U)
+            <span style="color:var(--accent)">if</span> s <span style="color:var(--accent)">in</span> self.U_set <span style="color:var(--accent)">and</span> self.U_set[s] == key:
+                <span style="color:var(--accent)">del</span> self.U_set[s]
+                <span style="color:var(--accent)">return</span> s
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">None</span>
+
+    <span style="color:var(--green)"># --- Ядро алгоритма ---</span>
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">update_vertex</span>(self, u):
+        <span style="color:var(--green)">"""Пересчитать rhs(u) по соседям, обновить очередь"""</span>
+        <span style="color:var(--accent)">if</span> u != self.goal:
+            self.rhs[u] = <span style="color:var(--accent)">min</span>(
+                (self.g[nb] + c <span style="color:var(--accent)">for</span> nb, c <span style="color:var(--accent)">in</span> self._neighbors(u)),
+                default=INF
+            )
+        self._remove(u)
+        <span style="color:var(--accent)">if</span> self.g[u] != self.rhs[u]:
+            self._insert(u, self._calc_key(u))
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">compute_shortest_path</span>(self):
+        <span style="color:var(--green)">"""Расширять узлы пока robot не станет consistent"""</span>
+        <span style="color:var(--accent)">while</span> <span style="color:var(--accent)">True</span>:
+            tk = self._top_key()
+            rk = self._calc_key(self.robot)
+            <span style="color:var(--accent)">if not</span> (tk &lt; rk <span style="color:var(--accent)">or</span> self.rhs[self.robot] != self.g[self.robot]):
+                <span style="color:var(--accent)">break</span>
+            u = self._pop()
+            <span style="color:var(--accent)">if</span> u <span style="color:var(--accent)">is None</span>: <span style="color:var(--accent)">break</span>
+
+            <span style="color:var(--accent)">if</span> self.g[u] &gt; self.rhs[u]:        <span style="color:var(--orange)"># overconsistent</span>
+                self.g[u] = self.rhs[u]
+                <span style="color:var(--accent)">for</span> s, c <span style="color:var(--accent)">in</span> self._neighbors(u):
+                    self.update_vertex(s)
+            <span style="color:var(--accent)">else</span>:                              <span style="color:var(--orange)"># underconsistent</span>
+                self.g[u] = INF
+                self.update_vertex(u)
+                <span style="color:var(--accent)">for</span> s, c <span style="color:var(--accent)">in</span> self._neighbors(u):
+                    self.update_vertex(s)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">get_path</span>(self):
+        <span style="color:var(--green)">"""Извлечь путь: от робота к цели по min g(s\')+c"""</span>
+        path = [self.robot]
+        s = self.robot
+        <span style="color:var(--accent)">while</span> s != self.goal:
+            best, best_cost = <span style="color:var(--accent)">None</span>, INF
+            <span style="color:var(--accent)">for</span> nb, c <span style="color:var(--accent)">in</span> self._neighbors(s):
+                <span style="color:var(--accent)">if</span> self.g[nb] + c &lt; best_cost:
+                    best_cost = self.g[nb] + c
+                    best = nb
+            <span style="color:var(--accent)">if</span> best <span style="color:var(--accent)">is None</span>: <span style="color:var(--accent)">break</span>
+            path.append(best)
+            s = best
+        <span style="color:var(--accent)">return</span> path
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">move_robot</span>(self):
+        <span style="color:var(--green)">"""Робот делает шаг к цели"""</span>
+        nxt = self.get_path()[1]
+        self.km += self._h(self.robot, nxt)
+        self.robot = nxt
+        <span style="color:var(--accent)">return</span> nxt
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">set_wall</span>(self, x, y):
+        <span style="color:var(--green)">"""Обнаружена новая стена — обновить и пересчитать"""</span>
+        self.walls.add((x, y))
+        <span style="color:var(--accent)">for</span> nb, c <span style="color:var(--accent)">in</span> self._neighbors((x, y)):
+            self.update_vertex(nb)
+        self.compute_shortest_path()
+
+
+<span style="color:var(--green)"># === Пример использования (та же сетка 5x5) ===</span>
+ds = DStarLite(5, 5, walls=[(2,1),(2,2)], start=(0,0), goal=(4,4))
+ds.compute_shortest_path()        <span style="color:var(--green)"># Фаза 1: поиск от G к S</span>
+path = ds.get_path()              <span style="color:var(--green)"># [(0,0),(0,1),(1,2),(2,3),(3,3),(4,4)]</span>
+
+ds.move_robot()                   <span style="color:var(--green)"># Робот -> (0,1)</span>
+ds.set_wall(2, 3)                 <span style="color:var(--green)"># Сенсоры: стена на (2,3)!</span>
+new_path = ds.get_path()          <span style="color:var(--green)"># [(0,1),(0,2),(1,3),(2,4),(3,4),(4,4)]</span></pre>
 
         <div class="card highlight">
             <p><strong>Ключевое отличие от LPA*:</strong> $k_m$ накапливается при каждом перемещении робота. Это позволяет не пересчитывать ключи всех узлов в очереди — вместо этого поправка добавляется в формулу ключа.</p>

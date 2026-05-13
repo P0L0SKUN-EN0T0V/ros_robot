@@ -499,62 +499,104 @@
         })();
         </script>
 
-        <!-- ============ ПСЕВДОКОД ============ -->
-        <h2>Псевдокод</h2>
+        <!-- ============ PYTHON ============ -->
+        <h2>Реализация на Python</h2>
+        <p>Полная реализация — именно этот код генерировал данные для анимации выше.</p>
 
-        <p>Вот алгоритм целиком — можно почти дословно переписать на C++:</p>
+<pre><span style="color:var(--accent)">import</span> math
+<span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
 
-        <div class="card">
-<pre style="margin:0"><span style="color:var(--accent)">function</span> A_Star(start, goal, grid):
-    <span style="color:var(--green)">// Приоритетная очередь — наверху клетка с min f</span>
-    open_set  = <span style="color:var(--accent)">PriorityQueue</span>()
-    closed_set = <span style="color:var(--accent)">Set</span>()
-
-    start.g = 0
-    start.h = heuristic(start, goal)
-    start.f = start.g + start.h
-    start.parent = <span style="color:var(--accent)">null</span>
-    open_set.<span style="color:var(--accent)">push</span>(start)
-
-    <span style="color:var(--accent)">while</span> open_set <span style="color:var(--accent)">is</span> <span style="color:var(--accent)">not</span> empty:
-        current = open_set.<span style="color:var(--accent)">pop</span>()       <span style="color:var(--orange)">// берём клетку с min f</span>
-
-        <span style="color:var(--accent)">if</span> current == goal:
-            <span style="color:var(--accent)">return</span> reconstruct_path(current)  <span style="color:var(--orange)">// 🎉 нашли!</span>
-
-        closed_set.<span style="color:var(--accent)">add</span>(current)
-
-        <span style="color:var(--accent)">for</span> <span style="color:var(--accent)">each</span> neighbor <span style="color:var(--accent)">of</span> current:
-            <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">in</span> closed_set:  <span style="color:var(--accent)">continue</span>   <span style="color:var(--orange)">// уже обработан</span>
-            <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">is</span> obstacle:    <span style="color:var(--accent)">continue</span>   <span style="color:var(--orange)">// стена</span>
-
-            <span style="color:var(--green)">// Считаем стоимость пути через current</span>
-            tentative_g = current.g + cost(current, neighbor)
-
-            <span style="color:var(--accent)">if</span> neighbor <span style="color:var(--accent)">not</span> <span style="color:var(--accent)">in</span> open_set:
-                <span style="color:var(--green)">// Новая клетка — добавляем</span>
-                neighbor.g = tentative_g
-                neighbor.h = heuristic(neighbor, goal)
-                neighbor.f = neighbor.g + neighbor.h
-                neighbor.parent = current
-                open_set.<span style="color:var(--accent)">push</span>(neighbor)
-
-            <span style="color:var(--accent)">else</span> <span style="color:var(--accent)">if</span> tentative_g < neighbor.g:
-                <span style="color:var(--green)">// Нашли более короткий путь к уже известной клетке</span>
-                neighbor.g = tentative_g
-                neighbor.f = neighbor.g + neighbor.h
-                neighbor.parent = current
-                open_set.<span style="color:var(--accent)">update</span>(neighbor)    <span style="color:var(--orange)">// обновить позицию в очереди</span>
-
-    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">null</span>  <span style="color:var(--orange)">// путь не существует</span>
+<span style="color:var(--accent2)">Cell</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>]
+<span style="color:var(--accent2)">INF</span> = <span style="color:var(--accent)">float</span>(<span style="color:var(--green)">'inf'</span>)
+<span style="color:var(--accent2)">SQRT2</span> = math.sqrt(2)
 
 
-<span style="color:var(--accent)">function</span> reconstruct_path(node):
-    path = []
-    <span style="color:var(--accent)">while</span> node != <span style="color:var(--accent)">null</span>:
-        path.<span style="color:var(--accent)">prepend</span>(node)
-        node = node.parent
-    <span style="color:var(--accent)">return</span> path</pre>
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">heuristic</span>(a: <span style="color:var(--accent2)">Cell</span>, b: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent2)">float</span>:
+    <span style="color:var(--green)">"""Octile distance — оптимальная эвристика для 8 направлений"""</span>
+    dx: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(a[0] - b[0])
+    dy: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(a[1] - b[1])
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">max</span>(dx, dy) + (SQRT2 - 1) * <span style="color:var(--accent)">min</span>(dx, dy)
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">neighbors</span>(s: <span style="color:var(--accent2)">Cell</span>, W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>,
+              walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>]) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>]]:
+    <span style="color:var(--green)">"""8 направлений: прямые (cost=1) + диагональные (cost=√2)"""</span>
+    dirs: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>]] = [
+        (0,1),(0,-1),(1,0),(-1,0),(1,1),(1,-1),(-1,1),(-1,-1)
+    ]
+    result: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>]] = []
+    <span style="color:var(--accent)">for</span> dr, dc <span style="color:var(--accent)">in</span> dirs:
+        n: <span style="color:var(--accent2)">Cell</span> = (s[0] + dr, s[1] + dc)
+        <span style="color:var(--accent)">if</span> 0 &lt;= n[0] &lt; H <span style="color:var(--accent)">and</span> 0 &lt;= n[1] &lt; W <span style="color:var(--accent)">and</span> n <span style="color:var(--accent)">not in</span> walls:
+            cost: <span style="color:var(--accent2)">float</span> = SQRT2 <span style="color:var(--accent)">if</span> (dr != 0 <span style="color:var(--accent)">and</span> dc != 0) <span style="color:var(--accent)">else</span> 1.0
+            result.append((n, cost))
+    <span style="color:var(--accent)">return</span> result
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">astar</span>(
+    W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>,
+    walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>],
+    start: <span style="color:var(--accent2)">Cell</span>,
+    goal: <span style="color:var(--accent2)">Cell</span>
+) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] | <span style="color:var(--accent)">None</span>:
+    <span style="color:var(--green)">"""A* на 8-связной сетке. Возвращает путь или None."""</span>
+
+    g: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>] = {start: 0.0}
+    f: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>] = {start: heuristic(start, goal)}
+    parent: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">Cell</span> | <span style="color:var(--accent)">None</span>] = {start: <span style="color:var(--accent)">None</span>}
+
+    <span style="color:var(--green)"># (f, counter, cell) — counter для стабильной сортировки</span>
+    counter: <span style="color:var(--accent2)">int</span> = 0
+    open_heap: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">float</span>, <span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">Cell</span>]] = [
+        (f[start], counter, start)
+    ]
+    open_set: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = {start}
+    closed: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = <span style="color:var(--accent)">set</span>()
+
+    <span style="color:var(--accent)">while</span> open_heap:
+        _, _, current = heappop(open_heap)
+
+        <span style="color:var(--accent)">if</span> current <span style="color:var(--accent)">not in</span> open_set:
+            <span style="color:var(--accent)">continue</span>                    <span style="color:var(--green)"># stale entry</span>
+        open_set.remove(current)
+
+        <span style="color:var(--accent)">if</span> current == goal:             <span style="color:var(--orange)"># Цель найдена!</span>
+            path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] = []
+            node: <span style="color:var(--accent2)">Cell</span> | <span style="color:var(--accent)">None</span> = current
+            <span style="color:var(--accent)">while</span> node <span style="color:var(--accent)">is not</span> <span style="color:var(--accent)">None</span>:
+                path.append(node)
+                node = parent[node]
+            path.reverse()
+            <span style="color:var(--accent)">return</span> path
+
+        closed.add(current)
+
+        <span style="color:var(--accent)">for</span> nb, cost <span style="color:var(--accent)">in</span> neighbors(current, W, H, walls):
+            <span style="color:var(--accent)">if</span> nb <span style="color:var(--accent)">in</span> closed:
+                <span style="color:var(--accent)">continue</span>                <span style="color:var(--green)"># уже обработан</span>
+
+            tentative_g: <span style="color:var(--accent2)">float</span> = g[current] + cost
+
+            <span style="color:var(--accent)">if</span> nb <span style="color:var(--accent)">not in</span> g <span style="color:var(--accent)">or</span> tentative_g &lt; g[nb]:
+                g[nb] = tentative_g
+                f[nb] = tentative_g + heuristic(nb, goal)
+                parent[nb] = current
+                counter += 1
+                heappush(open_heap, (f[nb], counter, nb))
+                open_set.add(nb)
+
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">None</span>                      <span style="color:var(--orange)"># путь не существует</span>
+
+
+<span style="color:var(--green)"># === Пример: сетка 5×5 со стеной ===</span>
+walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = {(1, 2), (2, 2)}
+path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] | <span style="color:var(--accent)">None</span> = astar(5, 5, walls, start=(0, 0), goal=(4, 4))
+<span style="color:var(--green)"># [(0,0), (1,1), (2,1), (3,2), (3,3), (4,4)]</span>
+<span style="color:var(--green)"># Стоимость: 3√2 + 2 ≈ 6.24. Обработано 9 клеток из 23.</span>
+</pre>
+
+        <div class="card highlight">
+            <p><strong>Почему counter в очереди?</strong> Если у двух клеток одинаковый f, Python сравнивает следующий элемент кортежа. Без counter попытается сравнить два tuple — и упадёт. Counter гарантирует уникальность и стабильный порядок (FIFO при равных f).</p>
         </div>
 
         <!-- ============ СЛОЖНОСТЬ ============ -->

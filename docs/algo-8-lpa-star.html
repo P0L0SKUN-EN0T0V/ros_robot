@@ -575,55 +575,155 @@
         </script>
 
         <!-- ============ ПСЕВДОКОД ============ -->
-        <h2>Псевдокод</h2>
+        <h2>Реализация на Python</h2>
 
-        <pre><span style="color:var(--green)">// Инициализация</span>
-for all s ∈ S:
-    g(s) = ∞; rhs(s) = ∞
-rhs(s_start) = 0
-U.Insert(s_start, CalcKey(s_start))
+        <p>Полная реализация LPA*. Ключевое отличие от <a href="algo-1-astar.html" style="color:var(--accent)">A*</a>: два значения на клетку (<code>g</code> и <code>rhs</code>), приоритет — двухкомпонентный ключ, инкрементальное обновление при изменении карты.</p>
 
-<span style="color:var(--green)">// CalcKey(s)</span>
-return [min(g(s), rhs(s)) + h(s, s_goal),
-        min(g(s), rhs(s))]
+<pre><span style="color:var(--accent)">import</span> math
+<span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
 
-<span style="color:var(--green)">// h(s, goal) — octile distance</span>
-dx = |s.x - goal.x|, dy = |s.y - goal.y|
-return max(dx, dy) + (√2 - 1) · min(dx, dy)
+<span style="color:var(--accent2)">Cell</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>]
+<span style="color:var(--accent2)">Key</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">float</span>, <span style="color:var(--accent2)">float</span>]
+<span style="color:var(--accent2)">INF</span> = <span style="color:var(--accent)">float</span>(<span style="color:var(--green)">'inf'</span>)
+<span style="color:var(--accent2)">SQRT2</span> = math.sqrt(2)
 
-<span style="color:var(--green)">// UpdateVertex(u)</span>
-if u ≠ s_start:
-    rhs(u) = min over all 8 neighbors s':
-              g(s') + c(s', u)       <span style="color:var(--orange)">// c = 1 кардин., √2 диаг.</span>
-if u ∈ U: U.Remove(u)
-if g(u) ≠ rhs(u): U.Insert(u, CalcKey(u))
 
-<span style="color:var(--green)">// ComputeShortestPath()</span>
-while U.TopKey() &lt; CalcKey(s_goal) OR
-      rhs(s_goal) ≠ g(s_goal):
-    u = U.Pop()
-    if g(u) &gt; rhs(u):           <span style="color:var(--orange)">// overconsistent</span>
-        g(u) = rhs(u)
-        for all s ∈ successors(u):
-            UpdateVertex(s)
-    else:                        <span style="color:var(--orange)">// underconsistent</span>
-        g(u) = ∞
-        UpdateVertex(u)
-        for all s ∈ successors(u):
-            UpdateVertex(s)
+<span style="color:var(--accent)">class</span> <span style="color:var(--accent2)">LPAStar</span>:
+    <span style="color:var(--green)">"""LPA* — инкрементальный A* для динамических карт."""</span>
 
-<span style="color:var(--green)">// При изменении карты</span>
-for each changed edge (u, v):
-    update c(u, v)
-    UpdateVertex(v)
-ComputeShortestPath()</pre>
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">__init__</span>(self, W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>,
+                 walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>],
+                 start: <span style="color:var(--accent2)">Cell</span>, goal: <span style="color:var(--accent2)">Cell</span>):
+        self.W, self.H = W, H
+        self.walls = <span style="color:var(--accent)">set</span>(walls)
+        self.start, self.goal = start, goal
+
+        self.g: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>] = {}     <span style="color:var(--green)"># g(s) = ∞ по умолчанию</span>
+        self.rhs: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>] = {}
+        self.U: <span style="color:var(--accent2)">list</span> = []                 <span style="color:var(--green)"># priority queue</span>
+        self.U_set: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = <span style="color:var(--accent)">set</span>()
+
+        <span style="color:var(--green)"># Инициализация: rhs(start)=0, остальные=∞</span>
+        self.rhs[start] = 0.0
+        k: <span style="color:var(--accent2)">Key</span> = self._calc_key(start)
+        heappush(self.U, (k, start))
+        self.U_set.add(start)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_g</span>(self, s: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent2)">float</span>:
+        <span style="color:var(--accent)">return</span> self.g.get(s, INF)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_rhs</span>(self, s: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent2)">float</span>:
+        <span style="color:var(--accent)">return</span> self.rhs.get(s, INF)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_h</span>(self, s: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent2)">float</span>:
+        <span style="color:var(--green)">"""Octile distance до цели."""</span>
+        dx: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(s[0] - self.goal[0])
+        dy: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(s[1] - self.goal[1])
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">max</span>(dx, dy) + (SQRT2 - 1) * <span style="color:var(--accent)">min</span>(dx, dy)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_calc_key</span>(self, s: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent2)">Key</span>:
+        m: <span style="color:var(--accent2)">float</span> = <span style="color:var(--accent)">min</span>(self._g(s), self._rhs(s))
+        <span style="color:var(--accent)">return</span> (m + self._h(s), m)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">_neighbors</span>(self, s: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>]]:
+        dirs = [(0,1),(0,-1),(1,0),(-1,0),(1,1),(1,-1),(-1,1),(-1,-1)]
+        result: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>]] = []
+        <span style="color:var(--accent)">for</span> dr, dc <span style="color:var(--accent)">in</span> dirs:
+            n: <span style="color:var(--accent2)">Cell</span> = (s[0]+dr, s[1]+dc)
+            <span style="color:var(--accent)">if</span> 0 &lt;= n[0] &lt; self.H <span style="color:var(--accent)">and</span> 0 &lt;= n[1] &lt; self.W                <span style="color:var(--accent)">and</span> n <span style="color:var(--accent)">not in</span> self.walls:
+                cost: <span style="color:var(--accent2)">float</span> = SQRT2 <span style="color:var(--accent)">if</span> (dr!=0 <span style="color:var(--accent)">and</span> dc!=0) <span style="color:var(--accent)">else</span> 1.0
+                result.append((n, cost))
+        <span style="color:var(--accent)">return</span> result
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">update_vertex</span>(self, u: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent)">None</span>:
+        <span style="color:var(--accent)">if</span> u != self.start:
+            <span style="color:var(--green)"># rhs(u) = min(g(s') + cost) по всем 8 соседям</span>
+            mn: <span style="color:var(--accent2)">float</span> = INF
+            <span style="color:var(--accent)">for</span> nb, cost <span style="color:var(--accent)">in</span> self._neighbors(u):
+                mn = <span style="color:var(--accent)">min</span>(mn, self._g(nb) + cost)
+            self.rhs[u] = mn
+
+        <span style="color:var(--green)"># Удалить из очереди (если есть)</span>
+        self.U_set.discard(u)
+
+        <span style="color:var(--green)"># Если inconsistent — вернуть в очередь</span>
+        <span style="color:var(--accent)">if</span> self._g(u) != self._rhs(u):
+            heappush(self.U, (self._calc_key(u), u))
+            self.U_set.add(u)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">compute_shortest_path</span>(self) -> <span style="color:var(--accent)">None</span>:
+        <span style="color:var(--accent)">while</span> self.U:
+            top_key, u = self.U[0]
+            <span style="color:var(--green)"># Stale entry?</span>
+            <span style="color:var(--accent)">if</span> u <span style="color:var(--accent)">not in</span> self.U_set:
+                heappop(self.U)
+                <span style="color:var(--accent)">continue</span>
+
+            goal_key: <span style="color:var(--accent2)">Key</span> = self._calc_key(self.goal)
+            <span style="color:var(--accent)">if</span> top_key >= goal_key <span style="color:var(--accent)">and</span>                self._rhs(self.goal) == self._g(self.goal):
+                <span style="color:var(--accent)">break</span>
+
+            heappop(self.U)
+            self.U_set.discard(u)
+
+            <span style="color:var(--accent)">if</span> self._g(u) > self._rhs(u):  <span style="color:var(--orange)"># overconsistent</span>
+                self.g[u] = self._rhs(u)
+                <span style="color:var(--accent)">for</span> s, _ <span style="color:var(--accent)">in</span> self._neighbors(u):
+                    self.update_vertex(s)
+            <span style="color:var(--accent)">else</span>:                          <span style="color:var(--orange)"># underconsistent</span>
+                self.g[u] = INF
+                self.update_vertex(u)
+                <span style="color:var(--accent)">for</span> s, _ <span style="color:var(--accent)">in</span> self._neighbors(u):
+                    self.update_vertex(s)
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">add_wall</span>(self, cell: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent)">None</span>:
+        <span style="color:var(--green)">"""Вызови при добавлении новой стены."""</span>
+        nbs = self._neighbors(cell)     <span style="color:var(--green)"># соседи ДО стены</span>
+        self.walls.add(cell)
+        <span style="color:var(--accent)">for</span> nb, _ <span style="color:var(--accent)">in</span> nbs:
+            self.update_vertex(nb)
+        self.compute_shortest_path()    <span style="color:var(--orange)"># инкрементальный пересчёт!</span>
+
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">get_path</span>(self) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>]:
+        <span style="color:var(--green)">"""Восстановить путь от goal к start по g-значениям."""</span>
+        path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] = [self.goal]
+        cur: <span style="color:var(--accent2)">Cell</span> = self.goal
+        <span style="color:var(--accent)">while</span> cur != self.start:
+            best: <span style="color:var(--accent2)">Cell</span> | <span style="color:var(--accent)">None</span> = <span style="color:var(--accent)">None</span>
+            best_g: <span style="color:var(--accent2)">float</span> = INF
+            <span style="color:var(--accent)">for</span> nb, cost <span style="color:var(--accent)">in</span> self._neighbors(cur):
+                v: <span style="color:var(--accent2)">float</span> = self._g(nb) + cost
+                <span style="color:var(--accent)">if</span> v &lt; best_g:
+                    best_g = v
+                    best = nb
+            <span style="color:var(--accent)">if</span> best <span style="color:var(--accent)">is</span> <span style="color:var(--accent)">None</span>:
+                <span style="color:var(--accent)">return</span> []                  <span style="color:var(--green)"># нет пути</span>
+            path.append(best)
+            cur = best
+        path.reverse()
+        <span style="color:var(--accent)">return</span> path
+
+
+<span style="color:var(--green)"># === Пример: Phase 1 + Phase 2 ===</span>
+walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = {(1, 2), (2, 2)}
+lpa = LPAStar(5, 5, walls, start=(0, 0), goal=(4, 4))
+lpa.compute_shortest_path()
+<span style="color:var(--green)"># Phase 1: path = [(0,0), (1,1), (2,1), (3,2), (3,3), (4,4)], cost=6.24</span>
+
+lpa.add_wall((2, 3))               <span style="color:var(--orange)"># новая стена!</span>
+<span style="color:var(--green)"># Phase 2: пересчитал 4 клетки (не 23). Новый путь обходит (2,3).</span>
+</pre>
 
         <div class="card highlight">
-            <p><strong>Ключевой момент:</strong> после изменения карты мы не сбрасываем g-значения и не начинаем поиск заново. Мы только обновляем rhs у затронутых клеток и вызываем <code>ComputeShortestPath()</code> — он подхватит inconsistent узлы из очереди и исправит только то, что нужно.</p>
+            <p><strong>Ключевой момент:</strong> после изменения карты мы не сбрасываем g-значения и не начинаем поиск заново. Мы только обновляем rhs у затронутых клеток и вызываем <code>compute_shortest_path()</code> — он подхватит inconsistent узлы из очереди и исправит только то, что нужно.</p>
         </div>
 
         <!-- ============ C++ ROS2 ============ -->
-        <h2>Реализация в C++ (ROS2)</h2>
+        <h2>Как это выглядит в ROS2 проекте</h2>
+
+        <p>Полная реализация LPA* на C++ — класс с инкрементальным обновлением при изменении карты.</p>
+
+        <div class="card">
 
 <pre><span style="color:var(--accent2)">#include</span> &lt;queue&gt;
 <span style="color:var(--accent2)">#include</span> &lt;unordered_map&gt;

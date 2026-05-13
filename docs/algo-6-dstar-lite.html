@@ -147,358 +147,284 @@
             $h(a, b) = \max(\Delta x, \Delta y) + (\sqrt{2} - 1) \cdot \min(\Delta x, \Delta y)$
         </div>
 
+
         <!-- ============ ВИЗУАЛЬНЫЙ ПРИМЕР ============ -->
         <h2>Визуальный пример</h2>
         <p>Карта 5×5, 8 направлений. S(0,0) — старт, G(4,4) — цель, стены: (2,1) и (2,2). D* Lite ищет от G к S, поэтому <strong>g = расстояние до цели</strong>.</p>
 
         <h3>Фаза 1: первый поиск (от G к S)</h3>
-        <p>g-значения — расстояние от каждой клетки до G(4,4):</p>
+        <p>D* Lite раскрыл <strong>10 клеток из 23</strong> свободных — эвристика $h(S, s)$ направила волну к старту и остановила поиск, как только g(S) стал consistent. 13 клеток остались с $g = \infty$ (полупрозрачные).</p>
 
         <div class="grid-viz">
-            <!-- Row 0: g from goal -->
-            <div class="cell start"><span class="lbl">S</span><span class="vals">g=6.2<br>rhs=6.2</span></div>
-            <div class="cell explored"><span class="vals">g=5.8<br>rhs=5.8</span></div>
-            <div class="cell explored"><span class="vals">g=4.8<br>rhs=4.8</span></div>
-            <div class="cell explored"><span class="vals">g=4.4<br>rhs=4.4</span></div>
-            <div class="cell explored"><span class="vals">g=4.0<br>rhs=4.0</span></div>
+            <!-- Row 0 -->
+            <div class="cell start path"><span class="lbl">S</span><span class="vals">g=<b>6.2</b><br>rhs=6.2</span><span class="ord">10</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=5.8</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=6.2</span></div>
+            <div class="cell unvisited" style="opacity:.25"><span class="vals">g=∞<br>rhs=∞</span></div>
+            <div class="cell unvisited" style="opacity:.25"><span class="vals">g=∞<br>rhs=∞</span></div>
             <!-- Row 1 -->
-            <div class="cell explored"><span class="vals">g=5.2<br>rhs=5.2</span></div>
-            <div class="cell path"><span class="vals">g=4.8<br>rhs=4.8</span></div>
+            <div class="cell explored path"><span class="vals">g=<b>5.2</b><br>rhs=5.2</span><span class="ord">9</span></div>
+            <div class="cell explored"><span class="vals">g=<b>4.8</b><br>rhs=4.8</span><span class="ord">8</span></div>
             <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell explored"><span class="vals">g=3.4<br>rhs=3.4</span></div>
-            <div class="cell explored"><span class="vals">g=3.0<br>rhs=3.0</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=3.4</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=3.8</span></div>
             <!-- Row 2 -->
-            <div class="cell explored"><span class="vals">g=4.8<br>rhs=4.8</span></div>
-            <div class="cell path"><span class="vals">g=3.8<br>rhs=3.8</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=4.8</span></div>
+            <div class="cell explored path"><span class="vals">g=<b>3.8</b><br>rhs=3.8</span><span class="ord">7</span></div>
             <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell explored"><span class="vals">g=2.4<br>rhs=2.4</span></div>
-            <div class="cell explored"><span class="vals">g=2.0<br>rhs=2.0</span></div>
+            <div class="cell explored"><span class="vals">g=<b>2.4</b><br>rhs=2.4</span><span class="ord">6</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=2.0</span></div>
             <!-- Row 3 -->
-            <div class="cell explored"><span class="vals">g=4.4<br>rhs=4.4</span></div>
-            <div class="cell explored"><span class="vals">g=3.4<br>rhs=3.4</span></div>
-            <div class="cell path"><span class="vals">g=2.4<br>rhs=2.4</span></div>
-            <div class="cell explored"><span class="vals">g=1.4<br>rhs=1.4</span></div>
-            <div class="cell explored"><span class="vals">g=1.0<br>rhs=1.0</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=5.2</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=3.4</span></div>
+            <div class="cell explored path"><span class="vals">g=<b>2.4</b><br>rhs=2.4</span><span class="ord">5</span></div>
+            <div class="cell explored path"><span class="vals">g=<b>1.4</b><br>rhs=1.4</span><span class="ord">2</span></div>
+            <div class="cell explored"><span class="vals">g=<b>1.0</b><br>rhs=1.0</span><span class="ord">4</span></div>
             <!-- Row 4 -->
-            <div class="cell explored"><span class="vals">g=4.0<br>rhs=4.0</span></div>
-            <div class="cell explored"><span class="vals">g=3.0<br>rhs=3.0</span></div>
-            <div class="cell explored"><span class="vals">g=2.0<br>rhs=2.0</span></div>
-            <div class="cell path"><span class="vals">g=1.0<br>rhs=1.0</span></div>
-            <div class="cell goal"><span class="lbl">G</span><span class="vals">g=0<br>rhs=0</span></div>
+            <div class="cell unvisited" style="opacity:.25"><span class="vals">g=∞<br>rhs=∞</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=3.8</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=2.0</span></div>
+            <div class="cell explored"><span class="vals">g=<b>1.0</b><br>rhs=1.0</span><span class="ord">3</span></div>
+            <div class="cell goal path"><span class="lbl">G</span><span class="vals">g=<b>0</b><br>rhs=0</span><span class="ord">1</span></div>
         </div>
 
-        <p>Робот строит путь <strong>от себя к цели</strong>, идя по соседям с минимальным g:</p>
-
-        <div class="grid-overlay">
-            <div class="grid-viz clean">
-                <div class="cell start"><span class="lbl">S</span></div>
-                <div class="cell"><span class="vals">(1,0)</span></div>
-                <div class="cell"><span class="vals">(2,0)</span></div>
-                <div class="cell"><span class="vals">(3,0)</span></div>
-                <div class="cell"><span class="vals">(4,0)</span></div>
-                <div class="cell"><span class="vals">(0,1)</span></div>
-                <div class="cell path"><span class="vals">(1,1)</span></div>
-                <div class="cell wall"><span class="lbl">▓</span></div>
-                <div class="cell"><span class="vals">(3,1)</span></div>
-                <div class="cell"><span class="vals">(4,1)</span></div>
-                <div class="cell"><span class="vals">(0,2)</span></div>
-                <div class="cell path"><span class="vals">(1,2)</span></div>
-                <div class="cell wall"><span class="lbl">▓</span></div>
-                <div class="cell"><span class="vals">(3,2)</span></div>
-                <div class="cell"><span class="vals">(4,2)</span></div>
-                <div class="cell"><span class="vals">(0,3)</span></div>
-                <div class="cell"><span class="vals">(1,3)</span></div>
-                <div class="cell path"><span class="vals">(2,3)</span></div>
-                <div class="cell"><span class="vals">(3,3)</span></div>
-                <div class="cell"><span class="vals">(4,3)</span></div>
-                <div class="cell"><span class="vals">(0,4)</span></div>
-                <div class="cell"><span class="vals">(1,4)</span></div>
-                <div class="cell"><span class="vals">(2,4)</span></div>
-                <div class="cell path"><span class="vals">(3,4)</span></div>
-                <div class="cell goal"><span class="lbl">G</span></div>
-            </div>
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polyline points="10,10 30,30 30,50 50,70 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+        <div class="grid-legend">
+            <span><span class="dot" style="background:rgba(108,158,255,.08);border-color:rgba(108,158,255,.25)"></span> Раскрыта (g&nbsp;finite)</span>
+            <span><span class="dot" style="background:var(--card);border-color:var(--border);opacity:.45"></span> Не раскрыта (g=∞)</span>
+            <span><span class="dot" style="background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4)"></span> Путь</span>
+            <span style="color:var(--orange);font-weight:700;font-size:.85em">①② — порядок раскрытия</span>
         </div>
-        <p style="text-align:center;color:var(--text2);font-size:.9em">Путь: S→(1,1)→(1,2)→(2,3)→(3,4)→G &nbsp;|&nbsp; Стоимость: $2 + 3\sqrt{2} \approx 6.2$</p>
+
+        <p style="text-align:center;color:var(--text2);font-size:.9em">Путь: S→(0,1)→(1,2)→(2,3)→(3,3)→G &nbsp;|&nbsp; Стоимость: $2 + 3\sqrt{2} \approx 6.24$</p>
+
+        <div class="card highlight">
+            <p><strong>Ключевое:</strong> D* Lite раскрыл только 10 клеток — как A*, он использует эвристику и останавливается, как только путь до робота найден. Весь правый-верхний и нижний-левый углы <strong>не тронуты</strong>.</p>
+        </div>
 
         <h3>Фаза 2: робот сделал шаг, увидел стену</h3>
-        <p>Робот переместился на (1,1). Сенсоры обнаружили: <strong>(2,3) заблокирована!</strong> Старый путь шёл через неё.</p>
+        <p>Робот переместился на (0,1). Сенсоры обнаружили: <strong>(2,3) заблокирована!</strong> Старый путь шёл через неё.</p>
 
         <div class="card warn">
             <p><strong>Что делает D* Lite:</strong></p>
             <ol>
-                <li>Обновляет $k_m$ (поправка за перемещение робота из S в (1,1))</li>
-                <li>Помечает (2,3) как стену. Пересчитывает rhs у соседей (2,3)</li>
-                <li>Только (1,2) зависела от (2,3) — её rhs меняется: 3.8 → 4.4</li>
-                <li>Раскрывает 2–3 inconsistent клетки. Находит обход через (1,3)→(2,4)</li>
+                <li>Обновляет $k_m$ += $h(S, (0,1))$ = 1 (поправка за перемещение)</li>
+                <li>Помечает (2,3) как стену. Пересчитывает rhs у её соседей</li>
+                <li>(1,2) зависела от (2,3) — rhs ломается: 3.8 → 5.8. Каскад!</li>
+                <li>(1,2) underconsistent → g=∞ → ломает (0,1) → (0,1) тоже g=∞</li>
+                <li>Раскрываются <strong>новые клетки</strong>: (2,4), (1,3), (0,2) — обход стены снизу</li>
+                <li>(1,2) и (0,1) пересчитываются с новыми g-значениями</li>
             </ol>
+            <p style="margin-top:8px">Итого: <strong>10 операций</strong> в очереди (3 underconsistent + 5 overconsistent + 2 реинсерта).</p>
         </div>
 
-        <p><strong>Карта после пересчёта</strong> (оранжевым — пересчитанные клетки):</p>
+        <p><strong>Карта после пересчёта</strong> (оранжевым — пересчитанные клетки, зелёным — новые):</p>
 
         <div class="grid-viz">
-            <div class="cell start" style="opacity:.4"><span class="lbl">S</span><span class="vals">g=6.2</span></div>
-            <div class="cell explored"><span class="vals">g=5.8</span></div>
-            <div class="cell explored"><span class="vals">g=4.8</span></div>
-            <div class="cell explored"><span class="vals">g=4.4</span></div>
-            <div class="cell explored"><span class="vals">g=4.0</span></div>
-            <div class="cell explored"><span class="vals">g=5.2</span></div>
-            <div class="cell" style="background:rgba(108,158,255,.2);border:2px solid var(--accent)"><span class="lbl" style="color:var(--accent)">🤖</span><span class="vals">robot</span></div>
+            <!-- Row 0 -->
+            <div class="cell" style="opacity:.4"><span class="lbl">S</span><span class="vals">g=6.2<br><span style="color:var(--orange)">rhs=6.8</span></span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br><span style="color:var(--orange)">rhs=7.2</span></span></div>
+            <div class="cell unvisited" style="opacity:.25"><span class="vals">g=∞<br>rhs=∞</span></div>
+            <div class="cell unvisited" style="opacity:.25"><span class="vals">g=∞<br>rhs=∞</span></div>
+            <div class="cell unvisited" style="opacity:.25"><span class="vals">g=∞<br>rhs=∞</span></div>
+            <!-- Row 1 -->
+            <div class="cell changed" style="background:rgba(108,158,255,.2);border:2px solid var(--accent)"><span class="lbl" style="color:var(--accent)">🤖</span><span class="vals">g=<b>5.8</b><br>rhs=5.8<br><span style="font-size:.8em;color:var(--orange)">было 5.2</span></span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=5.4</span></div>
             <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell explored"><span class="vals">g=3.4</span></div>
-            <div class="cell explored"><span class="vals">g=3.0</span></div>
-            <div class="cell explored"><span class="vals">g=4.8</span></div>
-            <div class="cell changed"><span class="vals">g=4.4<br><b>было 3.8</b></span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=3.4</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=3.8</span></div>
+            <!-- Row 2 -->
+            <div class="cell path" style="border-color:var(--green)"><span class="vals">g=<b>4.8</b><br>rhs=4.8<br><span style="font-size:.8em;color:var(--green)">NEW</span></span></div>
+            <div class="cell changed"><span class="vals">g=<b>4.4</b><br>rhs=4.4<br><span style="font-size:.8em;color:var(--orange)">было 3.8</span></span></div>
             <div class="cell wall"><span class="lbl">▓</span></div>
-            <div class="cell explored"><span class="vals">g=2.4</span></div>
-            <div class="cell explored"><span class="vals">g=2.0</span></div>
-            <div class="cell explored"><span class="vals">g=4.4</span></div>
-            <div class="cell explored"><span class="vals">g=3.4</span></div>
+            <div class="cell explored"><span class="vals">g=<b>2.4</b><br>rhs=2.4</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=2.0</span></div>
+            <!-- Row 3 -->
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=4.4</span></div>
+            <div class="cell path" style="border-color:var(--green)"><span class="vals">g=<b>3.4</b><br>rhs=3.4<br><span style="font-size:.8em;color:var(--green)">NEW</span></span></div>
             <div class="cell wall" style="border-color:var(--red);border-width:2px"><span class="lbl" style="color:var(--red)">NEW ▓</span></div>
-            <div class="cell explored"><span class="vals">g=1.4</span></div>
-            <div class="cell explored"><span class="vals">g=1.0</span></div>
-            <div class="cell explored"><span class="vals">g=4.0</span></div>
-            <div class="cell explored"><span class="vals">g=3.0</span></div>
-            <div class="cell explored"><span class="vals">g=2.0</span></div>
-            <div class="cell explored"><span class="vals">g=1.0</span></div>
-            <div class="cell goal"><span class="lbl">G</span><span class="vals">g=0</span></div>
+            <div class="cell explored"><span class="vals">g=<b>1.4</b><br>rhs=1.4</span></div>
+            <div class="cell explored"><span class="vals">g=<b>1.0</b><br>rhs=1.0</span></div>
+            <!-- Row 4 -->
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=4.8</span></div>
+            <div class="cell unvisited"><span class="vals">g=∞<br>rhs=3.0</span></div>
+            <div class="cell path" style="border-color:var(--green)"><span class="vals">g=<b>2.0</b><br>rhs=2.0<br><span style="font-size:.8em;color:var(--green)">NEW</span></span></div>
+            <div class="cell explored path"><span class="vals">g=<b>1.0</b><br>rhs=1.0</span></div>
+            <div class="cell goal path"><span class="lbl">G</span><span class="vals">g=<b>0</b><br>rhs=0</span></div>
         </div>
 
-        <p><strong>Новый путь от текущей позиции робота:</strong></p>
-        <div class="grid-overlay">
-            <div class="grid-viz clean">
-                <div class="cell" style="opacity:.4"><span class="lbl">S</span></div>
-                <div class="cell"><span class="vals">(1,0)</span></div>
-                <div class="cell"><span class="vals">(2,0)</span></div>
-                <div class="cell"><span class="vals">(3,0)</span></div>
-                <div class="cell"><span class="vals">(4,0)</span></div>
-                <div class="cell"><span class="vals">(0,1)</span></div>
-                <div class="cell" style="background:rgba(108,158,255,.2);border:2px solid var(--accent)"><span class="lbl">🤖</span></div>
-                <div class="cell wall"><span class="lbl">▓</span></div>
-                <div class="cell"><span class="vals">(3,1)</span></div>
-                <div class="cell"><span class="vals">(4,1)</span></div>
-                <div class="cell"><span class="vals">(0,2)</span></div>
-                <div class="cell path"><span class="vals">(1,2)</span></div>
-                <div class="cell wall"><span class="lbl">▓</span></div>
-                <div class="cell"><span class="vals">(3,2)</span></div>
-                <div class="cell"><span class="vals">(4,2)</span></div>
-                <div class="cell"><span class="vals">(0,3)</span></div>
-                <div class="cell path"><span class="vals">(1,3)</span></div>
-                <div class="cell wall"><span class="lbl">▓</span></div>
-                <div class="cell"><span class="vals">(3,3)</span></div>
-                <div class="cell"><span class="vals">(4,3)</span></div>
-                <div class="cell"><span class="vals">(0,4)</span></div>
-                <div class="cell"><span class="vals">(1,4)</span></div>
-                <div class="cell path"><span class="vals">(2,4)</span></div>
-                <div class="cell path"><span class="vals">(3,4)</span></div>
-                <div class="cell goal"><span class="lbl">G</span></div>
-            </div>
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polyline points="30,30 30,50 30,70 50,90 70,90 90,90" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </div>
-        <p style="text-align:center;color:var(--text2);font-size:.9em">Путь от 🤖: (1,1)→(1,2)→(1,3)→(2,4)→(3,4)→G &nbsp;|&nbsp; Стоимость: $3 + 2\sqrt{2} \approx 5.8$</p>
+        <p style="text-align:center;color:var(--text2);font-size:.9em">Новый путь от 🤖: (0,1)→(0,2)→(1,3)→(2,4)→(3,4)→G &nbsp;|&nbsp; Стоимость: $1 + 4\sqrt{2} \approx 5.83$</p>
 
         <div class="card success">
-            <p><strong>Итого:</strong> A* пересчитал бы ~20 клеток с нуля. D* Lite пересчитал <strong>1-2</strong>. И ему даже не надо «начинать заново» — он просто чинит кусочек дерева рядом с роботом.</p>
+            <p><strong>Итого:</strong> A* пересчитал бы все ~10–15 клеток с нуля. D* Lite сделал 10 операций, из них 3 — раскрытие <strong>новых</strong> клеток (0,2), (1,3), (2,4) для обхода стены. Остальные — каскадное исправление старых значений. На большой карте выигрыш ещё заметнее.</p>
         </div>
 
         <div class="grid-legend">
-            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:var(--accent)"></span> Старт / Робот</span>
+            <span><span class="dot" style="background:rgba(108,158,255,.2);border-color:var(--accent)"></span> Робот</span>
             <span><span class="dot" style="background:rgba(167,139,250,.2);border-color:var(--accent2)"></span> Цель</span>
-            <span><span class="dot" style="background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4)"></span> Путь</span>
+            <span><span class="dot" style="background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4)"></span> Путь / Новая клетка</span>
             <span><span class="dot" style="background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.5)"></span> Пересчитано</span>
             <span><span class="dot" style="background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.3)"></span> Стена</span>
         </div>
 
         <!-- ============ АНИМАЦИЯ ============ -->
         <h2>Анимация: как работает D* Lite</h2>
-        <p>Фаза 1: поиск от G к S. Фаза 2: робот шагает на (1,1), видит стену на (2,3), D* Lite чинит путь. В каждой клетке — g и rhs.</p>
+        <p>Фаза 1: поиск от G к S (10 раскрытий). Фаза 2: робот шагает на (0,1), видит стену на (2,3), D* Lite чинит путь (10 операций). В каждой клетке — g и rhs.</p>
 
         <div class="card" style="padding:28px 20px">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
                 <button id="ds-prev" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">◀</button>
                 <button id="ds-play" style="background:rgba(108,158,255,.15);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶ Play</button>
                 <button id="ds-next" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:1em">▶</button>
-                <span id="ds-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 1 / 8</span>
+                <span id="ds-counter" style="color:var(--text2);font-size:.9em;margin-left:8px">Шаг 1 / 23</span>
+                <span id="ds-phase" style="color:var(--accent);font-size:.85em;font-weight:600;margin-left:auto">Фаза 1: Поиск</span>
             </div>
-            <div style="position:relative;max-width:380px;margin:0 auto 16px">
+            <div style="position:relative;max-width:420px;margin:0 auto 16px">
                 <div id="ds-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
-                <svg id="ds-svg" viewBox="0 0 100 100" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none" preserveAspectRatio="none"></svg>
             </div>
             <div id="ds-desc" class="card highlight" style="margin-top:8px;font-size:.95em;min-height:60px"></div>
         </div>
 
         <script>
         (function(){
-            const I='∞';const _=I;
-            // g values from GOAL (reversed). null = wall
-            const grids=[
-                // Step 0: init
-                {walls:[],robot:null,grs:[
-                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_}],
-                    [{g:_,r:_},{g:_,r:_},null,{g:_,r:_},{g:_,r:_}],
-                    [{g:_,r:_},{g:_,r:_},null,{g:_,r:_},{g:_,r:_}],
-                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_}],
-                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:0}]
-                ],path:[],desc:'<b>Инициализация.</b> rhs(G)=0, всё остальное ∞. Поиск идёт <b>от цели к старту</b>. g = расстояние до G.'},
+            const N=null,W=-1;
+            // Step data from Python D* Lite simulation
+            // g/r: 5×5 arrays. N=∞, W=wall. Values rounded to 1 decimal.
+            const S=[
+{g:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,N,N],[N,N,N,N,N],[N,N,N,N,N]],r:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,N,N],[N,N,N,N,N],[N,N,N,N,0]],ro:[0, 0],pa:[],ex:N,ph:1,de:'<b>Инициализация.</b> rhs(G)=0, всё остальное ∞. Поиск идёт <b>от цели к старту</b>.'},
+{g:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,N,N],[N,N,N,N,N],[N,N,N,N,0]],r:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,N,N],[N,N,N,1.4,1.0],[N,N,N,1.0,0]],ro:[0, 0],pa:[],ex:[4, 4],ph:1,de:'<b>Шаг 1.</b> Раскрываем (4,4): g=0. Обновляем rhs соседей.'},
+{g:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,N,N],[N,N,N,1.4,N],[N,N,N,N,0]],r:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,2.4,2.8],[N,N,2.4,1.4,1.0],[N,N,2.8,1.0,0]],ro:[0, 0],pa:[],ex:[3, 3],ph:1,de:'<b>Шаг 2.</b> Раскрываем (3,3): g=1.4. Обновляем rhs соседей.'},
+{g:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,N,N],[N,N,N,1.4,N],[N,N,N,1.0,0]],r:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,2.4,2.8],[N,N,2.4,1.4,1.0],[N,N,2.0,1.0,0]],ro:[0, 0],pa:[],ex:[3, 4],ph:1,de:'<b>Шаг 3.</b> Раскрываем (3,4): g=1.0. Обновляем rhs соседей.'},
+{g:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,N,N],[N,N,N,1.4,1.0],[N,N,N,1.0,0]],r:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,2.4,2.0],[N,N,2.4,1.4,1.0],[N,N,2.0,1.0,0]],ro:[0, 0],pa:[],ex:[4, 3],ph:1,de:'<b>Шаг 4.</b> Раскрываем (4,3): g=1.0. Обновляем rhs соседей.'},
+{g:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,N,N],[N,N,2.4,1.4,1.0],[N,N,N,1.0,0]],r:[[N,N,N,N,N],[N,N,W,N,N],[N,3.8,W,2.4,2.0],[N,3.4,2.4,1.4,1.0],[N,3.8,2.0,1.0,0]],ro:[0, 0],pa:[],ex:[2, 3],ph:1,de:'<b>Шаг 5.</b> Раскрываем (2,3): g=2.4. Обновляем rhs соседей.'},
+{g:[[N,N,N,N,N],[N,N,W,N,N],[N,N,W,2.4,N],[N,N,2.4,1.4,1.0],[N,N,N,1.0,0]],r:[[N,N,N,N,N],[N,N,W,3.4,3.8],[N,3.8,W,2.4,2.0],[N,3.4,2.4,1.4,1.0],[N,3.8,2.0,1.0,0]],ro:[0, 0],pa:[],ex:[3, 2],ph:1,de:'<b>Шаг 6.</b> Раскрываем (3,2): g=2.4. Обновляем rhs соседей.'},
+{g:[[N,N,N,N,N],[N,N,W,N,N],[N,3.8,W,2.4,N],[N,N,2.4,1.4,1.0],[N,N,N,1.0,0]],r:[[N,N,N,N,N],[5.2,4.8,W,3.4,3.8],[4.8,3.8,W,2.4,2.0],[5.2,3.4,2.4,1.4,1.0],[N,3.8,2.0,1.0,0]],ro:[0, 0],pa:[],ex:[1, 2],ph:1,de:'<b>Шаг 7.</b> Раскрываем (1,2): g=3.8. Обновляем rhs соседей.'},
+{g:[[N,N,N,N,N],[N,4.8,W,N,N],[N,3.8,W,2.4,N],[N,N,2.4,1.4,1.0],[N,N,N,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.2,4.8,W,3.4,3.8],[4.8,3.8,W,2.4,2.0],[5.2,3.4,2.4,1.4,1.0],[N,3.8,2.0,1.0,0]],ro:[0, 0],pa:[],ex:[1, 1],ph:1,de:'<b>Шаг 8.</b> Раскрываем (1,1): g=4.8. Обновляем rhs соседей.'},
+{g:[[N,N,N,N,N],[5.2,4.8,W,N,N],[N,3.8,W,2.4,N],[N,N,2.4,1.4,1.0],[N,N,N,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.2,4.8,W,3.4,3.8],[4.8,3.8,W,2.4,2.0],[5.2,3.4,2.4,1.4,1.0],[N,3.8,2.0,1.0,0]],ro:[0, 0],pa:[],ex:[0, 1],ph:1,de:'<b>Шаг 9.</b> Раскрываем (0,1): g=5.2. Обновляем rhs соседей.'},
+{g:[[6.2,N,N,N,N],[5.2,4.8,W,N,N],[N,3.8,W,2.4,N],[N,N,2.4,1.4,1.0],[N,N,N,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.2,4.8,W,3.4,3.8],[4.8,3.8,W,2.4,2.0],[5.2,3.4,2.4,1.4,1.0],[N,3.8,2.0,1.0,0]],ro:[0, 0],pa:[[0, 0], [0, 1], [1, 2], [2, 3], [3, 3], [4, 4]],ex:[0, 0],ph:1,de:'<b>Шаг 10.</b> (0,0) — <b>S найден!</b> g(S)=6.2. Путь: S→(0,1)→(1,2)→(2,3)→(3,3)→G.'},
+{g:[[6.2,N,N,N,N],[5.2,4.8,W,N,N],[N,3.8,W,2.4,N],[N,N,2.4,1.4,1.0],[N,N,N,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.2,4.8,W,3.4,3.8],[4.8,3.8,W,2.4,2.0],[5.2,3.4,2.4,1.4,1.0],[N,3.8,2.0,1.0,0]],ro:[0, 1],pa:[[0, 1], [1, 2], [2, 3], [3, 3], [4, 4]],ex:N,ph:2,de:'<b>Робот → (0,1).</b> km+=1. Сенсоры видят: <b>(2,3) заблокирована!</b>'},
+{g:[[6.2,N,N,N,N],[5.2,4.8,W,N,N],[N,3.8,W,2.4,N],[N,N,W,1.4,1.0],[N,N,N,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.2,4.8,W,3.4,3.8],[4.8,5.8,W,2.4,2.0],[5.2,4.8,W,1.4,1.0],[N,N,2.0,1.0,0]],ro:[0, 1],pa:[],ex:N,ph:2,de:'<b>Стена на (2,3).</b> rhs соседей пересчитан. (1,2): rhs 3.8→5.8 — <span style="color:var(--orange)">inconsistent!</span>'},
+{g:[[6.2,N,N,N,N],[5.2,4.8,W,N,N],[N,N,W,2.4,N],[N,N,W,1.4,1.0],[N,N,N,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.8,6.2,W,3.4,3.8],[6.2,5.8,W,2.4,2.0],[N,N,W,1.4,1.0],[N,N,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[1, 2],ph:2,de:'<b>(1,2) underconsistent:</b> g=3.8 < rhs=5.8 → g=∞. Каскад: ломает (0,1), (1,1).'},
+{g:[[6.2,N,N,N,N],[N,4.8,W,N,N],[N,N,W,2.4,N],[N,N,W,1.4,1.0],[N,N,N,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.8,7.7,W,3.4,3.8],[6.2,5.8,W,2.4,2.0],[N,N,W,1.4,1.0],[N,N,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[0, 1],ph:2,de:'<b>(0,1) underconsistent:</b> g=5.2 < rhs=5.8 → g=∞. Робот потерял свой g!'},
+{g:[[6.2,N,N,N,N],[N,4.8,W,N,N],[N,N,W,2.4,N],[N,N,W,1.4,1.0],[N,N,2.0,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.8,7.7,W,3.4,3.8],[6.2,5.8,W,2.4,2.0],[N,3.4,W,1.4,1.0],[N,3.0,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[2, 4],ph:2,de:'<b>Новая клетка (2,4):</b> g=2.0. Путь в обход стены через нижний ряд.'},
+{g:[[6.2,N,N,N,N],[N,4.8,W,N,N],[N,N,W,2.4,N],[N,N,W,1.4,1.0],[N,N,2.0,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.8,7.7,W,3.4,3.8],[6.2,5.8,W,2.4,2.0],[N,3.4,W,1.4,1.0],[N,3.0,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[4, 2],ph:2,de:'(4,2) реинсерт — ключ устарел из-за km, возвращён в очередь.'},
+{g:[[6.2,N,N,N,N],[N,4.8,W,N,N],[N,N,W,2.4,N],[N,3.4,W,1.4,1.0],[N,N,2.0,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.8,7.7,W,3.4,3.8],[4.8,4.4,W,2.4,2.0],[4.4,3.4,W,1.4,1.0],[4.8,3.0,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[1, 3],ph:2,de:'<b>Новая клетка (1,3):</b> g=3.4. Мост между (0,2) и (2,4).'},
+{g:[[6.2,N,N,N,N],[N,4.8,W,N,N],[N,N,W,2.4,N],[N,3.4,W,1.4,1.0],[N,N,2.0,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.8,7.7,W,3.4,3.8],[4.8,4.4,W,2.4,2.0],[4.4,3.4,W,1.4,1.0],[4.8,3.0,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[3, 1],ph:2,de:'(3,1) реинсерт — ключ устарел, возвращён в очередь.'},
+{g:[[6.2,N,N,N,N],[N,4.8,W,N,N],[N,4.4,W,2.4,N],[N,3.4,W,1.4,1.0],[N,N,2.0,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.8,5.4,W,3.4,3.8],[4.8,4.4,W,2.4,2.0],[4.4,3.4,W,1.4,1.0],[4.8,3.0,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[1, 2],ph:2,de:'<b>(1,2) восстановлен:</b> g=4.4 (было 3.8). Через (1,3)+1 вместо (2,3)+√2.'},
+{g:[[6.2,N,N,N,N],[N,4.8,W,N,N],[4.8,4.4,W,2.4,N],[N,3.4,W,1.4,1.0],[N,N,2.0,1.0,0]],r:[[6.2,5.8,6.2,N,N],[5.8,5.4,W,3.4,3.8],[4.8,4.4,W,2.4,2.0],[4.4,3.4,W,1.4,1.0],[4.8,3.0,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[0, 2],ph:2,de:'<b>Новая клетка (0,2):</b> g=4.8. Первый шаг нового пути от робота.'},
+{g:[[6.2,N,N,N,N],[N,N,W,N,N],[4.8,4.4,W,2.4,N],[N,3.4,W,1.4,1.0],[N,N,2.0,1.0,0]],r:[[N,7.2,N,N,N],[5.8,5.4,W,3.4,3.8],[4.8,4.4,W,2.4,2.0],[4.4,3.4,W,1.4,1.0],[4.8,3.0,2.0,1.0,0]],ro:[0, 1],pa:[],ex:[1, 1],ph:2,de:'<b>(1,1) underconsistent:</b> g→∞. Каскад затронул (0,0) — rhs стал 6.8 (stale).'},
+{g:[[6.2,N,N,N,N],[5.8,N,W,N,N],[4.8,4.4,W,2.4,N],[N,3.4,W,1.4,1.0],[N,N,2.0,1.0,0]],r:[[6.8,7.2,N,N,N],[5.8,5.4,W,3.4,3.8],[4.8,4.4,W,2.4,2.0],[4.4,3.4,W,1.4,1.0],[4.8,3.0,2.0,1.0,0]],ro:[0, 1],pa:[[0, 1], [0, 2], [1, 3], [2, 4], [3, 4], [4, 4]],ex:[0, 1],ph:2,de:'<b>(0,1) восстановлен:</b> g=5.8. Путь: (0,1)→(0,2)→(1,3)→(2,4)→(3,4)→G. Стоимость: 5.83.'},
+];
 
-                // Step 1: expand G
-                {walls:[],robot:null,grs:[
-                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_}],
-                    [{g:_,r:_},{g:_,r:_},null,{g:_,r:_},{g:_,r:_}],
-                    [{g:_,r:_},{g:_,r:_},null,{g:_,r:2.4},{g:_,r:2}],
-                    [{g:_,r:_},{g:_,r:_},{g:_,r:2.4},{g:_,r:1.4},{g:_,r:1}],
-                    [{g:_,r:_},{g:_,r:_},{g:_,r:2},{g:_,r:1},{g:0,r:0}]
-                ],path:[],desc:'<b>Шаг 1.</b> Раскрываем G(4,4): g=rhs=0. Волна расходится: rhs(3,4)=1, rhs(4,3)=1, rhs(3,3)=1.4. Продолжаем расширять.'},
-
-                // Step 2: wave expands further
-                {walls:[],robot:null,grs:[
-                    [{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:_},{g:_,r:4}],
-                    [{g:_,r:_},{g:_,r:_},null,{g:3.4,r:3.4},{g:3,r:3}],
-                    [{g:_,r:_},{g:_,r:_},null,{g:2.4,r:2.4},{g:2,r:2}],
-                    [{g:_,r:_},{g:_,r:3.4},{g:2.4,r:2.4},{g:1.4,r:1.4},{g:1,r:1}],
-                    [{g:_,r:4},{g:_,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
-                ],path:[],desc:'<b>Шаг 2.</b> Волна расширяется от G. Правый нижний угол заполнен. (2,3)=2.4 — через диагональ от (3,4). Стены (2,1)/(2,2) блокируют прямой путь вверх.'},
-
-                // Step 3: wave reaches left side, wrapping around wall
-                {walls:[],robot:null,grs:[
-                    [{g:_,r:_},{g:_,r:5.8},{g:_,r:4.8},{g:_,r:4.4},{g:4,r:4}],
-                    [{g:_,r:5.2},{g:_,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
-                    [{g:_,r:4.8},{g:_,r:3.8},null,{g:2.4,r:2.4},{g:2,r:2}],
-                    [{g:_,r:4.4},{g:3.4,r:3.4},{g:2.4,r:2.4},{g:1.4,r:1.4},{g:1,r:1}],
-                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
-                ],path:[],desc:'<b>Шаг 3.</b> Волна обходит стены через (1,2)=3.8 (из (2,3)+√2). Левая сторона заполняется: rhs(0,2)=4.8, rhs(0,1)=5.2.'},
-
-                // Step 4: S reached, all consistent
-                {walls:[],robot:null,grs:[
-                    [{g:6.2,r:6.2},{g:5.8,r:5.8},{g:4.8,r:4.8},{g:4.4,r:4.4},{g:4,r:4}],
-                    [{g:5.2,r:5.2},{g:4.8,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
-                    [{g:4.8,r:4.8},{g:3.8,r:3.8},null,{g:2.4,r:2.4},{g:2,r:2}],
-                    [{g:4.4,r:4.4},{g:3.4,r:3.4},{g:2.4,r:2.4},{g:1.4,r:1.4},{g:1,r:1}],
-                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
-                ],path:[[0,0],[1,1],[1,2],[2,3],[3,4],[4,4]],desc:'<b>Фаза 1 завершена.</b> g(S)=6.2 — расстояние до G. Все consistent. Путь: S→(1,1)→(1,2)→(2,3)→(3,4)→G. Робот начинает движение.'},
-
-                // Step 5: robot moves to (1,1)
-                {walls:[],robot:[1,1],grs:[
-                    [{g:6.2,r:6.2},{g:5.8,r:5.8},{g:4.8,r:4.8},{g:4.4,r:4.4},{g:4,r:4}],
-                    [{g:5.2,r:5.2},{g:4.8,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
-                    [{g:4.8,r:4.8},{g:3.8,r:3.8},null,{g:2.4,r:2.4},{g:2,r:2}],
-                    [{g:4.4,r:4.4},{g:3.4,r:3.4},{g:2.4,r:2.4},{g:1.4,r:1.4},{g:1,r:1}],
-                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
-                ],path:[[1,1],[1,2],[2,3],[3,4],[4,4]],desc:'<b>Робот на (1,1).</b> Сделал первый шаг. k_m += h(S, (1,1)) = √2. Следующий шаг по плану — (1,2). Но сенсоры видят: <b>(2,3) заблокирована!</b>'},
-
-                // Step 6: wall at (2,3), rhs update
-                {walls:[[2,3]],robot:[1,1],grs:[
-                    [{g:6.2,r:6.2},{g:5.8,r:5.8},{g:4.8,r:4.8},{g:4.4,r:4.4},{g:4,r:4}],
-                    [{g:5.2,r:5.2},{g:4.8,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
-                    [{g:4.8,r:4.8},{g:3.8,r:4.4},null,{g:2.4,r:2.4},{g:2,r:2}],
-                    [{g:4.4,r:4.4},{g:3.4,r:3.4},null,{g:1.4,r:1.4},{g:1,r:1}],
-                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
-                ],path:[[1,1],[1,2],[2,3],[3,4],[4,4]],desc:'<b>Стена на (2,3)!</b> Пересчитываем rhs соседей. (1,2) зависела от (2,3)+√2=3.8 → теперь лучший путь через (1,3)+1=4.4. rhs(1,2) изменился: <span style="color:var(--orange)">3.8 → 4.4</span>. Inconsistent!'},
-
-                // Step 7: fix, new path
-                {walls:[[2,3]],robot:[1,1],grs:[
-                    [{g:6.2,r:6.2},{g:5.8,r:5.8},{g:4.8,r:4.8},{g:4.4,r:4.4},{g:4,r:4}],
-                    [{g:5.2,r:5.2},{g:4.8,r:4.8},null,{g:3.4,r:3.4},{g:3,r:3}],
-                    [{g:4.8,r:4.8},{g:4.4,r:4.4},null,{g:2.4,r:2.4},{g:2,r:2}],
-                    [{g:4.4,r:4.4},{g:3.4,r:3.4},null,{g:1.4,r:1.4},{g:1,r:1}],
-                    [{g:4,r:4},{g:3,r:3},{g:2,r:2},{g:1,r:1},{g:0,r:0}]
-                ],path:[[1,1],[1,2],[1,3],[2,4],[3,4],[4,4]],desc:'<b>Готово!</b> D* Lite пересчитал <b>1 клетку</b> — (1,2). Новый путь от робота: (1,1)→(1,2)→(1,3)→(2,4)→(3,4)→G. Стоимость: 3+2√2 ≈ 5.8.'},
-            ];
-
-            const WALLS_INIT=[[2,1],[2,2]];
             const grid=document.getElementById('ds-grid');
-            const svg=document.getElementById('ds-svg');
             const desc=document.getElementById('ds-desc');
             const counter=document.getElementById('ds-counter');
+            const phaseEl=document.getElementById('ds-phase');
             let cur=0,timer=null;
-            function cid(c,r){return 'dsc'+c+'_'+r}
-            function sp(c,r){return [10+c*20,10+r*20]}
-            function fmt(v){return v===I?'∞':v}
 
+            // Build grid cells
             for(let r=0;r<5;r++) for(let c=0;c<5;c++){
                 const d=document.createElement('div');
-                d.id=cid(c,r);
-                d.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 2px;text-align:center;min-height:68px;display:flex;flex-direction:column;justify-content:center;font-size:.7em;transition:all .35s;position:relative;line-height:1.4';
+                d.id='dsc'+c+'_'+r;
+                d.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 2px;text-align:center;min-height:72px;display:flex;flex-direction:column;justify-content:center;font-size:.7em;transition:all .35s;position:relative;line-height:1.4';
                 grid.appendChild(d);
             }
 
+            function fmt(v){return v===N?'∞':v}
+
             function render(i){
-                const s=grids[i];
-                const allW=[...WALLS_INIT,...(s.walls||[])];
-                const isW=(c,r)=>allW.some(w=>w[0]===c&&w[1]===r);
-                counter.textContent='Шаг '+(i+1)+' / '+grids.length;
-                desc.innerHTML=s.desc;
+                const s=S[i];
+                counter.textContent='Шаг '+(i+1)+' / '+S.length;
+                desc.innerHTML=s.de;
+                phaseEl.textContent=s.ph===1?'Фаза 1: Поиск':'Фаза 2: Реплэннинг';
+                phaseEl.style.color=s.ph===1?'var(--accent)':'var(--orange)';
+
+                const pathSet=new Set(s.pa.map(p=>p[0]+','+p[1]));
 
                 for(let r=0;r<5;r++) for(let c=0;c<5;c++){
-                    const el=document.getElementById(cid(c,r));
-                    el.style.boxShadow='none';el.style.borderWidth='1px';el.style.borderStyle='solid';el.style.opacity='1';
+                    const el=document.getElementById('dsc'+c+'_'+r);
+                    const gv=s.g[r][c], rv=s.r[r][c];
+                    const isExp=s.ex&&s.ex[0]===c&&s.ex[1]===r;
+                    const isRobot=s.ro[0]===c&&s.ro[1]===r;
+                    const isPath=pathSet.has(c+','+r);
+                    const isGoal=c===4&&r===4;
+                    const isStart=c===0&&r===0;
 
-                    if(isW(c,r)){
-                        const isNew=s.walls&&s.walls.some(w=>w[0]===c&&w[1]===r);
-                        el.style.background='rgba(248,113,113,.15)';el.style.borderColor='rgba(248,113,113,.3)';
-                        el.innerHTML=isNew?'<b style="color:var(--red);font-size:1.3em">NEW ▓</b>':'<b style="color:var(--red)">▓</b>';
+                    // Reset styles
+                    el.style.borderWidth='1px';el.style.borderStyle='solid';
+                    el.style.opacity='1';el.style.boxShadow='none';
+
+                    if(gv===W){
+                        // Wall
+                        const isNew=(s.ph===2&&c===2&&r===3);
+                        el.style.background='rgba(248,113,113,.15)';
+                        el.style.borderColor='rgba(248,113,113,.3)';
                         if(isNew){el.style.borderColor='var(--red)';el.style.borderWidth='2px';el.style.boxShadow='0 0 10px rgba(248,113,113,.4)';}
+                        el.innerHTML=isNew?'<b style="color:var(--red);font-size:1.1em">NEW ▓</b>':'<b style="color:var(--red)">▓</b>';
                         continue;
                     }
 
-                    const cell=s.grs[r][c];
-                    if(!cell){el.innerHTML='';el.style.background='var(--card)';el.style.borderColor='var(--border)';continue;}
+                    const gFinite=gv!==N;
+                    const rFinite=rv!==N;
+                    const consistent=gFinite&&rFinite&&Math.abs(gv-rv)<0.15;
+                    const bothInf=!gFinite&&!rFinite;
 
-                    const gv=cell.g,rv=cell.r;
-                    const con=(gv===rv);
-                    const bothInf=(gv===I&&rv===I);
-                    const isRobot=s.robot&&s.robot[0]===c&&s.robot[1]===r;
+                    let html='';
 
-                    let lbl='';
-                    if(isRobot) lbl='<span style="font-size:1.2em">🤖</span>';
-                    else if(c===0&&r===0&&!s.robot) lbl='<b style="color:var(--accent);font-size:1.1em">S</b>';
-                    else if(c===4&&r===4) lbl='<b style="color:var(--accent2);font-size:1.1em">G</b>';
+                    // Label
+                    if(isRobot) html+='<span style="font-size:1.2em">🤖</span>';
+                    else if(isStart&&s.ph===2) html+='<b style="color:var(--text2);font-size:.9em">S</b>';
+                    else if(isStart) html+='<b style="color:var(--accent);font-size:1.1em">S</b>';
+                    if(isGoal) html+='<b style="color:var(--accent2);font-size:1.1em">G</b>';
 
-                    let gC='',rC='';
-                    if(!con&&!bothInf){gC='color:var(--orange)';rC='color:var(--orange)';}
-
-                    let html=lbl;
+                    // Values
                     if(bothInf){
-                        html+='<span style="color:var(--text2);opacity:.5;font-size:.9em">g=∞<br>rhs=∞</span>';
-                        el.style.background='var(--card)';el.style.borderColor='var(--border)';el.style.opacity='.5';
+                        html+='<span style="color:var(--text2);opacity:.4;font-size:.85em">∞</span>';
+                        el.style.background='var(--card)';el.style.borderColor='var(--border)';el.style.opacity='.25';
                     } else {
-                        html+='<span style="font-family:\'Courier New\',monospace;font-size:.9em">';
-                        html+='<span style="'+gC+'">g='+fmt(gv)+'</span><br>';
-                        html+='<span style="'+rC+'">rhs='+fmt(rv)+'</span></span>';
-                        el.style.opacity='1';
-                        if(con){el.style.background='rgba(108,158,255,.06)';el.style.borderColor='rgba(108,158,255,.2)';}
-                        else{el.style.background='rgba(251,146,60,.12)';el.style.borderColor='rgba(251,146,60,.4)';el.style.borderWidth='2px';}
+                        let gC='',rC='';
+                        if(!consistent&&!bothInf&&gFinite){gC='color:var(--orange)';rC='color:var(--orange)';}
+                        html+='<span style="font-family:monospace;font-size:.85em">';
+                        html+='g='+(gFinite?('<b style="'+gC+'">'+gv+'</b>'):'<span style="opacity:.5">∞</span>')+'<br>';
+                        html+='<span style="'+rC+'">r='+fmt(rv)+'</span></span>';
+
+                        if(gFinite&&consistent){
+                            el.style.background='rgba(108,158,255,.08)';
+                            el.style.borderColor='rgba(108,158,255,.25)';
+                        } else if(gFinite&&!consistent){
+                            el.style.background='rgba(251,146,60,.12)';
+                            el.style.borderColor='rgba(251,146,60,.4)';
+                            el.style.borderWidth='2px';
+                        } else {
+                            // rhs only, g=∞
+                            el.style.background='var(--card)';
+                            el.style.borderColor='var(--border)';
+                            el.style.opacity='.45';
+                        }
                     }
+
                     el.innerHTML=html;
 
+                    // Highlights
+                    if(isExp){el.style.boxShadow='0 0 12px rgba(108,158,255,.5)';el.style.borderColor='var(--accent)';el.style.borderWidth='2px';}
+                    if(isPath&&!isExp){el.style.borderColor='rgba(74,222,128,.6)';el.style.borderWidth='2px';el.style.background='rgba(74,222,128,.1)';}
                     if(isRobot){el.style.borderColor='var(--accent)';el.style.borderWidth='2px';el.style.opacity='1';el.style.background='rgba(108,158,255,.2)';}
-                    if(c===0&&r===0&&s.robot){el.style.opacity='.4';}
-                    if(c===4&&r===4){el.style.borderColor='var(--accent2)';el.style.borderWidth='2px';el.style.opacity='1';}
+                    if(isGoal){el.style.borderColor='var(--accent2)';el.style.borderWidth='2px';el.style.opacity='1';}
+                    if(isStart&&s.ph===2&&!isRobot){el.style.opacity='.4';}
                 }
-
-                let h='';
-                if(s.path.length>1){
-                    const pts=s.path.map(([c,r])=>sp(c,r).join(',')).join(' ');
-                    h+='<polyline points="'+pts+'" fill="none" stroke="#4ade80" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>';
-                    s.path.forEach(([c,r])=>{const[x,y]=sp(c,r);h+='<circle cx="'+x+'" cy="'+y+'" r="2.5" fill="#4ade80" opacity=".9"/>';});
-                }
-                svg.innerHTML=h;
             }
 
             render(0);
-            document.getElementById('ds-next').onclick=()=>{if(cur<grids.length-1){cur++;render(cur);}};
+            document.getElementById('ds-next').onclick=()=>{if(cur<S.length-1){cur++;render(cur);}};
             document.getElementById('ds-prev').onclick=()=>{if(cur>0){cur--;render(cur);}};
             document.getElementById('ds-play').onclick=function(){
                 if(timer){clearInterval(timer);timer=null;this.textContent='▶ Play';return;}
-                this.textContent='⏸ Pause';cur=0;render(0);
+                this.textContent='⏸ Pause';
+                if(cur>=S.length-1) cur=0;
+                render(cur);
                 timer=setInterval(()=>{
-                    if(cur<grids.length-1){cur++;render(cur);}
+                    if(cur<S.length-1){cur++;render(cur);}
                     else{clearInterval(timer);timer=null;document.getElementById('ds-play').textContent='▶ Play';}
-                },3000);
+                },2500);
             };
         })();
         </script>

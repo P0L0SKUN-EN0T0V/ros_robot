@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаг 0 — Что такое ROS2 и зачем оно</title>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .sidebar .section-title{color:var(--text2);font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .diagram{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;margin:20px 0;text-align:center}
+        .diagram svg{max-width:100%}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .term{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:16px 20px;margin:12px 0}
+        .term strong{color:var(--accent2)}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html">Справочник (Quick Ref)</a>
+        <div class="sep"></div>
+        <div class="section-title">Пошаговый гайд</div>
+        <a href="step-0-what-is-ros2.html" class="active">0. Что такое ROS2</a>
+        <a href="step-1-tools-gazebo-rviz.html">1. Gazebo и RViz</a>
+        <a href="step-2-sensors.html">2. Одометрия и лидар</a>
+        <a href="step-3-mapping.html">3. Строим карту</a>
+        <a href="step-4-astar.html">4. Алгоритм A*</a>
+        <a href="step-5-pure-pursuit.html">5. Pure Pursuit</a>
+        <a href="step-6-assembly.html">6. Собираем проект</a>
+        <div class="sep"></div>
+        <div class="section-title">Алгоритмы</div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Шаг 0: Что такое ROS2 и зачем оно</h1>
+        <p class="subtitle">Объясняем с нуля — без предварительных знаний</p>
+
+        <!-- ============ ЗАЧЕМ ============ -->
+        <h2>Зачем роботу программа</h2>
+
+        <p>Робот — это набор железок: моторы, датчики, камеры, колёса. Сами по себе они ничего не делают. Чтобы робот ехал, объезжал стены и добирался до цели, нужна <strong>программа</strong>, которая:</p>
+
+        <ol>
+            <li><strong>Читает данные с датчиков</strong> — робот «видит» мир через лидар (лазерный дальномер) и одометрию (счётчик оборотов колёс).</li>
+            <li><strong>Думает</strong> — строит карту, прокладывает маршрут.</li>
+            <li><strong>Управляет моторами</strong> — посылает команды «ехать вперёд», «повернуть на 30°».</li>
+        </ol>
+
+        <div class="analogy">Представь пилота самолёта. Он смотрит на приборы (датчики), решает куда лететь (планирование), и двигает штурвал (управление). Программа робота делает то же самое — только автоматически.</div>
+
+        <!-- ============ ПРОБЛЕМА ============ -->
+        <h2>Проблема: всё в одном — плохо</h2>
+
+        <p>Можно написать одну гигантскую программу, которая делает вообще всё: читает лидар, строит карту, ищет путь, рулит моторами. Но это плохая идея:</p>
+
+        <ul>
+            <li><strong>Сломалась одна часть</strong> — падает вся программа целиком.</li>
+            <li><strong>Хочешь поменять алгоритм пути?</strong> — нужно перелопатить весь код.</li>
+            <li><strong>Работаешь в команде?</strong> — все правят один файл и мешают друг другу.</li>
+        </ul>
+
+        <div class="analogy">Это как кухня, где один человек одновременно готовит, моет посуду и принимает заказы. Быстрее и надёжнее — разделить на повара, посудомойщика и официанта. Каждый делает своё дело, а общаются через записки (заказы).</div>
+
+        <!-- ============ ROS2 ============ -->
+        <h2>Решение: ROS2</h2>
+
+        <div class="term">
+            <strong>ROS2</strong> (Robot Operating System 2) — это <em>не</em> операционная система. Это <strong>фреймворк</strong> — набор инструментов и правил, которые помогают писать программы для роботов. ROS2 позволяет разбить робота на независимые программы, которые общаются друг с другом.
+        </div>
+
+        <p>ROS2 даёт три ключевых вещи:</p>
+
+        <div class="card highlight">
+            <p><strong>1. Способ разбить программу на части</strong> — каждая часть называется <em>нода</em> (node).</p>
+            <p><strong>2. Способ связать части между собой</strong> — через <em>топики</em> (topics).</p>
+            <p><strong>3. Готовые инструменты</strong> — визуализация, симулятор, логирование, запись данных.</p>
+        </div>
+
+        <!-- ============ НОДА ============ -->
+        <h2>Что такое нода (Node)</h2>
+
+        <div class="term">
+            <strong>Нода</strong> — это отдельная программа (процесс), которая делает одну конкретную вещь. У каждой ноды есть имя.
+        </div>
+
+        <p>Примеры нод в типичном роботе:</p>
+
+        <table>
+            <tr><th>Имя ноды</th><th>Что делает</th></tr>
+            <tr><td><code>lidar_driver</code></td><td>Читает данные с лидара и публикует их</td></tr>
+            <tr><td><code>mapper</code></td><td>Получает данные лидара, строит карту</td></tr>
+            <tr><td><code>planner</code></td><td>Получает карту и цель, ищет путь через A*</td></tr>
+            <tr><td><code>controller</code></td><td>Получает путь, считает скорости для моторов</td></tr>
+        </table>
+
+        <div class="analogy">Нода — это работник на заводе. У каждого своя станция, свой инструмент, своя задача. Они не лезут в дела друг друга, а общаются через конвейерную ленту.</div>
+
+        <p>В нашем проекте мы напишем <strong>одну ноду</strong> <code>global_planner_node</code>, которая будет делать всё сразу: и карту строить, и путь искать, и рулить. Это упрощение для учебного проекта — в реальных роботах ноды обычно разделяют.</p>
+
+        <!-- ============ ТОПИК ============ -->
+        <h2>Что такое топик (Topic)</h2>
+
+        <div class="term">
+            <strong>Топик</strong> — это именованный канал для передачи данных между нодами. Одна нода <em>публикует</em> (publish) данные в топик, другая — <em>подписывается</em> (subscribe) и читает их.
+        </div>
+
+        <div class="analogy">Топик — это радиоволна. Радиостанция (publisher) вещает на частоте 101.5 FM. Любой, у кого есть приёмник (subscriber), может настроиться и слушать. Станция не знает, сколько слушателей. Слушатели не знают друг о друге. Все просто используют один канал.</div>
+
+        <p>У каждого топика есть:</p>
+        <ul>
+            <li><strong>Имя</strong> — строка вроде <code>/scan</code> или <code>/cmd_vel</code>. Слеш в начале — это просто соглашение.</li>
+            <li><strong>Тип сообщения</strong> — формат данных, который летит по этому каналу.</li>
+        </ul>
+
+        <h3>Топики в нашем проекте</h3>
+
+        <table>
+            <tr><th>Топик</th><th>Тип</th><th>Кто пишет</th><th>Кто читает</th><th>Что внутри</th></tr>
+            <tr>
+                <td><code>/scan</code></td>
+                <td><code>LaserScan</code></td>
+                <td>Симулятор (Gazebo)</td>
+                <td>Наша нода</td>
+                <td>Массив расстояний от лидара до ближайших объектов (360 лучей вокруг робота)</td>
+            </tr>
+            <tr>
+                <td><code>/odom</code></td>
+                <td><code>Odometry</code></td>
+                <td>Симулятор (Gazebo)</td>
+                <td>Наша нода</td>
+                <td>Позиция робота (x, y) и его ориентация (куда смотрит)</td>
+            </tr>
+            <tr>
+                <td><code>/goal_pose</code></td>
+                <td><code>PoseStamped</code></td>
+                <td>Мы через RViz (мышкой)</td>
+                <td>Наша нода</td>
+                <td>Куда ехать — координаты цели</td>
+            </tr>
+            <tr>
+                <td><code>/cmd_vel</code></td>
+                <td><code>Twist</code></td>
+                <td>Наша нода</td>
+                <td>Симулятор (Gazebo)</td>
+                <td>Команды движения: линейная скорость + угловая скорость</td>
+            </tr>
+            <tr>
+                <td><code>/map</code></td>
+                <td><code>OccupancyGrid</code></td>
+                <td>Наша нода</td>
+                <td>RViz (для отрисовки)</td>
+                <td>Карта мира в виде сетки: 0 = свободно, 100 = стена, -1 = неизвестно</td>
+            </tr>
+            <tr>
+                <td><code>/global_plan</code></td>
+                <td><code>Path</code></td>
+                <td>Наша нода</td>
+                <td>RViz (для отрисовки)</td>
+                <td>Набор точек — запланированный путь от робота до цели</td>
+            </tr>
+        </table>
+
+        <!-- ============ СХЕМА ============ -->
+        <h2>Как всё связано: общая схема</h2>
+
+        <p>Вот как данные текут в нашем проекте:</p>
+
+        <div class="diagram">
+            <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',sans-serif">
+                <!-- Gazebo box -->
+                <rect x="20" y="20" width="160" height="120" rx="12" fill="#1a1d2e" stroke="#fb923c" stroke-width="2"/>
+                <text x="100" y="52" text-anchor="middle" fill="#fb923c" font-weight="700" font-size="15">Gazebo</text>
+                <text x="100" y="74" text-anchor="middle" fill="#94a3b8" font-size="11">(симулятор мира,</text>
+                <text x="100" y="90" text-anchor="middle" fill="#94a3b8" font-size="11">робот, стены, лидар)</text>
+                <text x="100" y="118" text-anchor="middle" fill="#94a3b8" font-size="10">Нам не нужно писать</text>
+                <text x="100" y="132" text-anchor="middle" fill="#94a3b8" font-size="10">— он уже готовый</text>
+
+                <!-- Our node -->
+                <rect x="260" y="20" width="180" height="120" rx="12" fill="#1a1d2e" stroke="#6c9eff" stroke-width="2"/>
+                <text x="350" y="52" text-anchor="middle" fill="#6c9eff" font-weight="700" font-size="14">global_planner_node</text>
+                <text x="350" y="74" text-anchor="middle" fill="#94a3b8" font-size="11">Наш код!</text>
+                <text x="350" y="96" text-anchor="middle" fill="#94a3b8" font-size="10">• Строит карту</text>
+                <text x="350" y="112" text-anchor="middle" fill="#94a3b8" font-size="10">• Ищет путь (A*)</text>
+                <text x="350" y="128" text-anchor="middle" fill="#94a3b8" font-size="10">• Едет (Pure Pursuit)</text>
+
+                <!-- RViz box -->
+                <rect x="520" y="20" width="160" height="120" rx="12" fill="#1a1d2e" stroke="#a78bfa" stroke-width="2"/>
+                <text x="600" y="52" text-anchor="middle" fill="#a78bfa" font-weight="700" font-size="15">RViz</text>
+                <text x="600" y="74" text-anchor="middle" fill="#94a3b8" font-size="11">(визуализация)</text>
+                <text x="600" y="96" text-anchor="middle" fill="#94a3b8" font-size="10">Показывает карту,</text>
+                <text x="600" y="112" text-anchor="middle" fill="#94a3b8" font-size="10">путь, позицию</text>
+                <text x="600" y="128" text-anchor="middle" fill="#94a3b8" font-size="10">Тоже готовый</text>
+
+                <!-- Arrows: Gazebo → Node -->
+                <line x1="180" y1="55" x2="258" y2="55" stroke="#4ade80" stroke-width="2" marker-end="url(#arr-green)"/>
+                <text x="219" y="48" text-anchor="middle" fill="#4ade80" font-size="9">/scan</text>
+
+                <line x1="180" y1="85" x2="258" y2="85" stroke="#4ade80" stroke-width="2" marker-end="url(#arr-green)"/>
+                <text x="219" y="78" text-anchor="middle" fill="#4ade80" font-size="9">/odom</text>
+
+                <!-- Arrow: Node → Gazebo -->
+                <line x1="258" y1="115" x2="182" y2="115" stroke="#f87171" stroke-width="2" marker-end="url(#arr-red)"/>
+                <text x="219" y="110" text-anchor="middle" fill="#f87171" font-size="9">/cmd_vel</text>
+
+                <!-- Arrows: Node → RViz -->
+                <line x1="440" y1="55" x2="518" y2="55" stroke="#a78bfa" stroke-width="2" marker-end="url(#arr-purple)"/>
+                <text x="479" y="48" text-anchor="middle" fill="#a78bfa" font-size="9">/map</text>
+
+                <line x1="440" y1="85" x2="518" y2="85" stroke="#a78bfa" stroke-width="2" marker-end="url(#arr-purple)"/>
+                <text x="479" y="78" text-anchor="middle" fill="#a78bfa" font-size="9">/global_plan</text>
+
+                <!-- Arrow: RViz → Node -->
+                <line x1="518" y1="115" x2="442" y2="115" stroke="#fb923c" stroke-width="2" marker-end="url(#arr-orange)"/>
+                <text x="479" y="110" text-anchor="middle" fill="#fb923c" font-size="9">/goal_pose</text>
+
+                <!-- Legend -->
+                <rect x="20" y="180" width="660" height="140" rx="12" fill="#141620" stroke="#2a2d3e" stroke-width="1"/>
+                <text x="350" y="206" text-anchor="middle" fill="#6c9eff" font-weight="700" font-size="13">Что откуда приходит и что мы пишем</text>
+
+                <circle cx="50" cy="232" r="6" fill="#4ade80"/>
+                <text x="64" y="236" fill="#e2e8f0" font-size="11"><tspan font-weight="700" fill="#4ade80">/scan, /odom</tspan> — Gazebo отправляет данные сенсоров. Мы их только читаем.</text>
+
+                <circle cx="50" cy="258" r="6" fill="#f87171"/>
+                <text x="64" y="262" fill="#e2e8f0" font-size="11"><tspan font-weight="700" fill="#f87171">/cmd_vel</tspan> — мы отправляем команды движения. Gazebo их исполняет.</text>
+
+                <circle cx="50" cy="284" r="6" fill="#a78bfa"/>
+                <text x="64" y="288" fill="#e2e8f0" font-size="11"><tspan font-weight="700" fill="#a78bfa">/map, /global_plan</tspan> — мы публикуем для RViz. Только для визуализации.</text>
+
+                <circle cx="50" cy="310" r="6" fill="#fb923c"/>
+                <text x="64" y="314" fill="#e2e8f0" font-size="11"><tspan font-weight="700" fill="#fb923c">/goal_pose</tspan> — мы кликаем в RViz мышкой «поехать сюда». Наша нода читает.</text>
+
+                <!-- Arrow markers -->
+                <defs>
+                    <marker id="arr-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4ade80"/></marker>
+                    <marker id="arr-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f87171"/></marker>
+                    <marker id="arr-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#a78bfa"/></marker>
+                    <marker id="arr-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#fb923c"/></marker>
+                </defs>
+            </svg>
+        </div>
+
+        <!-- ============ СООБЩЕНИЕ ============ -->
+        <h2>Что такое сообщение (Message)</h2>
+
+        <div class="term">
+            <strong>Сообщение</strong> — это структура данных с фиксированным набором полей. Каждый топик передаёт сообщения строго одного типа.
+        </div>
+
+        <p>Не нужно выдумывать формат самому — ROS2 уже определил стандартные типы. Вот те, которые мы будем использовать:</p>
+
+        <div class="card">
+            <h3>Twist (команда движения)</h3>
+            <p>Топик: <code>/cmd_vel</code></p>
+            <pre>geometry_msgs/msg/Twist
+├── linear       ← линейная скорость
+│   ├── x: 0.2   ← «ехать вперёд со скоростью 0.2 м/с»
+│   ├── y: 0.0   ← (для колёсного робота всегда 0)
+│   └── z: 0.0
+└── angular      ← угловая скорость
+    ├── x: 0.0
+    ├── y: 0.0
+    └── z: 0.5   ← «поворачивать влево на 0.5 рад/с»</pre>
+            <p>Для нашего робота важны только два поля: <code>linear.x</code> (вперёд/назад) и <code>angular.z</code> (поворот влево/вправо).</p>
+        </div>
+
+        <div class="card">
+            <h3>LaserScan (данные лидара)</h3>
+            <p>Топик: <code>/scan</code></p>
+            <pre>sensor_msgs/msg/LaserScan
+├── angle_min: -3.14     ← начальный угол (рад)
+├── angle_max:  3.14     ← конечный угол (рад)
+├── angle_increment: 0.0175  ← шаг между лучами (~1°)
+├── ranges: [0.5, 0.7, 1.2, inf, ...]  ← массив расстояний
+└── ...</pre>
+            <p><code>ranges</code> — массив из ~360 чисел. Каждое число — расстояние в метрах до ближайшего объекта в данном направлении. <code>inf</code> = ничего не обнаружено (луч улетел в бесконечность).</p>
+        </div>
+
+        <div class="card">
+            <h3>Odometry (позиция робота)</h3>
+            <p>Топик: <code>/odom</code></p>
+            <pre>nav_msgs/msg/Odometry
+├── pose.pose.position
+│   ├── x: 1.5    ← робот находится в точке x=1.5 м
+│   └── y: 2.3    ← и y=2.3 м
+└── pose.pose.orientation
+    └── (кватернион → угол)  ← куда робот «смотрит»</pre>
+            <p>Из ориентации (кватерниона) мы извлечём угол <code>yaw</code> — направление, куда повёрнут нос робота.</p>
+        </div>
+
+        <!-- ============ PUB/SUB ============ -->
+        <h2>Pub / Sub: как ноды общаются</h2>
+
+        <p>Механизм «публикация-подписка» (publish-subscribe, или pub/sub) работает так:</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text"><strong>Publisher создаёт топик</strong> — нода говорит: «Я буду публиковать данные типа LaserScan в топик /scan».</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text"><strong>Subscriber подписывается</strong> — другая нода говорит: «Когда в /scan появятся новые данные — вызови мою функцию scanCallback».</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text"><strong>Данные текут автоматически</strong> — publisher пишет, subscriber получает. Никто никого не ждёт. Если subscriber не успел — пропустит сообщение (и это нормально).</div>
+        </div>
+
+        <div class="analogy">Это как YouTube-канал. Автор загружает видео (publish). Подписчики получают уведомления (subscribe). Автор не знает, кто конкретно смотрит. Если ты отписался — автор продолжает загружать. Если подписался — получаешь новые видео автоматически.</div>
+
+        <div class="card success">
+            <p><strong>Ключевое преимущество:</strong> Publisher и Subscriber ничего не знают друг о друге. Можно заменить одну ноду другой, и всё продолжит работать — если формат сообщений совпадает. Это как USB: не важно, какая мышка — главное, чтобы разъём подходил.</p>
+        </div>
+
+        <!-- ============ КОД ============ -->
+        <h2>Как это выглядит в коде (C++)</h2>
+
+        <p>Не пугайся — сейчас просто посмотри на общую структуру. Детали разберём позже.</p>
+
+        <pre><span style="color:#94a3b8">// Подключаем ROS2</span>
+#include &lt;rclcpp/rclcpp.hpp&gt;
+<span style="color:#94a3b8">// Подключаем типы сообщений</span>
+#include &lt;sensor_msgs/msg/laser_scan.hpp&gt;
+#include &lt;geometry_msgs/msg/twist.hpp&gt;
+
+<span style="color:#94a3b8">// Наша нода — это класс, наследник от rclcpp::Node</span>
+class MyRobot : public rclcpp::Node {
+public:
+    MyRobot() : Node(<span style="color:#4ade80">"my_robot_node"</span>) {
+
+        <span style="color:#94a3b8">// Подписываемся на /scan (данные лидара)</span>
+        scan_sub_ = this-&gt;create_subscription&lt;sensor_msgs::msg::LaserScan&gt;(
+            <span style="color:#4ade80">"/scan"</span>, 10,
+            [this](sensor_msgs::msg::LaserScan::SharedPtr msg) {
+                <span style="color:#94a3b8">// Эта функция вызывается каждый раз,</span>
+                <span style="color:#94a3b8">// когда Gazebo присылает новые данные лидара</span>
+                RCLCPP_INFO(this-&gt;get_logger(), <span style="color:#4ade80">"Лидар: %zu лучей"</span>, msg-&gt;ranges.size());
+            }
+        );
+
+        <span style="color:#94a3b8">// Создаём publisher для /cmd_vel (команды движения)</span>
+        cmd_pub_ = this-&gt;create_publisher&lt;geometry_msgs::msg::Twist&gt;(
+            <span style="color:#4ade80">"/cmd_vel"</span>, 10
+        );
+    }
+
+private:
+    rclcpp::Subscription&lt;sensor_msgs::msg::LaserScan&gt;::SharedPtr scan_sub_;
+    rclcpp::Publisher&lt;geometry_msgs::msg::Twist&gt;::SharedPtr cmd_pub_;
+};</pre>
+
+        <div class="card warn">
+            <p><strong>Не надо заучивать!</strong> Этот код — шаблон. В следующих шагах мы соберём его по кусочкам, и каждую строчку объясним. Сейчас важно понять общую идею: нода создаёт подписки (получать данные) и паблишеры (отправлять данные).</p>
+        </div>
+
+        <!-- ============ ЧТО ПИСАТЬ ============ -->
+        <h2>Что пишем мы, а что уже готовое</h2>
+
+        <p>Это самый частый вопрос новичков: <em>«А откуда берётся лидар / карта / симуляция?»</em></p>
+
+        <table>
+            <tr><th>Компонент</th><th>Кто его делает</th><th>Нам нужно</th></tr>
+            <tr>
+                <td>Симуляция мира (стены, комнаты)</td>
+                <td>Gazebo (готовое)</td>
+                <td>Только запустить</td>
+            </tr>
+            <tr>
+                <td>Робот (TurtleBot3)</td>
+                <td>Пакет <code>turtlebot3_gazebo</code> (готовое)</td>
+                <td>Только запустить</td>
+            </tr>
+            <tr>
+                <td>Данные лидара (<code>/scan</code>)</td>
+                <td>Gazebo автоматически публикует</td>
+                <td>Только подписаться и читать</td>
+            </tr>
+            <tr>
+                <td>Позиция робота (<code>/odom</code>)</td>
+                <td>Gazebo автоматически публикует</td>
+                <td>Только подписаться и читать</td>
+            </tr>
+            <tr>
+                <td>Визуализация (карта, путь)</td>
+                <td>RViz (готовое)</td>
+                <td>Только публиковать данные в нужном формате</td>
+            </tr>
+            <tr style="background:rgba(108,158,255,.08)">
+                <td><strong>Построение карты</strong></td>
+                <td><strong>Мы пишем!</strong></td>
+                <td>Функция <code>updateMapWithLaser</code></td>
+            </tr>
+            <tr style="background:rgba(108,158,255,.08)">
+                <td><strong>Поиск пути (A*)</strong></td>
+                <td><strong>Мы пишем!</strong></td>
+                <td>Функция <code>planAStar</code></td>
+            </tr>
+            <tr style="background:rgba(108,158,255,.08)">
+                <td><strong>Управление движением</strong></td>
+                <td><strong>Мы пишем!</strong></td>
+                <td>Функция <code>purePursuitControl</code></td>
+            </tr>
+        </table>
+
+        <div class="card success">
+            <p><strong>Итого:</strong> из всей системы мы пишем только <strong>один файл</strong> — ноду <code>global_planner_node</code> с тремя ключевыми функциями. Всё остальное (симулятор, робот, лидар, визуализация) — уже готовое и работает из коробки.</p>
+        </div>
+
+        <!-- ============ СЛОВАРЬ ============ -->
+        <h2>Мини-словарь</h2>
+
+        <p>Термины, которые будут встречаться дальше. Сохрани как шпаргалку:</p>
+
+        <table>
+            <tr><th>Термин</th><th>Простым языком</th></tr>
+            <tr><td><strong>ROS2</strong></td><td>Фреймворк для программирования роботов. Не ОС, а набор библиотек и инструментов</td></tr>
+            <tr><td><strong>Нода (Node)</strong></td><td>Отдельная программа, делающая одну задачу</td></tr>
+            <tr><td><strong>Топик (Topic)</strong></td><td>Именованный канал для передачи данных между нодами</td></tr>
+            <tr><td><strong>Сообщение (Message)</strong></td><td>Структура данных, которая летит по топику</td></tr>
+            <tr><td><strong>Publisher</strong></td><td>Нода, которая отправляет данные в топик</td></tr>
+            <tr><td><strong>Subscriber</strong></td><td>Нода, которая получает данные из топика</td></tr>
+            <tr><td><strong>Gazebo</strong></td><td>3D-симулятор — виртуальный мир с роботом, стенами и датчиками</td></tr>
+            <tr><td><strong>RViz</strong></td><td>Программа для визуализации — показывает карту, путь, позицию робота</td></tr>
+            <tr><td><strong>TurtleBot3</strong></td><td>Маленький учебный робот (в нашем случае — виртуальный, в Gazebo)</td></tr>
+            <tr><td><strong>Лидар (LiDAR)</strong></td><td>Лазерный дальномер — крутится и измеряет расстояние до объектов</td></tr>
+            <tr><td><strong>Одометрия (Odometry)</strong></td><td>Данные о позиции и ориентации робота (где он и куда смотрит)</td></tr>
+            <tr><td><strong>A*</strong></td><td>Алгоритм поиска кратчайшего пути на сетке (карте)</td></tr>
+            <tr><td><strong>Pure Pursuit</strong></td><td>Алгоритм движения по пути — «следовать за морковкой»</td></tr>
+            <tr><td><strong>OccupancyGrid</strong></td><td>Карта в виде сетки: каждая клетка = свободно / стена / неизвестно</td></tr>
+        </table>
+
+        <!-- ============ ИТОГ ============ -->
+        <h2>Что дальше</h2>
+
+        <div class="card highlight">
+            <p>Теперь ты знаешь основы:</p>
+            <ul>
+                <li>ROS2 — фреймворк, который позволяет нодам общаться через топики.</li>
+                <li>Gazebo — готовый симулятор. Он даёт нам <code>/scan</code> и <code>/odom</code>.</li>
+                <li>Мы пишем одну ноду, которая строит карту, ищет путь и управляет роботом.</li>
+                <li>Результат публикуем в топики, RViz показывает красиво.</li>
+            </ul>
+            <p>В следующем шаге установим и запустим Gazebo и RViz — увидим робота своими глазами.</p>
+        </div>
+
+        <!-- ============ НАВИГАЦИЯ ============ -->
+        <div class="nav-bottom">
+            <span style="color:var(--text2)">Это первый шаг</span>
+            <a href="step-1-tools-gazebo-rviz.html">Шаг 1: Gazebo и RViz →</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -256,11 +256,12 @@
     <span style="color:#6c9eff">double</span> min_range = std::numeric_limits&lt;<span style="color:#6c9eff">double</span>&gt;::infinity();
 
     <span style="color:#94a3b8">// Проверяем лучи в переднем секторе (±30°)</span>
-    <span style="color:#6c9eff">int</span> center = msg->ranges.size() / 2;  <span style="color:#94a3b8">// центральный луч = вперёд</span>
-    <span style="color:#6c9eff">int</span> spread = 30;                        <span style="color:#94a3b8">// ±30 лучей (~±30°)</span>
+    <span style="color:#94a3b8">// У TurtleBot3 index 0 = вперёд (angle_min ≈ 0)</span>
+    <span style="color:#6c9eff">int</span> n = msg->ranges.size();
+    <span style="color:#6c9eff">int</span> spread = 30;  <span style="color:#94a3b8">// ±30 лучей (~±30°)</span>
 
-    <span style="color:#6c9eff">for</span> (<span style="color:#6c9eff">int</span> i = center - spread; i &lt;= center + spread; i++) {
-        <span style="color:#6c9eff">if</span> (i &lt; 0 || i >= (<span style="color:#6c9eff">int</span>)msg->ranges.size()) <span style="color:#6c9eff">continue</span>;
+    <span style="color:#6c9eff">for</span> (<span style="color:#6c9eff">int</span> k = -spread; k &lt;= spread; k++) {
+        <span style="color:#6c9eff">int</span> i = (k + n) % n;  <span style="color:#94a3b8">// wrap-around: -1 → последний луч</span>
         <span style="color:#6c9eff">float</span> r = msg->ranges[i];
         <span style="color:#6c9eff">if</span> (!std::isinf(r) && !std::isnan(r) && r &lt; min_range) {
             min_range = r;

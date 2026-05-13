@@ -260,7 +260,7 @@ std::vector&lt;<span style="color:#6c9eff">int</span>8_t&gt; map_data_(MAP_SIZE 
         <pre><span style="color:#6c9eff">bool</span> isFree(<span style="color:#6c9eff">int</span> x, <span style="color:#6c9eff">int</span> y) {
     <span style="color:#6c9eff">if</span> (x &lt; 0 || x >= MAP_SIZE || y &lt; 0 || y >= MAP_SIZE) <span style="color:#6c9eff">return</span> <span style="color:#6c9eff">false</span>;
     <span style="color:#6c9eff">int</span> val = map_data_[y * MAP_SIZE + x];
-    return val == <span style="color:#4ade80">0</span> || val == <span style="color:#fb923c">-1</span>;  <span style="color:#94a3b8">// свободно ИЛИ неизвестно</span>
+    <span style="color:#6c9eff">return</span> val == <span style="color:#4ade80">0</span> || val == <span style="color:#fb923c">-1</span>;  <span style="color:#94a3b8">// свободно ИЛИ неизвестно</span>
 }</pre>
 
         <p>Это ключевая деталь из задания преподавателя. Без неё A* не сможет проложить путь через неисследованные зоны.</p>

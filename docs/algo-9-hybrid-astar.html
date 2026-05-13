@@ -431,46 +431,153 @@
         </script>
 
         <!-- ============ PSEUDOCODE ============ -->
-        <h2>Псевдокод</h2>
+        <h2>Реализация на Python</h2>
 
-<pre>
-<span style="color:var(--accent)">function</span> HybridAStar(start, goal, grid):
-    open &larr; priority_queue()
-    open.push(start, f = h(start))
-    visited[discretize(start)] &larr; start
+        <p>Полная реализация Hybrid A*. Ключевое отличие от обычного A*: состояние = <code>(x, y, θ)</code>, кинематическая модель (bicycle), дискретизация по 3D-клеткам.</p>
 
-    <span style="color:var(--accent)">while</span> open не пуст:
-        cur &larr; open.pop_min()
+<pre><span style="color:var(--accent)">import</span> math
+<span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
+<span style="color:var(--accent)">from</span> dataclasses <span style="color:var(--accent)">import</span> dataclass, field
 
-        <span style="color:var(--text2)">// Analytic expansion: пробуем кривую напрямую к цели</span>
-        <span style="color:var(--accent)">if</span> iteration % N == 0:
-            curve &larr; ReedsShepp(cur, goal)
-            <span style="color:var(--accent)">if</span> collision_free(curve):
-                <span style="color:var(--accent)">return</span> reconstruct(cur) + curve
+<span style="color:var(--accent2)">N_THETA</span>: <span style="color:var(--accent2)">int</span> = 72                  <span style="color:var(--green)"># 5° шаг угла</span>
+<span style="color:var(--accent2)">ANGLE_RES</span>: <span style="color:var(--accent2)">float</span> = 2 * math.pi / N_THETA
+<span style="color:var(--accent2)">L</span>: <span style="color:var(--accent2)">float</span> = 0.3                    <span style="color:var(--green)"># колёсная база [м]</span>
+<span style="color:var(--accent2)">DS</span>: <span style="color:var(--accent2)">float</span> = 0.1                   <span style="color:var(--green)"># шаг [м]</span>
+<span style="color:var(--accent2)">DELTA_MAX</span>: <span style="color:var(--accent2)">float</span> = 0.5            <span style="color:var(--green)"># макс. угол руля [рад]</span>
+<span style="color:var(--accent2)">STEERS</span>: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">float</span>] = [
+    -DELTA_MAX, -DELTA_MAX/2, 0.0, DELTA_MAX/2, DELTA_MAX
+]
 
-        <span style="color:var(--text2)">// Expand: применяем каждый маневр</span>
-        <span style="color:var(--accent)">for</span> &delta; &isin; {-&delta;<sub>max</sub>, -&delta;<sub>max</sub>/2, 0, +&delta;<sub>max</sub>/2, +&delta;<sub>max</sub>}:
-            next &larr; simulate(cur, &delta;, &Delta;s)
-            cell &larr; discretize(next)  <span style="color:var(--text2)">// (i, j, k<sub>&theta;</sub>)</span>
 
-            <span style="color:var(--accent)">if</span> !collision_free(arc(cur, next)): <span style="color:var(--accent)">continue</span>
-            <span style="color:var(--accent)">if</span> cell &isin; visited <span style="color:var(--accent)">and</span> visited[cell].g &le; next.g: <span style="color:var(--accent)">continue</span>
+@dataclass
+<span style="color:var(--accent)">class</span> <span style="color:var(--accent2)">State3D</span>:
+    x: <span style="color:var(--accent2)">float</span>
+    y: <span style="color:var(--accent2)">float</span>
+    theta: <span style="color:var(--accent2)">float</span>
+    g: <span style="color:var(--accent2)">float</span> = 0.0
+    f: <span style="color:var(--accent2)">float</span> = 0.0
+    parent_idx: <span style="color:var(--accent2)">int</span> = -1
 
-            next.g &larr; cur.g + arc_length
-            next.f &larr; next.g + max(h<sub>dubins</sub>(next), h<sub>2d</sub>(next))
-            next.parent &larr; cur
-            visited[cell] &larr; next
-            open.push(next)
+    <span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">disc</span>(self, res: <span style="color:var(--accent2)">float</span>) -> <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>]:
+        <span style="color:var(--green)">"""Дискретизация (x,y,θ) → (i, j, k_θ)."""</span>
+        ix: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">int</span>(self.x / res)
+        iy: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">int</span>(self.y / res)
+        ik: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">int</span>(self.theta / ANGLE_RES) % N_THETA
+        <span style="color:var(--accent)">return</span> (ix, iy, ik)
 
-    <span style="color:var(--accent)">return</span> null  <span style="color:var(--text2)">// путь не найден</span>
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">simulate</span>(s: <span style="color:var(--accent2)">State3D</span>, delta: <span style="color:var(--accent2)">float</span>) -> <span style="color:var(--accent2)">State3D</span>:
+    <span style="color:var(--green)">"""Один шаг кинематической модели (bicycle model)."""</span>
+    nx: <span style="color:var(--accent2)">float</span> = s.x + DS * math.cos(s.theta)
+    ny: <span style="color:var(--accent2)">float</span> = s.y + DS * math.sin(s.theta)
+    nt: <span style="color:var(--accent2)">float</span> = s.theta + (DS / L) * math.tan(delta)
+    nt = nt % (2 * math.pi)              <span style="color:var(--orange)"># нормализация [0, 2π)</span>
+    <span style="color:var(--accent)">return</span> State3D(x=nx, y=ny, theta=nt)
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">collision_free</span>(
+    s: <span style="color:var(--accent2)">State3D</span>,
+    grid: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">bool</span>]],
+    res: <span style="color:var(--accent2)">float</span>
+) -> <span style="color:var(--accent2)">bool</span>:
+    <span style="color:var(--green)">"""Проверка: клетка, в которую попадает (x,y), свободна?"""</span>
+    ix: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">int</span>(s.x / res)
+    iy: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">int</span>(s.y / res)
+    <span style="color:var(--accent)">if</span> ix &lt; 0 <span style="color:var(--accent)">or</span> iy &lt; 0 <span style="color:var(--accent)">or</span> iy >= <span style="color:var(--accent)">len</span>(grid) <span style="color:var(--accent)">or</span> ix >= <span style="color:var(--accent)">len</span>(grid[0]):
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">False</span>
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">not</span> grid[iy][ix]
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">heuristic_2d</span>(s: <span style="color:var(--accent2)">State3D</span>, goal: <span style="color:var(--accent2)">State3D</span>) -> <span style="color:var(--accent2)">float</span>:
+    <span style="color:var(--green)">"""Евклидово расстояние (нижняя граница)."""</span>
+    <span style="color:var(--accent)">return</span> math.hypot(s.x - goal.x, s.y - goal.y)
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">hybrid_astar</span>(
+    grid: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">bool</span>]],
+    res: <span style="color:var(--accent2)">float</span>,
+    start: <span style="color:var(--accent2)">State3D</span>,
+    goal: <span style="color:var(--accent2)">State3D</span>,
+    max_iter: <span style="color:var(--accent2)">int</span> = 50000
+) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">State3D</span>] | <span style="color:var(--accent)">None</span>:
+    <span style="color:var(--green)">"""Hybrid A* с bicycle model. Возвращает путь или None."""</span>
+
+    start.g = 0.0
+    start.f = heuristic_2d(start, goal)
+    nodes: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">State3D</span>] = [start]
+    visited: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent)">tuple</span>, <span style="color:var(--accent2)">int</span>] = {start.disc(res): 0}
+
+    counter: <span style="color:var(--accent2)">int</span> = 0
+    open_heap: <span style="color:var(--accent2)">list</span> = [(start.f, counter, 0)]
+    goal_thresh: <span style="color:var(--accent2)">float</span> = res * 1.5     <span style="color:var(--green)"># порог достижения цели</span>
+
+    <span style="color:var(--accent)">for</span> _ <span style="color:var(--accent)">in</span> <span style="color:var(--accent)">range</span>(max_iter):
+        <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> open_heap:
+            <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">None</span>
+
+        _, _, idx = heappop(open_heap)
+        cur: <span style="color:var(--accent2)">State3D</span> = nodes[idx]
+
+        <span style="color:var(--green)"># Достигли цели?</span>
+        <span style="color:var(--accent)">if</span> math.hypot(cur.x-goal.x, cur.y-goal.y) &lt; goal_thresh:
+            path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">State3D</span>] = []
+            i: <span style="color:var(--accent2)">int</span> = idx
+            <span style="color:var(--accent)">while</span> i != -1:
+                path.append(nodes[i])
+                i = nodes[i].parent_idx
+            path.reverse()
+            <span style="color:var(--accent)">return</span> path
+
+        <span style="color:var(--green)"># Expand: 5 углов руля</span>
+        <span style="color:var(--accent)">for</span> delta <span style="color:var(--accent)">in</span> STEERS:
+            nxt: <span style="color:var(--accent2)">State3D</span> = simulate(cur, delta)
+
+            <span style="color:var(--accent)">if</span> <span style="color:var(--accent)">not</span> collision_free(nxt, grid, res):
+                <span style="color:var(--accent)">continue</span>
+
+            disc = nxt.disc(res)
+            nxt.g = cur.g + DS
+            nxt.f = nxt.g + heuristic_2d(nxt, goal)
+            nxt.parent_idx = idx
+
+            <span style="color:var(--accent)">if</span> disc <span style="color:var(--accent)">in</span> visited:
+                old_idx: <span style="color:var(--accent2)">int</span> = visited[disc]
+                <span style="color:var(--accent)">if</span> nodes[old_idx].g &lt;= nxt.g:
+                    <span style="color:var(--accent)">continue</span>                  <span style="color:var(--green)"># уже есть лучший</span>
+
+            new_idx: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">len</span>(nodes)
+            nodes.append(nxt)
+            visited[disc] = new_idx
+            counter += 1
+            heappush(open_heap, (nxt.f, counter, new_idx))
+
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">None</span>
+
+
+<span style="color:var(--green)"># === Пример ===</span>
+<span style="color:var(--green)"># grid[y][x] = True если стена. res = 0.1 м/клетка.</span>
+<span style="color:var(--green)"># start = State3D(0.5, 0.5, 0.0)</span>
+<span style="color:var(--green)"># goal  = State3D(4.0, 4.0, math.pi/2)</span>
+<span style="color:var(--green)"># path = hybrid_astar(grid, 0.1, start, goal)</span>
 </pre>
 
+        <div class="card highlight">
+            <p><strong>Отличия от обычного A*:</strong></p>
+            <ul>
+                <li><code>State3D(x, y, θ)</code> — непрерывные координаты + угол, а не дискретные клетки</li>
+                <li><code>simulate()</code> — bicycle model вместо 8 соседей. 5 углов руля = 5 манёвров</li>
+                <li><code>disc()</code> — дискретизация 3D→ячейка для visited-массива (без неё — бесконечные состояния)</li>
+                <li><code>goal_thresh</code> — достижение «рядом с целью» вместо точного совпадения</li>
+            </ul>
+        </div>
+
         <!-- ============ C++ ROS2 ============ -->
-        <h2>Реализация в C++ (ROS2)</h2>
+        <h2>Как это выглядит в ROS2 проекте</h2>
 
         <p>Ключевые компоненты: 3D-состояние, bicycle model, analytic expansion через OMPL.</p>
 
-<pre>
+        <div class="card">
+<pre style="margin:0">
 <span style="color:var(--text2)">// hybrid_astar_planner.hpp</span>
 <span style="color:var(--accent)">#include</span> &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
 <span style="color:var(--accent)">#include</span> &lt;ompl/base/spaces/ReedsSheppStateSpace.h&gt;
@@ -526,6 +633,7 @@ State3D simulate(<span style="color:var(--accent)">const</span> State3D&amp; s, 
     -DELTA_MAX, -DELTA_MAX/2, 0, DELTA_MAX/2, DELTA_MAX
 };
 </pre>
+        </div>
 
         <div class="card warn">
             <p><strong>ROS2 Nav2:</strong> Hybrid A* уже реализован в <code>nav2_smac_planner</code> &rarr; плагин <code>SmacPlannerHybrid</code>. Ключевые параметры: <code>minimum_turning_radius</code>, <code>angle_quantization_bins</code> (= $N_\theta$), <code>analytic_expansion_ratio</code>.</p>

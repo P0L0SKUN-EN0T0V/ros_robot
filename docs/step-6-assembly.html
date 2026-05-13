@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаг 6 — Собираем проект</title>
+    <style>
+        :root{--bg:#0f1117;--card:#1a1d2e;--border:#2a2d3e;--accent:#6c9eff;--accent2:#a78bfa;--green:#4ade80;--orange:#fb923c;--red:#f87171;--text:#e2e8f0;--text2:#94a3b8;--sidebar:#151825}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
+        .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
+        .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
+        .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}
+        .sidebar a.active{border-left-color:var(--accent);color:var(--accent);background:rgba(108,158,255,.1)}
+        .sidebar .sep{height:1px;background:var(--border);margin:12px 20px}
+        .sidebar .section-title{color:var(--text2);font-size:.75em;text-transform:uppercase;letter-spacing:1px;padding:12px 20px 4px;font-weight:600}
+        .main{margin-left:260px;padding:48px 40px;max-width:920px;width:100%}
+        h1{font-size:2.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+        .subtitle{color:var(--text2);margin-bottom:36px;font-size:1.05em}
+        h2{font-size:1.4em;color:var(--accent);margin:44px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+        h3{font-size:1.1em;color:var(--accent2);margin:28px 0 12px}
+        p{margin:10px 0}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0}
+        .card.highlight{border-left:4px solid var(--accent)}
+        .card.warn{border-left:4px solid var(--orange)}
+        .card.success{border-left:4px solid var(--green)}
+        ul,ol{padding-left:24px;margin:10px 0}li{margin:8px 0}
+        code{background:rgba(108,158,255,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-size:.9em}
+        pre{background:#141620;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-size:.85em;margin:14px 0;line-height:1.6}
+        .analogy{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:20px 24px;margin:16px 0;font-style:italic;color:var(--green)}
+        .analogy::before{content:"💡 ";font-style:normal}
+        .step{display:flex;gap:16px;margin:14px 0;align-items:flex-start}
+        .step-num{min-width:36px;height:36px;border-radius:50%;background:rgba(108,158,255,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9em;flex-shrink:0}
+        .step-text{flex:1}
+        .nav-bottom{display:flex;justify-content:space-between;margin-top:48px;padding-top:24px;border-top:1px solid var(--border)}
+        .nav-bottom a{color:var(--accent);text-decoration:none;font-size:.95em}
+        .nav-bottom a:hover{text-decoration:underline}
+        .cmd{background:#141620;border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin:10px 0;font-family:'Courier New',monospace;font-size:.9em;position:relative}
+        .cmd::before{content:"$";color:var(--green);margin-right:8px;font-weight:700}
+        table{width:100%;border-collapse:collapse;margin:12px 0}
+        th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+        th{color:var(--accent);font-weight:600}
+        .checklist{list-style:none;padding-left:0}
+        .checklist li{padding:8px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+        .checklist li::before{content:"☐";font-size:1.1em;color:var(--accent)}
+        @media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:24px 16px}}
+        @media print{body{display:block}.sidebar{display:none}.main{margin-left:0}body{background:#fff;color:#1a1a1a}.card{background:#f9f9f9;border-color:#ddd}h1{-webkit-text-fill-color:#2563eb}h2{color:#2563eb}h3{color:#7c3aed}code{background:#f0f0f0;color:#2563eb}pre{background:#f5f5f5;border-color:#ddd}}
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h3>ROS2 Navigation</h3>
+        <a href="guide.html">Обзор проекта</a>
+        <a href="project-guide.html">Справочник (Quick Ref)</a>
+        <div class="sep"></div>
+        <div class="section-title">Пошаговый гайд</div>
+        <a href="step-0-what-is-ros2.html">0. Что такое ROS2</a>
+        <a href="step-1-tools-gazebo-rviz.html">1. Gazebo и RViz</a>
+        <a href="step-2-sensors.html">2. Одометрия и лидар</a>
+        <a href="step-3-mapping.html">3. Строим карту</a>
+        <a href="step-4-astar.html">4. Алгоритм A*</a>
+        <a href="step-5-pure-pursuit.html">5. Pure Pursuit</a>
+        <a href="step-6-assembly.html" class="active">6. Собираем проект</a>
+        <div class="sep"></div>
+        <div class="section-title">Алгоритмы</div>
+        <a href="algo-1-astar.html">1. A*</a>
+        <a href="algo-2-dijkstra.html">2. Dijkstra</a>
+        <a href="algo-3-rrt.html">3. RRT</a>
+        <a href="algo-4-rrt-star.html">4. RRT*</a>
+        <a href="algo-5-theta-star.html">5. Theta*</a>
+        <a href="algo-6-dstar-lite.html">6. D* Lite</a>
+        <a href="algo-7-jps.html">7. Jump Point Search</a>
+        <a href="algo-8-lpa-star.html">8. LPA*</a>
+        <a href="algo-9-hybrid-astar.html">9. Hybrid A*</a>
+        <a href="algo-10-prm.html">10. PRM</a>
+    </nav>
+
+    <div class="main">
+        <h1>Шаг 6: Собираем проект</h1>
+        <p class="subtitle">Один файл, CMakeLists, launch, запуск и отладка</p>
+
+        <!-- ============ СТРУКТУРА ============ -->
+        <h2>Структура файлов</h2>
+
+        <pre>~/ros2_ws/src/global_planner/
+├── CMakeLists.txt
+├── package.xml
+├── launch/
+│   └── planner.launch.py       <span style="color:#94a3b8">← запуск всего одной командой</span>
+└── src/
+    └── global_planner_node.cpp  <span style="color:#94a3b8">← весь наш код</span></pre>
+
+        <p>Один файл .cpp — это требование задания. Все функции из шагов 3-5 живут внутри одного класса.</p>
+
+        <!-- ============ СКЕЛЕТ КЛАССА ============ -->
+        <h2>Скелет класса</h2>
+
+        <p>Вот полная структура <code>global_planner_node.cpp</code> — всё, что мы написали в шагах 2-5, собрано воедино:</p>
+
+        <pre>#include &lt;rclcpp/rclcpp.hpp&gt;
+#include &lt;sensor_msgs/msg/laser_scan.hpp&gt;
+#include &lt;nav_msgs/msg/odometry.hpp&gt;
+#include &lt;nav_msgs/msg/occupancy_grid.hpp&gt;
+#include &lt;nav_msgs/msg/path.hpp&gt;
+#include &lt;geometry_msgs/msg/twist.hpp&gt;
+#include &lt;geometry_msgs/msg/pose_stamped.hpp&gt;
+#include &lt;tf2/utils.h&gt;
+#include &lt;cmath&gt;
+#include &lt;queue&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+
+using namespace std::chrono_literals;
+
+class GlobalPlanner : public rclcpp::Node {
+public:
+    GlobalPlanner() : Node(<span style="color:#4ade80">"global_planner_node"</span>) {
+        <span style="color:#94a3b8">// Subscribers</span>
+        scan_sub_ = create_subscription&lt;sensor_msgs::msg::LaserScan&gt;(
+            <span style="color:#4ade80">"/scan"</span>, 10, [this](auto msg){ scanCallback(msg); });
+        odom_sub_ = create_subscription&lt;nav_msgs::msg::Odometry&gt;(
+            <span style="color:#4ade80">"/odom"</span>, 10, [this](auto msg){ odomCallback(msg); });
+        goal_sub_ = create_subscription&lt;geometry_msgs::msg::PoseStamped&gt;(
+            <span style="color:#4ade80">"/goal_pose"</span>, 10, [this](auto msg){ goalCallback(msg); });
+
+        <span style="color:#94a3b8">// Publishers</span>
+        cmd_pub_  = create_publisher&lt;geometry_msgs::msg::Twist&gt;(<span style="color:#4ade80">"/cmd_vel"</span>, 10);
+        map_pub_  = create_publisher&lt;nav_msgs::msg::OccupancyGrid&gt;(<span style="color:#4ade80">"/map"</span>, 10);
+        path_pub_ = create_publisher&lt;nav_msgs::msg::Path&gt;(<span style="color:#4ade80">"/global_plan"</span>, 10);
+
+        <span style="color:#94a3b8">// Таймер управления (10 Hz)</span>
+        timer_ = create_wall_timer(100ms, [this](){ controlLoop(); });
+
+        RCLCPP_INFO(get_logger(), <span style="color:#4ade80">"Global Planner запущен!"</span>);
+    }
+
+private:
+    <span style="color:#94a3b8">// === Параметры карты ===</span>
+    static const int MAP_SIZE = 200;
+    static constexpr double RESOLUTION = 0.05;
+    static constexpr double ORIGIN_X = -5.0;
+    static constexpr double ORIGIN_Y = -5.0;
+
+    <span style="color:#94a3b8">// === Состояние ===</span>
+    std::vector&lt;int8_t&gt; map_data_{MAP_SIZE * MAP_SIZE, -1};
+    double robot_x_ = 0, robot_y_ = 0, robot_yaw_ = 0;
+    double goal_x_ = 0, goal_y_ = 0;
+    bool has_goal_ = false;
+    std::vector&lt;std::pair&lt;int,int&gt;&gt; current_path_;
+
+    <span style="color:#94a3b8">// === ROS2 объекты ===</span>
+    rclcpp::Subscription&lt;sensor_msgs::msg::LaserScan&gt;::SharedPtr scan_sub_;
+    rclcpp::Subscription&lt;nav_msgs::msg::Odometry&gt;::SharedPtr odom_sub_;
+    rclcpp::Subscription&lt;geometry_msgs::msg::PoseStamped&gt;::SharedPtr goal_sub_;
+    rclcpp::Publisher&lt;geometry_msgs::msg::Twist&gt;::SharedPtr cmd_pub_;
+    rclcpp::Publisher&lt;nav_msgs::msg::OccupancyGrid&gt;::SharedPtr map_pub_;
+    rclcpp::Publisher&lt;nav_msgs::msg::Path&gt;::SharedPtr path_pub_;
+    rclcpp::TimerBase::SharedPtr timer_;
+
+    <span style="color:#94a3b8">// === Callbacks (шаг 2) ===</span>
+    void odomCallback(/*...*/);
+    void scanCallback(/*...*/);
+    void goalCallback(/*...*/);
+
+    <span style="color:#94a3b8">// === Карта (шаг 3) ===</span>
+    int worldToGrid(double coord, double origin);
+    void updateMapWithLaser(double rx, double ry, double hx, double hy);
+    void publishMap();
+    bool isFree(int x, int y);
+
+    <span style="color:#94a3b8">// === A* (шаг 4) ===</span>
+    double heuristic(int x1, int y1, int x2, int y2);
+    std::vector&lt;std::pair&lt;int,int&gt;&gt; planAStar(int sx, int sy, int gx, int gy);
+    void replan();
+    void publishPath();
+
+    <span style="color:#94a3b8">// === Pure Pursuit (шаг 5) ===</span>
+    double normalizeAngle(double a);
+    void purePursuitControl();
+
+    <span style="color:#94a3b8">// === Главный цикл ===</span>
+    void controlLoop() {
+        if (has_goal_) {
+            replan();
+            purePursuitControl();
+        }
+    }
+};
+
+int main(int argc, char** argv) {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared&lt;GlobalPlanner&gt;());
+    rclcpp::shutdown();
+    return 0;
+}</pre>
+
+        <div class="card warn">
+            <p><strong>Это скелет!</strong> Тела функций — в шагах 2-5. Скопируй их сюда. Полный рабочий код — в <a href="project-guide.html" style="color:var(--accent)">справочнике</a>.</p>
+        </div>
+
+        <!-- ============ CMAKE ============ -->
+        <h2>CMakeLists.txt</h2>
+
+        <p>Замени содержимое <code>CMakeLists.txt</code> на:</p>
+
+        <pre>cmake_minimum_required(VERSION 3.8)
+project(global_planner)
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+add_executable(global_planner_node src/global_planner_node.cpp)
+ament_target_dependencies(global_planner_node
+    rclcpp sensor_msgs nav_msgs geometry_msgs tf2 tf2_ros)
+
+install(TARGETS global_planner_node DESTINATION lib/${PROJECT_NAME})
+
+<span style="color:#94a3b8"># Устанавливаем launch-файлы</span>
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+
+ament_package()</pre>
+
+        <!-- ============ LAUNCH ============ -->
+        <h2>Launch-файл</h2>
+
+        <p>Создай <code>launch/planner.launch.py</code> — он запускает Gazebo, RViz и нашу ноду одной командой:</p>
+
+        <pre><span style="color:#94a3b8"># launch/planner.launch.py</span>
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+import os
+
+def generate_launch_description():
+    <span style="color:#94a3b8"># Запускаем Gazebo с TurtleBot3</span>
+    gazebo = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory('turtlebot3_gazebo'),
+                'launch', 'turtlebot3_world.launch.py'
+            )
+        )
+    )
+
+    <span style="color:#94a3b8"># Наша нода</span>
+    planner = Node(
+        package='global_planner',
+        executable='global_planner_node',
+        name='global_planner_node',
+        output='screen'
+    )
+
+    <span style="color:#94a3b8"># RViz</span>
+    rviz = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen'
+    )
+
+    return LaunchDescription([gazebo, planner, rviz])</pre>
+
+        <!-- ============ СБОРКА И ЗАПУСК ============ -->
+        <h2>Сборка и запуск</h2>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">
+                <strong>Собираем</strong>
+                <div class="cmd">cd ~/ros2_ws && colcon build --packages-select global_planner</div>
+                <p>Если ошибки компиляции — читай сообщения. Чаще всего: забытый include, опечатка в типе, пропущенная точка с запятой.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">
+                <strong>Подгружаем пакет</strong>
+                <div class="cmd">source install/setup.bash</div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">
+                <strong>Запускаем всё</strong>
+                <div class="cmd">export TURTLEBOT3_MODEL=burger && ros2 launch global_planner planner.launch.py</div>
+                <p>Откроются Gazebo, RViz и в логах появится «Global Planner запущен!»</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">
+                <strong>Ставим цель в RViz</strong>
+                <p>Кнопка «2D Goal Pose» → кликни на карту → робот поехал!</p>
+            </div>
+        </div>
+
+        <!-- ============ RVIZ НАСТРОЙКА ============ -->
+        <h2>Настройка RViz для нашего проекта</h2>
+
+        <p>Добавь следующие отображения:</p>
+
+        <table>
+            <tr><th>Отображение</th><th>Как добавить</th><th>Что покажет</th></tr>
+            <tr><td>Map</td><td>Add → By topic → /map → Map</td><td>Карту (чёрное = стены, белое = свободно, серое = туман)</td></tr>
+            <tr><td>Path</td><td>Add → By topic → /global_plan → Path</td><td>Зелёную линию — запланированный маршрут</td></tr>
+            <tr><td>LaserScan</td><td>Add → By topic → /scan → LaserScan</td><td>Красные точки — что видит лидар сейчас</td></tr>
+            <tr><td>RobotModel</td><td>Add → By display type → RobotModel</td><td>Модель робота</td></tr>
+        </table>
+
+        <p>Fixed Frame: <code>odom</code>. Сохрани конфигурацию: File → Save Config As.</p>
+
+        <!-- ============ ОТЛАДКА ============ -->
+        <h2>Отладка: если что-то не работает</h2>
+
+        <div class="card">
+            <h3>Робот не двигается</h3>
+            <ul>
+                <li>Проверь: <code>ros2 topic echo /cmd_vel --once</code> — публикуется ли что-то?</li>
+                <li>Если нули — нода не отправляет команды. Проверь: есть ли <code>has_goal_ = true</code>?</li>
+                <li>Если числа ненулевые — проблема в Gazebo. Перезапусти.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>Карта не появляется в RViz</h3>
+            <ul>
+                <li><code>ros2 topic echo /map --once</code> — публикуется ли карта?</li>
+                <li>Проверь <code>frame_id</code> — должен быть <code>"odom"</code>.</li>
+                <li>В RViz: Fixed Frame тоже должен быть <code>odom</code>.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>A* не находит путь</h3>
+            <ul>
+                <li>Цель может быть за пределами карты → проверь ORIGIN_X/Y и MAP_SIZE.</li>
+                <li>Цель может стоять на стене → попробуй другую точку.</li>
+                <li>Добавь лог: <code>RCLCPP_INFO(get_logger(), "A*: start(%d,%d) goal(%d,%d)", sx,sy,gx,gy);</code></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>Робот осциллирует / кружит</h3>
+            <ul>
+                <li>Увеличь <code>LOOKAHEAD_DIST</code> (0.3 → 0.5)</li>
+                <li>Уменьши коэффициент поворота (2.0 → 1.0)</li>
+                <li>Увеличь <code>GOAL_TOLERANCE</code> (0.15 → 0.25)</li>
+            </ul>
+        </div>
+
+        <!-- ============ ПОЛЕЗНЫЕ КОМАНДЫ ============ -->
+        <h2>Полезные команды для отладки</h2>
+
+        <pre><span style="color:#94a3b8"># Список всех нод</span>
+ros2 node list
+
+<span style="color:#94a3b8"># Список всех топиков</span>
+ros2 topic list
+
+<span style="color:#94a3b8"># Частота публикации</span>
+ros2 topic hz /scan
+ros2 topic hz /map
+
+<span style="color:#94a3b8"># Одно сообщение из топика</span>
+ros2 topic echo /odom --once
+
+<span style="color:#94a3b8"># Граф связей между нодами</span>
+ros2 run rqt_graph rqt_graph
+
+<span style="color:#94a3b8"># Пересборка после изменений</span>
+cd ~/ros2_ws && colcon build --packages-select global_planner && source install/setup.bash</pre>
+
+        <!-- ============ ЧЕКЛИСТ ============ -->
+        <h2>Финальный чеклист</h2>
+
+        <ul class="checklist">
+            <li>ROS2 Humble установлен, <code>ros2 --version</code> работает</li>
+            <li>TurtleBot3 burger запускается в Gazebo</li>
+            <li>Пакет <code>global_planner</code> создан и собирается без ошибок</li>
+            <li><code>global_planner_node</code> стартует и выводит лог</li>
+            <li>Нода подписана на <code>/scan</code>, <code>/odom</code>, <code>/goal_pose</code></li>
+            <li>Карта публикуется в <code>/map</code> и видна в RViz</li>
+            <li>При клике «2D Goal Pose» в RViz — путь появляется в <code>/global_plan</code></li>
+            <li>Робот едет по пути и останавливается у цели</li>
+            <li>При обнаружении новой стены — перепланирование работает</li>
+            <li>Экстренная остановка при близком препятствии</li>
+        </ul>
+
+        <!-- ============ ИТОГИ ============ -->
+        <h2>Поздравляем!</h2>
+
+        <div class="card success">
+            <p>Ты прошёл все шаги и собрал полноценную систему навигации:</p>
+            <ul>
+                <li><strong>Шаг 0</strong> — узнал что такое ROS2, ноды, топики.</li>
+                <li><strong>Шаг 1</strong> — установил инструменты и создал пакет.</li>
+                <li><strong>Шаг 2</strong> — разобрался с сенсорами (лидар + одометрия).</li>
+                <li><strong>Шаг 3</strong> — написал построение карты через ray tracing.</li>
+                <li><strong>Шаг 4</strong> — реализовал A* на частичной карте.</li>
+                <li><strong>Шаг 5</strong> — добавил Pure Pursuit для движения по пути.</li>
+                <li><strong>Шаг 6</strong> — собрал, запустил, отладил.</li>
+            </ul>
+            <p>Для углублённого изучения алгоритмов — смотри раздел «Алгоритмы» в боковой панели.</p>
+        </div>
+
+        <div class="nav-bottom">
+            <a href="step-5-pure-pursuit.html">← Шаг 5: Pure Pursuit</a>
+            <a href="guide.html">Обзор проекта →</a>
+        </div>
+    </div>
+</body>
+</html>

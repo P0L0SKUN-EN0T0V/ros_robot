@@ -708,10 +708,10 @@
 walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = {(1, 2), (2, 2)}
 lpa = LPAStar(5, 5, walls, start=(0, 0), goal=(4, 4))
 lpa.compute_shortest_path()
-<span style="color:var(--green)"># Phase 1: path = [(0,0), (1,1), (2,1), (3,2), (3,3), (4,4)], cost=6.24</span>
+<span style="color:var(--green)"># Phase 1: path = [(0,0), (1,1), (2,1), (3,2), (4,3), (4,4)], cost=6.24</span>
 
-lpa.add_wall((2, 3))               <span style="color:var(--orange)"># новая стена!</span>
-<span style="color:var(--green)"># Phase 2: пересчитал 4 клетки (не 23). Новый путь обходит (2,3).</span>
+lpa.add_wall((3, 2))               <span style="color:var(--orange)"># новая стена!</span>
+<span style="color:var(--green)"># Phase 2: пересчитал 3 клетки (не 25). Новый путь обходит стену (3,2).</span>
 </pre>
 
         <div class="card highlight">

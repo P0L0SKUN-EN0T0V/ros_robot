@@ -13,6 +13,11 @@
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.8;display:flex;min-height:100vh}
         .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto}
+        .sidebar::-webkit-scrollbar{width:6px}
+        .sidebar::-webkit-scrollbar-track{background:var(--sidebar)}
+        .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+        .sidebar::-webkit-scrollbar-thumb:hover{background:#3a3d4e}
+        .sidebar{scrollbar-width:thin;scrollbar-color:var(--border) var(--sidebar)}
         .sidebar h3{color:var(--accent);padding:0 20px;margin-bottom:16px;font-size:1em}
         .sidebar a{display:block;padding:8px 20px;color:var(--text2);text-decoration:none;font-size:.9em;border-left:3px solid transparent;transition:all .2s}
         .sidebar a:hover{background:rgba(108,158,255,.08);color:var(--text)}

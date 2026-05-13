@@ -441,7 +441,7 @@
             '3,3':{g:4.65,h:1.41,f:6.06,p:'3,2',disc:4,exp:5},
             '4,1':{g:4.24,h:3,f:7.24,p:'2,1',disc:4,exp:0},
             '4,2':{g:4.47,h:2,f:6.47,p:'2,1',disc:4,exp:0},
-            '4,3':{g:5.06,h:1,f:6.06,p:'3,2',disc:4,exp:0},
+            '4,3':{g:5.06,h:1,f:6.06,p:'2,1',disc:4,exp:0},
             '2,4':{g:5.89,h:2,f:7.89,p:'3,2',disc:5,exp:0},
             '3,4':{g:5.65,h:1,f:6.65,p:'3,2',disc:5,exp:0},
             '4,4':{g:5.89,h:0,f:5.89,p:'3,2',disc:5,exp:6}
@@ -455,7 +455,7 @@
             {title:'Шаг 1: раскрываем (0,0)',desc:'Извлекаем S(0,0), f=5.66 — минимум в OPEN. Соседи: (0,1), (1,0), (1,1). parent(S)=S, так что line-of-sight проверка тривиальна (от S к соседям). Все три получают <span class="los-yes">LOS=YES</span>, parent=S.',open:['(1,1) f=5.66','(0,1) f=6.24','(1,0) f=6.24'],expanded:1,closed:['0,0']},
             {title:'Шаг 2: раскрываем (1,1)',desc:'Извлекаем (1,1), f=5.66. parent=(0,0)=S. Проверяем LOS от S к каждому соседу.<br><span class="los-yes">LOS S→(2,1): YES</span> — прямая линия свободна, parent=S, g=2.24.<br><span class="los-yes">LOS S→(0,2): YES</span> — g=2.0. <span class="los-yes">LOS S→(2,0): YES</span> — g=2.0.<br>Все соседи привязаны к S напрямую!',open:['(2,1) f=6.06','(0,1) f=6.24','(1,0) f=6.24','(0,2) f=6.83','(2,0) f=6.83'],expanded:2,closed:['0,0','1,1']},
             {title:'Шаг 3: раскрываем (2,1)',desc:'Извлекаем (2,1), f=6.06. parent=(0,0)=S. Проверяем LOS от S к соседям.<br><span class="los-yes">LOS S→(3,1): YES</span> — g=3.16, parent=S.<br><span class="los-yes">LOS S→(3,0): YES</span> — g=3.0, parent=S.<br><span class="los-no">LOS S→(3,2): NO</span> — прямая S→(3,2) пересекает стену (2,2)! Fallback: parent=(2,1), g=3.65.<br>Ключевой момент: (3,2) привязана к (2,1), а не к S — стена блокирует прямой путь.',open:['(3,2) f=6.06','(0,1) f=6.24','(1,0) f=6.24','(3,1) f=6.58','(0,2) f=6.83','(2,0) f=6.83','(3,0) f=7.41'],expanded:3,closed:['0,0','1,1','2,1']},
-            {title:'Шаг 4: раскрываем (3,2)',desc:'Извлекаем (3,2), f=6.06. parent=(2,1). Проверяем LOS от (2,1) к соседям.<br><span class="los-yes">LOS (2,1)→(4,2): YES</span> — g=4.47, parent=(2,1).<br><span class="los-no">LOS (2,1)→(3,3): NO</span> — линия задевает стену! Fallback: parent=(3,2), g=4.65.<br><span class="los-no">LOS (2,1)→(4,3): NO</span> — тоже blocked! parent=(3,2), g=5.06.<br><span class="los-no">LOS (2,1)→(2,3): NO</span> — blocked. parent=(3,2), g=5.06.',open:['(3,3) f=6.06','(4,3) f=6.06','(0,1) f=6.24','(1,0) f=6.24','(4,2) f=6.47','(3,1) f=6.58','(0,2) f=6.83','(2,0) f=6.83'],expanded:4,closed:['0,0','1,1','2,1','3,2']},
+            {title:'Шаг 4: раскрываем (3,2)',desc:'Извлекаем (3,2), f=6.06. parent=(2,1). Проверяем LOS от (2,1) к соседям.<br><span class="los-yes">LOS (2,1)→(4,2): YES</span> — g=4.47, parent=(2,1).<br><span class="los-no">LOS (2,1)→(3,3): NO</span> — линия задевает стену! Fallback: parent=(3,2), g=4.65.<br><span class="los-yes">LOS (2,1)→(4,3): YES</span> — g через (2,1)=5.06, parent=(2,1).<br><span class="los-no">LOS (2,1)→(2,3): NO</span> — линия проходит через стену (2,2)! Fallback: parent=(3,2), g=5.06.',open:['(3,3) f=6.06','(4,3) f=6.06','(0,1) f=6.24','(1,0) f=6.24','(4,2) f=6.47','(3,1) f=6.58','(0,2) f=6.83','(2,0) f=6.83'],expanded:4,closed:['0,0','1,1','2,1','3,2']},
             {title:'Шаг 5: раскрываем (3,3)',desc:'Извлекаем (3,3), f=6.06. parent=(3,2). Проверяем LOS от (3,2) к соседям.<br><span class="los-yes">LOS (3,2)→(4,4): YES</span> — прямая (3,2)→G свободна! g=5.89, parent=(3,2). Это лучше любого пути через (4,3).<br><span class="los-yes">LOS (3,2)→(3,4): YES</span> — g=5.65.<br><span class="los-yes">LOS (3,2)→(2,4): YES</span> — g=5.89.<br>Цель обнаружена с f=5.89 — лучше всего в OPEN!',open:['(4,4) f=5.89','(4,3) f=6.06','(0,1) f=6.24','(1,0) f=6.24','(4,2) f=6.47','(3,1) f=6.58','(3,4) f=6.65','(0,2) f=6.83','(2,0) f=6.83'],expanded:5,closed:['0,0','1,1','2,1','3,2','3,3']},
             {title:'Шаг 6: раскрываем (4,4) — ЦЕЛЬ!',desc:'Извлекаем G(4,4), f=5.89 — это цель! Восстанавливаем путь по parent-ссылкам:<br>G(4,4) → parent=(3,2) → parent=(2,1) → parent=S(0,0).<br><b>Путь: S→(2,1)→(3,2)→G, длина≈5.89</b>. Три отрезка под произвольными углами (63°, 45°, 27°) вместо 5 у A* под фиксированными 45°/0°.<br>Обработано <b>6 клеток</b> (A* обработал 9). Theta* быстрее И даёт более короткий путь.',open:[],expanded:6,closed:['0,0','1,1','2,1','3,2','3,3','4,4'],showPath:true}
         ];
@@ -562,64 +562,151 @@
         })();
         </script>
 
-        <!-- ============ ПСЕВДОКОД ============ -->
-        <h2>Псевдокод</h2>
+        <!-- ============ РЕАЛИЗАЦИЯ PYTHON ============ -->
+        <h2>Реализация на Python</h2>
 
-<pre>
-Theta_Star(start, goal, grid):
-    open_list = priority_queue()
-    g[start] = 0
-    f[start] = h(start, goal)
-    parent[start] = start
-    open_list.<span style="color:var(--accent)">push</span>(start, f[start])
+        <p>Полная реализация — именно этот код генерировал данные для анимации выше. Сравни с <a href="algo-1-astar.html" style="color:var(--accent)">A*</a> — отличие только в блоке <code>line_of_sight</code>.</p>
 
-    <span style="color:var(--accent)">while</span> open_list <span style="color:var(--accent)">is</span> <span style="color:var(--accent)">not</span> empty:
-        s = open_list.<span style="color:var(--accent)">pop</span>()       <span style="color:var(--orange)">// узел с минимальным f</span>
+<pre><span style="color:var(--accent)">import</span> math
+<span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
 
-        <span style="color:var(--accent)">if</span> s == goal:
-            <span style="color:var(--accent)">return</span> reconstruct_path(parent, goal)
+<span style="color:var(--accent2)">Cell</span> = <span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>]
+<span style="color:var(--accent2)">INF</span> = <span style="color:var(--accent)">float</span>(<span style="color:var(--green)">'inf'</span>)
+<span style="color:var(--accent2)">SQRT2</span> = math.sqrt(2)
 
-        <span style="color:var(--accent)">for</span> <span style="color:var(--accent)">each</span> neighbor n <span style="color:var(--accent)">of</span> s:
-            <span style="color:var(--accent)">if</span> n <span style="color:var(--accent)">is</span> obstacle: <span style="color:var(--accent)">continue</span>
 
-            <span style="color:var(--green)">// === ОТЛИЧИЕ ОТ A*: проверка line-of-sight ===</span>
-            <span style="color:var(--accent)">if</span> line_of_sight(parent[s], n):
-                <span style="color:var(--green)">// Путь 2: через "дедушку"</span>
-                new_g = g[parent[s]] + dist(parent[s], n)
-                <span style="color:var(--accent)">if</span> new_g < g[n]:
-                    g[n] = new_g
-                    f[n] = new_g + h(n, goal)
-                    parent[n] = parent[s]     <span style="color:var(--orange)">// "дедушка"!</span>
-                    open_list.<span style="color:var(--accent)">push</span>(n, f[n])
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">line_of_sight</span>(a: <span style="color:var(--accent2)">Cell</span>, b: <span style="color:var(--accent2)">Cell</span>, walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>]) -> <span style="color:var(--accent2)">bool</span>:
+    <span style="color:var(--green)">"""Bresenham: можно ли провести прямую от a до b, не задев стену?"""</span>
+    r0, c0 = a
+    r1, c1 = b
+    dr: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(r1 - r0)
+    dc: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(c1 - c0)
+    sr: <span style="color:var(--accent2)">int</span> = 1 <span style="color:var(--accent)">if</span> r1 > r0 <span style="color:var(--accent)">else</span> -1
+    sc: <span style="color:var(--accent2)">int</span> = 1 <span style="color:var(--accent)">if</span> c1 > c0 <span style="color:var(--accent)">else</span> -1
+    err: <span style="color:var(--accent2)">int</span> = dr - dc
+    r, c = r0, c0
+
+    <span style="color:var(--accent)">while</span> (r, c) != (r1, c1):
+        <span style="color:var(--accent)">if</span> (r, c) != a <span style="color:var(--accent)">and</span> (r, c) <span style="color:var(--accent)">in</span> walls:
+            <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">False</span>           <span style="color:var(--orange)"># стена на пути!</span>
+        e2: <span style="color:var(--accent2)">int</span> = 2 * err
+        <span style="color:var(--accent)">if</span> e2 > -dc:
+            err -= dc; r += sr
+        <span style="color:var(--accent)">if</span> e2 &lt; dr:
+            err += dc; c += sc
+
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">True</span>
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">heuristic</span>(a: <span style="color:var(--accent2)">Cell</span>, b: <span style="color:var(--accent2)">Cell</span>) -> <span style="color:var(--accent2)">float</span>:
+    <span style="color:var(--green)">"""Octile distance — допустимая эвристика для 8-связной сетки."""</span>
+    dx: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(a[0] - b[0])
+    dy: <span style="color:var(--accent2)">int</span> = <span style="color:var(--accent)">abs</span>(a[1] - b[1])
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">max</span>(dx, dy) + (SQRT2 - 1) * <span style="color:var(--accent)">min</span>(dx, dy)
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">neighbors</span>(s: <span style="color:var(--accent2)">Cell</span>, W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>,
+              walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>]) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>]]:
+    <span style="color:var(--green)">"""8 направлений: прямые (cost=1) + диагональные (cost=√2)."""</span>
+    dirs: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>]] = [
+        (0,1),(0,-1),(1,0),(-1,0),(1,1),(1,-1),(-1,1),(-1,-1)
+    ]
+    result: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>]] = []
+    <span style="color:var(--accent)">for</span> dr, dc <span style="color:var(--accent)">in</span> dirs:
+        n: <span style="color:var(--accent2)">Cell</span> = (s[0] + dr, s[1] + dc)
+        <span style="color:var(--accent)">if</span> 0 &lt;= n[0] &lt; H <span style="color:var(--accent)">and</span> 0 &lt;= n[1] &lt; W <span style="color:var(--accent)">and</span> n <span style="color:var(--accent)">not in</span> walls:
+            cost: <span style="color:var(--accent2)">float</span> = SQRT2 <span style="color:var(--accent)">if</span> (dr != 0 <span style="color:var(--accent)">and</span> dc != 0) <span style="color:var(--accent)">else</span> 1.0
+            result.append((n, cost))
+    <span style="color:var(--accent)">return</span> result
+
+
+<span style="color:var(--accent)">def</span> <span style="color:var(--accent2)">theta_star</span>(
+    W: <span style="color:var(--accent2)">int</span>, H: <span style="color:var(--accent2)">int</span>,
+    walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>],
+    start: <span style="color:var(--accent2)">Cell</span>,
+    goal: <span style="color:var(--accent2)">Cell</span>
+) -> <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] | <span style="color:var(--accent)">None</span>:
+    <span style="color:var(--green)">"""Theta* на 8-связной сетке. Возвращает any-angle путь или None."""</span>
+
+    g: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>] = {start: 0.0}
+    f: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">float</span>] = {start: heuristic(start, goal)}
+    parent: <span style="color:var(--accent2)">dict</span>[<span style="color:var(--accent2)">Cell</span>, <span style="color:var(--accent2)">Cell</span>] = {start: start}  <span style="color:var(--orange)"># parent[start] = start!</span>
+
+    counter: <span style="color:var(--accent2)">int</span> = 0
+    open_heap: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent)">tuple</span>[<span style="color:var(--accent2)">float</span>, <span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">Cell</span>]] = [
+        (f[start], counter, start)
+    ]
+    open_set: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = {start}
+    closed: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = <span style="color:var(--accent)">set</span>()
+
+    <span style="color:var(--accent)">while</span> open_heap:
+        _, _, current = heappop(open_heap)
+
+        <span style="color:var(--accent)">if</span> current <span style="color:var(--accent)">not in</span> open_set:
+            <span style="color:var(--accent)">continue</span>                    <span style="color:var(--green)"># stale entry</span>
+        open_set.remove(current)
+
+        <span style="color:var(--accent)">if</span> current == goal:             <span style="color:var(--orange)"># Цель найдена!</span>
+            path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] = []
+            node: <span style="color:var(--accent2)">Cell</span> = current
+            <span style="color:var(--accent)">while</span> node != parent[node]:
+                path.append(node)
+                node = parent[node]
+            path.append(start)
+            path.reverse()
+            <span style="color:var(--accent)">return</span> path
+
+        closed.add(current)
+
+        <span style="color:var(--accent)">for</span> nb, step_cost <span style="color:var(--accent)">in</span> neighbors(current, W, H, walls):
+            <span style="color:var(--accent)">if</span> nb <span style="color:var(--accent)">in</span> closed:
+                <span style="color:var(--accent)">continue</span>
+
+            <span style="color:var(--green)"># === ОТЛИЧИЕ ОТ A*: line-of-sight к parent(current) ===</span>
+            p: <span style="color:var(--accent2)">Cell</span> = parent[current]
+
+            <span style="color:var(--accent)">if</span> line_of_sight(p, nb, walls):
+                <span style="color:var(--green)"># Путь 2: через «дедушку» — напрямую</span>
+                new_g: <span style="color:var(--accent2)">float</span> = g[p] + math.hypot(
+                    nb[0] - p[0], nb[1] - p[1]
+                )
+                <span style="color:var(--accent)">if</span> new_g &lt; g.get(nb, INF):
+                    g[nb] = new_g
+                    f[nb] = new_g + heuristic(nb, goal)
+                    parent[nb] = p             <span style="color:var(--orange)"># «дедушка»!</span>
+                    counter += 1
+                    heappush(open_heap, (f[nb], counter, nb))
+                    open_set.add(nb)
             <span style="color:var(--accent)">else</span>:
-                <span style="color:var(--green)">// Путь 1: стандартный A*</span>
-                new_g = g[s] + dist(s, n)
-                <span style="color:var(--accent)">if</span> new_g < g[n]:
-                    g[n] = new_g
-                    f[n] = new_g + h(n, goal)
-                    parent[n] = s
-                    open_list.<span style="color:var(--accent)">push</span>(n, f[n])
+                <span style="color:var(--green)"># Путь 1: стандартный A*</span>
+                new_g: <span style="color:var(--accent2)">float</span> = g[current] + step_cost
+                <span style="color:var(--accent)">if</span> new_g &lt; g.get(nb, INF):
+                    g[nb] = new_g
+                    f[nb] = new_g + heuristic(nb, goal)
+                    parent[nb] = current
+                    counter += 1
+                    heappush(open_heap, (f[nb], counter, nb))
+                    open_set.add(nb)
 
-    <span style="color:var(--accent)">return</span> FAILURE
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">None</span>
 
 
-line_of_sight(A, B):     <span style="color:var(--orange)">// алгоритм Брезенхема</span>
-    dx = abs(B.x - A.x),  dy = abs(B.y - A.y)
-    sx = sign(B.x - A.x), sy = sign(B.y - A.y)
-    err = dx - dy
-    x = A.x, y = A.y
-
-    <span style="color:var(--accent)">while</span> (x, y) != (B.x, B.y):
-        <span style="color:var(--accent)">if</span> grid[x][y] <span style="color:var(--accent)">is</span> obstacle: <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">false</span>
-        e2 = 2 * err
-        <span style="color:var(--accent)">if</span> e2 > -dy: err -= dy; x += sx
-        <span style="color:var(--accent)">if</span> e2 <  dx: err += dx; y += sy
-
-    <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">true</span>
+<span style="color:var(--green)"># === Пример: сетка 5×5 со стеной ===</span>
+walls: <span style="color:var(--accent2)">set</span>[<span style="color:var(--accent2)">Cell</span>] = {(1, 2), (2, 2)}
+path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--accent2)">Cell</span>] | <span style="color:var(--accent)">None</span> = theta_star(5, 5, walls, (0, 0), (4, 4))
+<span style="color:var(--green)"># [(0,0), (2,1), (3,2), (4,4)]</span>
+<span style="color:var(--green)"># Стоимость: √5 + √2 + √8 ≈ 5.89. Три отрезка any-angle.</span>
+<span style="color:var(--green)"># Сравни: A* даёт 6.24 (5 отрезков под 45°/0°).</span>
 </pre>
 
         <div class="card highlight">
-            <strong>Всего одно отличие от A*:</strong> блок <code>if line_of_sight(parent[s], n)</code>. Если видимость есть — привязываем узел к «дедушке». Если нет — работаем как обычный A*. Вот и вся «магия».
+            <p><strong>Отличия от <a href="algo-1-astar.html" style="color:var(--accent)">A*</a>:</strong></p>
+            <ul>
+                <li><code>parent[start] = start</code> — старт ссылается сам на себя (у A* — <code>None</code>). Это нужно, чтобы <code>line_of_sight(parent[s], n)</code> работало для первого шага</li>
+                <li><code>line_of_sight(p, nb, walls)</code> — Брезенхем проверяет прямую видимость к «дедушке»</li>
+                <li><code>math.hypot</code> вместо grid-cost — расстояние по прямой, не по клеткам</li>
+                <li>Восстановление пути: <code>while node != parent[node]</code> вместо <code>while node is not None</code></li>
+            </ul>
         </div>
 
         <!-- ============ СЛОЖНОСТЬ ============ -->
@@ -679,69 +766,144 @@ line_of_sight(A, B):     <span style="color:var(--orange)">// алгоритм �
         </div>
 
         <!-- ============ C++ ROS2 ============ -->
-        <h2>Интеграция с ROS2 (C++)</h2>
+        <h2>Как это выглядит в ROS2 проекте</h2>
 
-        <p>Показываю только отличие от A* — функцию line-of-sight и модифицированный цикл обновления соседей:</p>
+        <p>Полная реализация Theta* на C++. Структура идентична <a href="algo-1-astar.html" style="color:var(--accent)">A*</a>, добавлены <code>line_of_sight()</code> и ветка «дедушка» в цикле обновления соседей.</p>
 
-<pre>
-<span style="color:var(--green)">// Line-of-Sight check (алгоритм Брезенхема)</span>
-<span style="color:var(--accent2)">bool</span> line_of_sight(<span style="color:var(--accent2)">int</span> x0, <span style="color:var(--accent2)">int</span> y0, <span style="color:var(--accent2)">int</span> x1, <span style="color:var(--accent2)">int</span> y1,
-                   <span style="color:var(--accent2)">const</span> <span style="color:var(--accent2)">nav_msgs::msg</span>::OccupancyGrid&amp; grid) {
-    <span style="color:var(--accent2)">int</span> dx = <span style="color:var(--accent2)">std::abs</span>(x1 - x0), dy = <span style="color:var(--accent2)">std::abs</span>(y1 - y0);
-    <span style="color:var(--accent2)">int</span> sx = (x0 &lt; x1) ? 1 : -1;
-    <span style="color:var(--accent2)">int</span> sy = (y0 &lt; y1) ? 1 : -1;
-    <span style="color:var(--accent2)">int</span> err = dx - dy;
+        <div class="card">
+<pre style="margin:0"><span style="color:var(--accent2)">#include</span> &lt;queue&gt;
+<span style="color:var(--accent2)">#include</span> &lt;vector&gt;
+<span style="color:var(--accent2)">#include</span> &lt;unordered_map&gt;
+<span style="color:var(--accent2)">#include</span> &lt;unordered_set&gt;
+<span style="color:var(--accent2)">#include</span> &lt;cmath&gt;
+<span style="color:var(--accent2)">#include</span> &lt;algorithm&gt;
 
-    <span style="color:var(--accent)">while</span> (x0 != x1 || y0 != y1) {
-        <span style="color:var(--accent)">if</span> (grid.data[y0 * grid.info.width + x0] &gt; 50)
-            <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">false</span>;  <span style="color:var(--orange)">// препятствие!</span>
+<span style="color:var(--accent)">using</span> <span style="color:var(--accent2)">Cell</span> = <span style="color:var(--accent2)">std::pair</span>&lt;<span style="color:var(--accent2)">int</span>, <span style="color:var(--accent2)">int</span>&gt;;
 
+<span style="color:var(--accent)">struct</span> <span style="color:var(--accent2)">CellHash</span> {
+    <span style="color:var(--accent2)">size_t</span> <span style="color:var(--accent)">operator</span>()(<span style="color:var(--accent2)">const</span> Cell&amp; c) <span style="color:var(--accent2)">const</span> {
+        <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">std::hash</span>&lt;<span style="color:var(--accent2)">int</span>&gt;()(c.first) ^ (<span style="color:var(--accent2)">std::hash</span>&lt;<span style="color:var(--accent2)">int</span>&gt;()(c.second) &lt;&lt; 16);
+    }
+};
+
+<span style="color:var(--accent2)">constexpr double</span> SQRT2 = 1.41421356237;
+
+<span style="color:var(--accent2)">double</span> heuristic(<span style="color:var(--accent2)">const</span> Cell&amp; a, <span style="color:var(--accent2)">const</span> Cell&amp; b) {
+    <span style="color:var(--accent2)">double</span> dx = <span style="color:var(--accent2)">std::abs</span>(a.first - b.first);
+    <span style="color:var(--accent2)">double</span> dy = <span style="color:var(--accent2)">std::abs</span>(a.second - b.second);
+    <span style="color:var(--accent)">return</span> <span style="color:var(--accent2)">std::max</span>(dx, dy) + (SQRT2 - 1.0) * <span style="color:var(--accent2)">std::min</span>(dx, dy);
+}
+
+<span style="color:var(--green)">// Bresenham line-of-sight: свободна ли прямая от a до b?</span>
+<span style="color:var(--accent2)">bool</span> line_of_sight(
+    <span style="color:var(--accent2)">const</span> Cell&amp; a, <span style="color:var(--accent2)">const</span> Cell&amp; b,
+    <span style="color:var(--accent2)">const std::unordered_set</span>&lt;Cell, CellHash&gt;&amp; walls
+) {
+    <span style="color:var(--accent2)">int</span> r0 = a.first,  c0 = a.second;
+    <span style="color:var(--accent2)">int</span> r1 = b.first,  c1 = b.second;
+    <span style="color:var(--accent2)">int</span> dr = <span style="color:var(--accent2)">std::abs</span>(r1 - r0), dc = <span style="color:var(--accent2)">std::abs</span>(c1 - c0);
+    <span style="color:var(--accent2)">int</span> sr = (r1 > r0) ? 1 : -1;
+    <span style="color:var(--accent2)">int</span> sc = (c1 > c0) ? 1 : -1;
+    <span style="color:var(--accent2)">int</span> err = dr - dc;
+
+    <span style="color:var(--accent)">while</span> (r0 != r1 || c0 != c1) {
+        Cell cur = {r0, c0};
+        <span style="color:var(--accent)">if</span> (cur != a &amp;&amp; walls.count(cur))
+            <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">false</span>;          <span style="color:var(--orange)">// стена на пути!</span>
         <span style="color:var(--accent2)">int</span> e2 = 2 * err;
-        <span style="color:var(--accent)">if</span> (e2 &gt; -dy) { err -= dy; x0 += sx; }
-        <span style="color:var(--accent)">if</span> (e2 &lt;  dx) { err += dx; y0 += sy; }
+        <span style="color:var(--accent)">if</span> (e2 > -dc) { err -= dc; r0 += sr; }
+        <span style="color:var(--accent)">if</span> (e2 &lt;  dr) { err += dc; c0 += sc; }
     }
     <span style="color:var(--accent)">return</span> <span style="color:var(--accent)">true</span>;
 }
 
-<span style="color:var(--green)">// Внутри основного цикла A* — замена блока обновления соседа:</span>
-<span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">auto</span> [nx, ny] : neighbors(cx, cy)) {
-    <span style="color:var(--accent)">if</span> (closed[ny][nx] || is_wall(nx, ny)) <span style="color:var(--accent)">continue</span>;
+<span style="color:var(--accent2)">std::vector</span>&lt;Cell&gt; theta_star(
+    <span style="color:var(--accent2)">int</span> W, <span style="color:var(--accent2)">int</span> H,
+    <span style="color:var(--accent2)">const std::unordered_set</span>&lt;Cell, CellHash&gt;&amp; walls,
+    Cell start, Cell goal
+) {
+    <span style="color:var(--accent2)">std::unordered_map</span>&lt;Cell, <span style="color:var(--accent2)">double</span>, CellHash&gt; g, f;
+    <span style="color:var(--accent2)">std::unordered_map</span>&lt;Cell, Cell, CellHash&gt; parent;
+    <span style="color:var(--accent2)">std::unordered_set</span>&lt;Cell, CellHash&gt; open_set, closed;
 
-    <span style="color:var(--green)">// === THETA*: проверяем line-of-sight к parent(current) ===</span>
-    <span style="color:var(--accent2)">int</span> px = parent_x[cy][cx];  <span style="color:var(--orange)">// координаты родителя текущего узла</span>
-    <span style="color:var(--accent2)">int</span> py = parent_y[cy][cx];
+    g[start] = 0.0;
+    f[start] = heuristic(start, goal);
+    parent[start] = start;              <span style="color:var(--orange)">// start → start!</span>
+    open_set.insert(start);
 
-    <span style="color:var(--accent)">if</span> (line_of_sight(px, py, nx, ny, *map_)) {
-        <span style="color:var(--green)">// Путь 2: через "дедушку"</span>
-        <span style="color:var(--accent2)">double</span> new_g = g[py][px] + hypot(nx - px, ny - py);
-        <span style="color:var(--accent)">if</span> (new_g &lt; g[ny][nx]) {
-            g[ny][nx] = new_g;
-            f[ny][nx] = new_g + heuristic(nx, ny, gx, gy);
-            parent_x[ny][nx] = px;  <span style="color:var(--orange)">// привязываем к "дедушке"!</span>
-            parent_y[ny][nx] = py;
-            open.push({f[ny][nx], nx, ny});
+    <span style="color:var(--accent)">using</span> <span style="color:var(--accent2)">QEntry</span> = <span style="color:var(--accent2)">std::pair</span>&lt;<span style="color:var(--accent2)">double</span>, Cell&gt;;
+    <span style="color:var(--accent2)">std::priority_queue</span>&lt;QEntry, <span style="color:var(--accent2)">std::vector</span>&lt;QEntry&gt;,
+                        <span style="color:var(--accent2)">std::greater</span>&lt;QEntry&gt;&gt; pq;
+    pq.push({f[start], start});
+
+    <span style="color:var(--accent2)">constexpr int</span> DR[] = {0,0,1,-1,1,1,-1,-1};
+    <span style="color:var(--accent2)">constexpr int</span> DC[] = {1,-1,0,0,1,-1,1,-1};
+
+    <span style="color:var(--accent)">while</span> (!pq.empty()) {
+        <span style="color:var(--accent)">auto</span> [cf, cur] = pq.top(); pq.pop();
+
+        <span style="color:var(--accent)">if</span> (!open_set.count(cur)) <span style="color:var(--accent)">continue</span>;
+        open_set.erase(cur);
+
+        <span style="color:var(--accent)">if</span> (cur == goal) {                    <span style="color:var(--orange)">// Цель!</span>
+            <span style="color:var(--accent2)">std::vector</span>&lt;Cell&gt; path;
+            Cell node = cur;
+            <span style="color:var(--accent)">while</span> (node != parent[node]) {
+                path.push_back(node);
+                node = parent[node];
+            }
+            path.push_back(start);
+            <span style="color:var(--accent2)">std::reverse</span>(path.begin(), path.end());
+            <span style="color:var(--accent)">return</span> path;
         }
-    } <span style="color:var(--accent)">else</span> {
-        <span style="color:var(--green)">// Путь 1: стандартный A*</span>
-        <span style="color:var(--accent2)">double</span> new_g = g[cy][cx] + hypot(nx - cx, ny - cy);
-        <span style="color:var(--accent)">if</span> (new_g &lt; g[ny][nx]) {
-            g[ny][nx] = new_g;
-            f[ny][nx] = new_g + heuristic(nx, ny, gx, gy);
-            parent_x[ny][nx] = cx;
-            parent_y[ny][nx] = cy;
-            open.push({f[ny][nx], nx, ny});
+
+        closed.insert(cur);
+
+        <span style="color:var(--accent)">for</span> (<span style="color:var(--accent2)">int</span> i = 0; i &lt; 8; ++i) {
+            Cell nb = {cur.first + DR[i], cur.second + DC[i]};
+            <span style="color:var(--accent)">if</span> (nb.first &lt; 0 || nb.first &gt;= H ||
+                nb.second &lt; 0 || nb.second &gt;= W) <span style="color:var(--accent)">continue</span>;
+            <span style="color:var(--accent)">if</span> (walls.count(nb) || closed.count(nb)) <span style="color:var(--accent)">continue</span>;
+
+            <span style="color:var(--green)">// === THETA*: line-of-sight к parent(current) ===</span>
+            Cell p = parent[cur];
+
+            <span style="color:var(--accent)">if</span> (line_of_sight(p, nb, walls)) {
+                <span style="color:var(--green)">// Путь 2: через «дедушку»</span>
+                <span style="color:var(--accent2)">double</span> tg = g[p] + std::hypot(
+                    nb.first - p.first, nb.second - p.second);
+                <span style="color:var(--accent)">if</span> (!g.count(nb) || tg &lt; g[nb]) {
+                    g[nb] = tg;
+                    f[nb] = tg + heuristic(nb, goal);
+                    parent[nb] = p;          <span style="color:var(--orange)">// «дедушка»!</span>
+                    pq.push({f[nb], nb});
+                    open_set.insert(nb);
+                }
+            } <span style="color:var(--accent)">else</span> {
+                <span style="color:var(--green)">// Путь 1: стандартный A*</span>
+                <span style="color:var(--accent2)">double</span> cost = (DR[i] != 0 &amp;&amp; DC[i] != 0) ? SQRT2 : 1.0;
+                <span style="color:var(--accent2)">double</span> tg = g[cur] + cost;
+                <span style="color:var(--accent)">if</span> (!g.count(nb) || tg &lt; g[nb]) {
+                    g[nb] = tg;
+                    f[nb] = tg + heuristic(nb, goal);
+                    parent[nb] = cur;
+                    pq.push({f[nb], nb});
+                    open_set.insert(nb);
+                }
+            }
         }
     }
-}
-</pre>
+    <span style="color:var(--accent)">return</span> {};  <span style="color:var(--orange)">// путь не найден</span>
+}</pre>
+        </div>
 
         <div class="card highlight">
-            <strong>Ключевые моменты в коде:</strong>
+            <p><strong>Отличия от <a href="algo-1-astar.html" style="color:var(--accent)">C++ реализации A*</a>:</strong></p>
             <ul>
-                <li><code>line_of_sight()</code> — алгоритм Брезенхема, проверяет отрезок по клеткам. Сложность $O(\max(dx, dy))$</li>
-                <li><code>parent_x/parent_y</code> — хранят координаты родителя каждого узла. В Theta* родитель может быть не соседом!</li>
-                <li><code>hypot(nx - px, ny - py)</code> — евклидово расстояние, не Manhattan. В Theta* расстояния считаются по прямой</li>
-                <li>Если line-of-sight удался — узел привязывается к «дедушке», пропуская промежуточный узел</li>
+                <li><code>parent[start] = start</code> вместо sentinel <code>{-1,-1}</code></li>
+                <li><code>line_of_sight(p, nb, walls)</code> — Брезенхем перед каждым обновлением соседа</li>
+                <li><code>std::hypot</code> — евклидово расстояние по прямой, не grid-cost</li>
+                <li>Восстановление: <code>while (node != parent[node])</code> вместо <code>while (node.first != -1)</code></li>
             </ul>
         </div>
 

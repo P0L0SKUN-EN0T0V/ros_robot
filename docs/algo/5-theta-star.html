@@ -105,7 +105,7 @@
 </head>
 <body>
         <nav class="sidebar" id="sidebar"></nav>
-    <script src="nav.js"></script>
+    <script src="../nav.js"></script>
 
     <div class="main">
         <h1>Theta* — Any-Angle Path Planning</h1>
@@ -559,7 +559,7 @@
         <!-- ============ РЕАЛИЗАЦИЯ PYTHON ============ -->
         <h2>Реализация на Python</h2>
 
-        <p>Полная реализация — именно этот код генерировал данные для анимации выше. Сравни с <a href="algo-1-astar.html" style="color:var(--accent)">A*</a> — отличие только в блоке <code>line_of_sight</code>.</p>
+        <p>Полная реализация — именно этот код генерировал данные для анимации выше. Сравни с <a href="../algo/1-astar.html" style="color:var(--accent)">A*</a> — отличие только в блоке <code>line_of_sight</code>.</p>
 
 <pre><span style="color:var(--accent)">import</span> math
 <span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
@@ -694,7 +694,7 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
 </pre>
 
         <div class="card highlight">
-            <p><strong>Отличия от <a href="algo-1-astar.html" style="color:var(--accent)">A*</a>:</strong></p>
+            <p><strong>Отличия от <a href="../algo/1-astar.html" style="color:var(--accent)">A*</a>:</strong></p>
             <ul>
                 <li><code>parent[start] = start</code> — старт ссылается сам на себя (у A* — <code>None</code>). Это нужно, чтобы <code>line_of_sight(parent[s], n)</code> работало для первого шага</li>
                 <li><code>line_of_sight(p, nb, walls)</code> — Брезенхем проверяет прямую видимость к «дедушке»</li>
@@ -762,7 +762,7 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
         <!-- ============ C++ ROS2 ============ -->
         <h2>Как это выглядит в ROS2 проекте</h2>
 
-        <p>Полная реализация Theta* на C++. Структура идентична <a href="algo-1-astar.html" style="color:var(--accent)">A*</a>, добавлены <code>line_of_sight()</code> и ветка «дедушка» в цикле обновления соседей.</p>
+        <p>Полная реализация Theta* на C++. Структура идентична <a href="../algo/1-astar.html" style="color:var(--accent)">A*</a>, добавлены <code>line_of_sight()</code> и ветка «дедушка» в цикле обновления соседей.</p>
 
         <div class="card">
 <pre style="margin:0"><span style="color:var(--accent2)">#include</span> &lt;queue&gt;
@@ -892,7 +892,7 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
         </div>
 
         <div class="card highlight">
-            <p><strong>Отличия от <a href="algo-1-astar.html" style="color:var(--accent)">C++ реализации A*</a>:</strong></p>
+            <p><strong>Отличия от <a href="../algo/1-astar.html" style="color:var(--accent)">C++ реализации A*</a>:</strong></p>
             <ul>
                 <li><code>parent[start] = start</code> вместо sentinel <code>{-1,-1}</code></li>
                 <li><code>line_of_sight(p, nb, walls)</code> — Брезенхем перед каждым обновлением соседа</li>
@@ -1004,8 +1004,8 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
 
         <!-- ============ НАВИГАЦИЯ ============ -->
         <div class="nav-bottom">
-            <a href="algo-4-rrt-star.html">← 4. RRT*</a>
-            <a href="algo-6-dstar-lite.html">6. D* Lite →</a>
+            <a href="../algo/4-rrt-star.html">← 4. RRT*</a>
+            <a href="../algo/6-dstar-lite.html">6. D* Lite →</a>
         </div>
     </div>
 </body>

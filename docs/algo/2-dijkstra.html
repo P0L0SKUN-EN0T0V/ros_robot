@@ -82,7 +82,7 @@
 </head>
 <body>
         <nav class="sidebar" id="sidebar"></nav>
-    <script src="nav.js"></script>
+    <script src="../nav.js"></script>
 
     <div class="main">
         <h1>Dijkstra</h1>
@@ -186,7 +186,7 @@
         <!-- ============ ПРИМЕР ============ -->
         <h2>Пример — разбор по шагам</h2>
 
-        <p>Та же сетка 5×5, те же стены, движение по 8 направлениям (прямой ход = 1, диагональный = $\sqrt{2} \approx 1.41$). Но теперь без эвристики — Dijkstra знает только $g$ (расстояние от старта). Сравни с <a href="algo-1-astar.html" style="color:var(--accent)">визуализацией A*</a> — разница в паттерне исследования драматическая.</p>
+        <p>Та же сетка 5×5, те же стены, движение по 8 направлениям (прямой ход = 1, диагональный = $\sqrt{2} \approx 1.41$). Но теперь без эвристики — Dijkstra знает только $g$ (расстояние от старта). Сравни с <a href="../algo/1-astar.html" style="color:var(--accent)">визуализацией A*</a> — разница в паттерне исследования драматическая.</p>
 
         <p>В каждой клетке — значение $g$ (расстояние от старта). Оранжевая цифра — порядок обработки. Заметь, как «волна» расходится <strong>равномерно</strong> от старта.</p>
 
@@ -443,7 +443,7 @@
         <!-- ============ PYTHON ============ -->
         <h2>Реализация на Python</h2>
 
-        <p>Сравни с <a href="algo-1-astar.html" style="color:var(--accent)">A*</a> — отличие буквально в одной строке: нет $h$, очередь сортируется только по $g$.</p>
+        <p>Сравни с <a href="../algo/1-astar.html" style="color:var(--accent)">A*</a> — отличие буквально в одной строке: нет $h$, очередь сортируется только по $g$.</p>
 
 <pre><span style="color:var(--accent)">import</span> math
 <span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
@@ -716,8 +716,8 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
 
         <!-- ============ НАВИГАЦИЯ ============ -->
         <div class="nav-bottom">
-            <a href="algo-1-astar.html">&larr; A*</a>
-            <a href="algo-3-rrt.html">RRT &rarr;</a>
+            <a href="../algo/1-astar.html">&larr; A*</a>
+            <a href="../algo/3-rrt.html">RRT &rarr;</a>
         </div>
     </div>
 </body>

@@ -95,7 +95,7 @@
 </head>
 <body>
         <nav class="sidebar" id="sidebar"></nav>
-    <script src="nav.js"></script>
+    <script src="../nav.js"></script>
 
     <div class="main">
         <h1>RRT* — Optimal RRT</h1>
@@ -523,7 +523,7 @@
         <!-- ============ PYTHON ============ -->
         <h2>Реализация на Python</h2>
 
-        <p>RRT* = RRT + два блока: <code>ChooseParent</code> и <code>Rewire</code>. Всё остальное идентично. Сравни с <a href="algo-3-rrt.html" style="color:var(--accent)">реализацией RRT</a>.</p>
+        <p>RRT* = RRT + два блока: <code>ChooseParent</code> и <code>Rewire</code>. Всё остальное идентично. Сравни с <a href="../algo/3-rrt.html" style="color:var(--accent)">реализацией RRT</a>.</p>
 
 <pre><span style="color:var(--accent)">import</span> math
 <span style="color:var(--accent)">import</span> random
@@ -777,7 +777,7 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
         <!-- ============ C++ ROS2 ============ -->
         <h2>Реализация на C++ (ROS2)</h2>
 
-        <p>Показываю ключевые отличия от <a href="algo-3-rrt.html" style="color:var(--accent)">RRT</a>. Структура ноды та же — меняется логика внутри <code>plan()</code>:</p>
+        <p>Показываю ключевые отличия от <a href="../algo/3-rrt.html" style="color:var(--accent)">RRT</a>. Структура ноды та же — меняется логика внутри <code>plan()</code>:</p>
 
 <pre>
 <span style="color:var(--green)">// Структура узла — добавляем cost</span>
@@ -925,8 +925,8 @@ tree.push_back({nx, ny, best_parent, best_cost});
 
         <!-- ============ НАВИГАЦИЯ ============ -->
         <div class="nav-bottom">
-            <a href="algo-3-rrt.html">← 3. RRT</a>
-            <a href="algo-5-theta-star.html">5. Theta* →</a>
+            <a href="../algo/3-rrt.html">← 3. RRT</a>
+            <a href="../algo/5-theta-star.html">5. Theta* →</a>
         </div>
     </div>
 </body>

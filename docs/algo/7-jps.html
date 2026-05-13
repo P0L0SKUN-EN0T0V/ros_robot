@@ -86,7 +86,7 @@
 </head>
 <body>
         <nav class="sidebar" id="sidebar"></nav>
-    <script src="nav.js"></script>
+    <script src="../nav.js"></script>
 
     <div class="main">
         <h1>Jump Point Search</h1>
@@ -705,7 +705,7 @@
         <!-- ============ РЕАЛИЗАЦИЯ PYTHON ============ -->
         <h2>Реализация на Python</h2>
 
-        <p>Полная реализация JPS. Отличие от <a href="algo-1-astar.html" style="color:var(--accent)">A*</a> — вместо обычных соседей используется рекурсивный <code>jump()</code>, который «перепрыгивает» пустые клетки и останавливается только на jump points.</p>
+        <p>Полная реализация JPS. Отличие от <a href="../algo/1-astar.html" style="color:var(--accent)">A*</a> — вместо обычных соседей используется рекурсивный <code>jump()</code>, который «перепрыгивает» пустые клетки и останавливается только на jump points.</p>
 
 <pre><span style="color:var(--accent)">import</span> math
 <span style="color:var(--accent)">from</span> heapq <span style="color:var(--accent)">import</span> heappush, heappop
@@ -878,7 +878,7 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
         <!-- ============ C++ ROS2 ============ -->
         <h2>Как это выглядит в ROS2 проекте</h2>
 
-        <p>Полная реализация JPS на C++. Использует ту же структуру что <a href="algo-1-astar.html" style="color:var(--accent)">A*</a>, но вместо перебора 8 соседей — рекурсивный <code>jump()</code> + pruned directions.</p>
+        <p>Полная реализация JPS на C++. Использует ту же структуру что <a href="../algo/1-astar.html" style="color:var(--accent)">A*</a>, но вместо перебора 8 соседей — рекурсивный <code>jump()</code> + pruned directions.</p>
 
         <div class="card">
 <pre style="margin:0"><span style="color:var(--accent2)">#include</span> &lt;queue&gt;
@@ -1125,8 +1125,8 @@ path: <span style="color:var(--accent2)">list</span>[<span style="color:var(--ac
 
         <!-- ============ НАВИГАЦИЯ ============ -->
         <div class="nav-bottom">
-            <a href="algo-6-dstar-lite.html">← 6. D* Lite</a>
-            <a href="algo-8-lpa-star.html">8. LPA* →</a>
+            <a href="../algo/6-dstar-lite.html">← 6. D* Lite</a>
+            <a href="../algo/8-lpa-star.html">8. LPA* →</a>
         </div>
     </div>
 </body>

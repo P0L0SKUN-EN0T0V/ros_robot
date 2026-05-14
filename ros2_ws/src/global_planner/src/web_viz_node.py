@@ -35,9 +35,6 @@ STATE = {
     ],
 }
 
-HTML_PAGE = open('/home/client/projects/ros_robot/ros2_ws/src/global_planner/src/viz.html').read() if False else ""
-
-
 class WebVizNode(Node):
     def __init__(self):
         super().__init__('web_viz_node')

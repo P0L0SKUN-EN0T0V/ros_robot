@@ -266,11 +266,11 @@ private:
                 int ny = cy + DY[d];
 
                 if (closed[ny][nx]) continue;
-                // Промежуточные клетки — через inflated map
-                // Но если мы рядом со стартом/целью — разрешаем
+                // Промежуточные клетки — через inflated map.
+                // Рядом со стартом — разрешаем без inflation (робот может уже
+                // стоять у самой стены и иначе план не построится).
                 bool near_start = (abs(nx - sx) <= INFLATION_RADIUS && abs(ny - sy) <= INFLATION_RADIUS);
-                bool near_goal = false;  // цель тоже с отступом — не срезаем
-                if (near_start || near_goal) {
+                if (near_start) {
                     if (!isPassable(nx, ny)) continue;
                 } else {
                     if (!isFree(nx, ny)) continue;

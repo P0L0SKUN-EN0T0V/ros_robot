@@ -581,7 +581,11 @@ function updateRightPanel() {
 }
 
 // ===================== MAIN LOOP =====================
-async function poll() {
+// Sequential polling — никогда не запускаем новый запрос пока
+// предыдущий не завершился. Убрали setInterval из-за накопления
+// pending fetches → net::ERR_INSUFFICIENT_RESOURCES.
+const POLL_INTERVAL_MS = 100;
+async function pollOnce() {
   try {
     const res = await fetch('/state');
     state = await res.json();
@@ -598,7 +602,16 @@ async function poll() {
     document.getElementById('status').textContent = 'Disconnected...';
   }
 }
-setInterval(poll, 60);
+async function pollLoop() {
+  while (true) {
+    const t0 = performance.now();
+    await pollOnce();
+    const elapsed = performance.now() - t0;
+    const wait = Math.max(0, POLL_INTERVAL_MS - elapsed);
+    await new Promise(r => setTimeout(r, wait));
+  }
+}
+pollLoop();
 
 function animate() {
   requestAnimationFrame(animate);

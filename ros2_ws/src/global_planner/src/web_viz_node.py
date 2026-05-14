@@ -13,6 +13,7 @@ from geometry_msgs.msg import PoseStamped
 import threading
 import json
 import math
+import time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 STATE = {
@@ -44,16 +45,23 @@ class WebVizNode(Node):
         self.create_subscription(LaserScan, '/scan', self.scan_cb, 10)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
         self.trail_counter = 0
+        self.last_map_bump = 0.0
         self.get_logger().info('Web Viz 3D started on http://0.0.0.0:8080')
 
     def map_cb(self, msg):
+        # Карта обновляется в STATE всегда (свежее всегда лучше),
+        # но revision++ — не чаще 5 Hz, чтобы клиент не дёргал
+        # тяжёлый /map по 16 раз в секунду.
         STATE['map']['width'] = msg.info.width
         STATE['map']['height'] = msg.info.height
         STATE['map']['resolution'] = msg.info.resolution
         STATE['map']['origin_x'] = msg.info.origin.position.x
         STATE['map']['origin_y'] = msg.info.origin.position.y
         STATE['map']['data'] = list(msg.data)
-        STATE['map']['revision'] += 1
+        now = time.time()
+        if now - self.last_map_bump > 0.2:
+            STATE['map']['revision'] += 1
+            self.last_map_bump = now
 
     def odom_cb(self, msg):
         x = msg.pose.pose.position.x
@@ -474,11 +482,25 @@ R.scene.add(rRobot);
 let rPathLine = null, rTrailLine = null, rLidarLines = null, rGoalMarker = null;
 let wallsBuilt = false;
 
-// Raycaster for click-to-goal
+// Raycaster for click-to-goal.
+// Используем pointerdown/up + проверку дельты — иначе drag-end камеры
+// (OrbitControls) тоже считается кликом и шлёт фантомные goal.
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+let downPos = null;
+const DRAG_THRESHOLD_SQ = 25;  // 5 пикселей
 
-rightPanel.addEventListener('click', (e) => {
+rightPanel.addEventListener('pointerdown', (e) => {
+  downPos = {x: e.clientX, y: e.clientY};
+});
+
+rightPanel.addEventListener('pointerup', (e) => {
+  if (!downPos) return;
+  const dx = e.clientX - downPos.x;
+  const dy = e.clientY - downPos.y;
+  downPos = null;
+  if (dx * dx + dy * dy > DRAG_THRESHOLD_SQ) return;  // это drag, не клик
+
   const rect = rightPanel.getBoundingClientRect();
   mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;

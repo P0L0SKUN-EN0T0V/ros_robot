@@ -25,6 +25,10 @@ public:
             "/odom", 10, [this](const nav_msgs::msg::Odometry::SharedPtr msg){ odomCallback(msg); });
         goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
             "/goal_pose", 10, [this](const geometry_msgs::msg::PoseStamped::SharedPtr msg){ goalCallback(msg); });
+        // Foxglove по умолчанию публикует клик в легаси-топик из ROS1/move_base.
+        // Чтобы не заставлять каждого пользователя лезть в settings — слушаем оба.
+        legacy_goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+            "/move_base_simple/goal", 10, [this](const geometry_msgs::msg::PoseStamped::SharedPtr msg){ goalCallback(msg); });
 
         cmd_pub_  = create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
         map_pub_  = create_publisher<nav_msgs::msg::OccupancyGrid>("/map", 10);
@@ -71,6 +75,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr legacy_goal_sub_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;

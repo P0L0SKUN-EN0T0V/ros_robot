@@ -17,7 +17,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 STATE = {
     'map': {'width': 200, 'height': 200, 'resolution': 0.05,
-            'origin_x': -5.0, 'origin_y': -5.0, 'data': []},
+            'origin_x': -5.0, 'origin_y': -5.0, 'data': [], 'revision': 0},
     'robot': {'x': 0.0, 'y': 0.0, 'yaw': 0.0},
     'path': [],
     'goal': None,
@@ -56,6 +56,7 @@ class WebVizNode(Node):
         STATE['map']['origin_x'] = msg.info.origin.position.x
         STATE['map']['origin_y'] = msg.info.origin.position.y
         STATE['map']['data'] = list(msg.data)
+        STATE['map']['revision'] += 1
 
     def odom_cb(self, msg):
         x = msg.pose.pose.position.x
@@ -108,11 +109,11 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(get_html().encode())
         elif self.path == '/state':
+            # Лёгкий эндпоинт без map.data — клиент опрашивает часто (50 мс)
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            # Downsample map: send every 2nd cell for performance
             s = {
                 'robot': STATE['robot'],
                 'path': STATE['path'],
@@ -120,16 +121,32 @@ class Handler(BaseHTTPRequestHandler):
                 'trail': STATE['trail'][-500:],
                 'walls': STATE['walls'],
                 'scan': STATE['scan'],
-                'map': {
+                'map_revision': STATE['map']['revision'],
+                'map_meta': {
                     'width': STATE['map']['width'],
                     'height': STATE['map']['height'],
                     'resolution': STATE['map']['resolution'],
                     'origin_x': STATE['map']['origin_x'],
                     'origin_y': STATE['map']['origin_y'],
-                    'data': STATE['map']['data'],
                 },
             }
             self.wfile.write(json.dumps(s).encode())
+        elif self.path == '/map':
+            # Тяжёлый эндпоинт с полной картой — клиент тянет только при
+            # изменении revision
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'revision': STATE['map']['revision'],
+                'width': STATE['map']['width'],
+                'height': STATE['map']['height'],
+                'resolution': STATE['map']['resolution'],
+                'origin_x': STATE['map']['origin_x'],
+                'origin_y': STATE['map']['origin_y'],
+                'data': STATE['map']['data'],
+            }).encode())
         else:
             self.send_response(404)
             self.end_headers()
@@ -212,6 +229,8 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
 let state = null;
+let mapData = null;       // { width, height, resolution, origin_x, origin_y, data }
+let lastMapRev = -1;
 
 // ===================== HELPERS =====================
 function createScene(container, cameraPos, lookAt) {
@@ -325,8 +344,8 @@ function updateLeftPanel() {
 
   // Карта обновляется только когда пришли новые данные (mapDirty),
   // а не каждый кадр — иначе createImageData(200,200) жрёт CPU зря
-  const m = state.map;
-  if (mapDirty && m.data && m.data.length > 0) {
+  const m = mapData;
+  if (mapDirty && m && m.data && m.data.length > 0) {
     mapDirty = false;
     const img = mapCtx.createImageData(m.width, m.height);
     let wallCount = 0;
@@ -547,7 +566,12 @@ async function poll() {
   try {
     const res = await fetch('/state');
     state = await res.json();
-    mapDirty = true;
+    if (state.map_revision !== lastMapRev) {
+      lastMapRev = state.map_revision;
+      const mres = await fetch('/map');
+      mapData = await mres.json();
+      mapDirty = true;
+    }
     const r = state.robot;
     document.getElementById('status').textContent =
       `Robot: (${r.x.toFixed(2)}, ${r.y.toFixed(2)}) | Yaw: ${(r.yaw*180/Math.PI).toFixed(0)} | Path: ${state.path.length} pts`;
@@ -555,7 +579,7 @@ async function poll() {
     document.getElementById('status').textContent = 'Disconnected...';
   }
 }
-setInterval(poll, 150);
+setInterval(poll, 60);
 
 function animate() {
   requestAnimationFrame(animate);

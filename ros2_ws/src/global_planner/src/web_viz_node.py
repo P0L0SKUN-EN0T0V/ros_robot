@@ -279,7 +279,8 @@ L.scene.add(makeGrid());
 const lRobot = makeRobot(0x00ff88);
 L.scene.add(lRobot);
 
-// Map mesh — flat plane with texture
+// Map mesh — flat plane показывает только free/unknown,
+// стены отрисовываются 3D-кубиками (см. wallMesh ниже)
 const mapCanvas = document.createElement('canvas');
 mapCanvas.width = 200; mapCanvas.height = 200;
 const mapCtx = mapCanvas.getContext('2d');
@@ -288,16 +289,22 @@ mapTexture.magFilter = THREE.NearestFilter;
 mapTexture.minFilter = THREE.NearestFilter;
 const mapMesh = new THREE.Mesh(
   new THREE.PlaneGeometry(10, 10),
-  new THREE.MeshBasicMaterial({map: mapTexture, transparent: true, opacity: 0.85})
+  new THREE.MeshBasicMaterial({map: mapTexture, transparent: true, opacity: 0.7})
 );
 mapMesh.rotation.x = -Math.PI / 2;
 mapMesh.position.y = 0.001;
 L.scene.add(mapMesh);
+let mapDirty = false;
 
-// Wall voxels group
-let wallGroup = new THREE.Group();
-L.scene.add(wallGroup);
-let lastWallUpdate = 0;
+// Wall voxels — один долгоживущий InstancedMesh, переиспользуется
+const WALL_CAPACITY = 8000;
+const wallGeo = new THREE.BoxGeometry(0.05, 0.3, 0.05);
+const wallMat = new THREE.MeshPhongMaterial({color: 0xff3355});
+const wallMesh = new THREE.InstancedMesh(wallGeo, wallMat, WALL_CAPACITY);
+wallMesh.count = 0;
+wallMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+L.scene.add(wallMesh);
+const wallDummy = new THREE.Object3D();
 
 // Path line
 let lPathLine = null;
@@ -316,51 +323,42 @@ function updateLeftPanel() {
   lRobot.position.set(r.x, 0.1, -r.y);
   lRobot.rotation.y = r.yaw;
 
-  // Map texture
+  // Карта обновляется только когда пришли новые данные (mapDirty),
+  // а не каждый кадр — иначе createImageData(200,200) жрёт CPU зря
   const m = state.map;
-  if (m.data && m.data.length > 0) {
+  if (mapDirty && m.data && m.data.length > 0) {
+    mapDirty = false;
     const img = mapCtx.createImageData(m.width, m.height);
+    let wallCount = 0;
     for (let y = 0; y < m.height; y++) {
       for (let x = 0; x < m.width; x++) {
         const si = (m.height - 1 - y) * m.width + x;
         const di = (y * m.width + x) * 4;
         const v = m.data[si];
-        if (v === -1) { img.data[di]=20; img.data[di+1]=20; img.data[di+2]=40; img.data[di+3]=200; }
-        else if (v === 0) { img.data[di]=180; img.data[di+1]=200; img.data[di+2]=180; img.data[di+3]=220; }
-        else { img.data[di]=255; img.data[di+1]=50; img.data[di+2]=80; img.data[di+3]=255; }
+        // Стены НЕ рисуем на текстуре — они идут 3D-кубиками
+        if (v === -1) { img.data[di]=20; img.data[di+1]=20; img.data[di+2]=40; img.data[di+3]=180; }
+        else if (v === 0) { img.data[di]=180; img.data[di+1]=200; img.data[di+2]=180; img.data[di+3]=180; }
+        else { img.data[di]=180; img.data[di+1]=200; img.data[di+2]=180; img.data[di+3]=180; wallCount++; }
       }
     }
     mapCtx.putImageData(img, 0, 0);
     mapTexture.needsUpdate = true;
-  }
 
-  // Wall voxels (update every 2s for perf)
-  const now = Date.now();
-  if (m.data && m.data.length > 0 && now - lastWallUpdate > 2000) {
-    lastWallUpdate = now;
-    wallGroup.clear();
-    const geo = new THREE.BoxGeometry(m.resolution, 0.3, m.resolution);
-    const mat = new THREE.MeshPhongMaterial({color: 0xff3355});
-    const inst = [];
-    for (let y = 0; y < m.height; y += 1) {
-      for (let x = 0; x < m.width; x += 1) {
+    // Кубики стен — переиспользуем тот же InstancedMesh
+    let wi = 0;
+    for (let y = 0; y < m.height && wi < WALL_CAPACITY; y++) {
+      for (let x = 0; x < m.width && wi < WALL_CAPACITY; x++) {
         if (m.data[y * m.width + x] === 100) {
           const wx = m.origin_x + x * m.resolution + m.resolution / 2;
           const wy = m.origin_y + y * m.resolution + m.resolution / 2;
-          inst.push([wx, wy]);
+          wallDummy.position.set(wx, 0.15, -wy);
+          wallDummy.updateMatrix();
+          wallMesh.setMatrixAt(wi++, wallDummy.matrix);
         }
       }
     }
-    if (inst.length > 0 && inst.length < 5000) {
-      const mesh = new THREE.InstancedMesh(geo, mat, inst.length);
-      const dummy = new THREE.Object3D();
-      inst.forEach(([wx, wy], i) => {
-        dummy.position.set(wx, 0.15, -wy);
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i, dummy.matrix);
-      });
-      wallGroup.add(mesh);
-    }
+    wallMesh.count = wi;
+    wallMesh.instanceMatrix.needsUpdate = true;
   }
 
   // Path
@@ -549,6 +547,7 @@ async function poll() {
   try {
     const res = await fetch('/state');
     state = await res.json();
+    mapDirty = true;
     const r = state.robot;
     document.getElementById('status').textContent =
       `Robot: (${r.x.toFixed(2)}, ${r.y.toFixed(2)}) | Yaw: ${(r.yaw*180/Math.PI).toFixed(0)} | Path: ${state.path.length} pts`;

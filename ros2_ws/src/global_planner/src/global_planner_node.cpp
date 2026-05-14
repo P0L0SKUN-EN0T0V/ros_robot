@@ -42,13 +42,23 @@ private:
     static constexpr double ORIGIN_Y = -5.0;
     static const int INFLATION_RADIUS = 5;  // 5 cells = 0.25m (robot radius 0.15m + margin)
 
+    // Log-odds mapping: каждая клетка накапливает свидетельства.
+    // Один промах не очищает стену моментально, и наоборот — стена,
+    // через которую луч прошёл несколько раз подряд, постепенно «забывается».
+    static constexpr float LOG_ODDS_FREE  = -0.4f;
+    static constexpr float LOG_ODDS_OCC   = +0.85f;
+    static constexpr float L_MIN          = -2.0f;
+    static constexpr float L_MAX          = +3.5f;
+    static constexpr float L_OCC_THRESH   = +0.4f;
+    static constexpr float L_FREE_THRESH  = -0.4f;
+
     static constexpr double LOOKAHEAD_DIST = 0.3;
     static constexpr double MAX_LINEAR_VEL = 0.5;
     static constexpr double MAX_ANGULAR_VEL = 1.5;
     static constexpr double GOAL_TOLERANCE = 0.15;
     static constexpr double ALIGN_THRESHOLD = 0.4;  // rad — при |alpha|>порога только крутимся
 
-    std::vector<int8_t> map_data_ = std::vector<int8_t>(MAP_SIZE * MAP_SIZE, -1);
+    std::vector<float> log_odds_ = std::vector<float>(MAP_SIZE * MAP_SIZE, 0.0f);
     std::vector<bool> inflated_ = std::vector<bool>(MAP_SIZE * MAP_SIZE, false);
     double robot_x_ = 0, robot_y_ = 0, robot_yaw_ = 0;
     double goal_x_ = 0, goal_y_ = 0;
@@ -116,6 +126,15 @@ private:
         return static_cast<int>((coord - origin) / RESOLUTION);
     }
 
+    inline void bumpCell(int x, int y, float delta) {
+        int i = y * MAP_SIZE + x;
+        log_odds_[i] = std::clamp(log_odds_[i] + delta, L_MIN, L_MAX);
+    }
+
+    inline bool isOccupied(int x, int y) const {
+        return log_odds_[y * MAP_SIZE + x] > L_OCC_THRESH;
+    }
+
     void updateMapWithLaser(double rx, double ry, double hx, double hy, bool hit_wall) {
         int x0 = worldToGrid(rx, ORIGIN_X);
         int y0 = worldToGrid(ry, ORIGIN_Y);
@@ -132,17 +151,13 @@ private:
         int cx = x0, cy = y0;
         while (cx != x1 || cy != y1) {
             if (cx >= 0 && cx < MAP_SIZE && cy >= 0 && cy < MAP_SIZE) {
-                map_data_[cy * MAP_SIZE + cx] = 0;
+                bumpCell(cx, cy, LOG_ODDS_FREE);
             }
             int e2 = 2 * err;
             if (e2 > -dy) { err -= dy; cx += sx; }
             if (e2 <  dx) { err += dx; cy += sy; }
         }
-        if (hit_wall) {
-            map_data_[y1 * MAP_SIZE + x1] = 100;
-        } else {
-            map_data_[y1 * MAP_SIZE + x1] = 0;
-        }
+        bumpCell(x1, y1, hit_wall ? LOG_ODDS_OCC : LOG_ODDS_FREE);
     }
 
     // Precomputed inflation map — O(MAP_SIZE^2 * INFLATION_RADIUS^2) but only 2x/sec
@@ -150,8 +165,7 @@ private:
         std::fill(inflated_.begin(), inflated_.end(), false);
         for (int y = 0; y < MAP_SIZE; y++) {
             for (int x = 0; x < MAP_SIZE; x++) {
-                if (map_data_[y * MAP_SIZE + x] == 100) {
-                    // Mark neighborhood as inflated
+                if (isOccupied(x, y)) {
                     for (int dy = -INFLATION_RADIUS; dy <= INFLATION_RADIUS; dy++) {
                         for (int dx = -INFLATION_RADIUS; dx <= INFLATION_RADIUS; dx++) {
                             int nx = x + dx, ny = y + dy;
@@ -174,7 +188,15 @@ private:
         grid.info.height = MAP_SIZE;
         grid.info.origin.position.x = ORIGIN_X;
         grid.info.origin.position.y = ORIGIN_Y;
-        grid.data = map_data_;
+        // Конвертируем log-odds в стандартный OccupancyGrid (-1/0/100)
+        std::vector<int8_t> data(MAP_SIZE * MAP_SIZE);
+        for (int i = 0; i < MAP_SIZE * MAP_SIZE; i++) {
+            float l = log_odds_[i];
+            if (l > L_OCC_THRESH)        data[i] = 100;
+            else if (l < L_FREE_THRESH)  data[i] = 0;
+            else                          data[i] = -1;
+        }
+        grid.data = std::move(data);
         map_pub_->publish(grid);
     }
 
@@ -182,8 +204,7 @@ private:
     bool isFree(int x, int y) {
         if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) return false;
         if (inflated_[y * MAP_SIZE + x]) return false;
-        int val = map_data_[y * MAP_SIZE + x];
-        return val == 0 || val == -1;
+        return !isOccupied(x, y);  // unknown тоже считаем проходимым
     }
 
     // ============================================================
@@ -203,8 +224,7 @@ private:
         // Для старта и цели — проверяем без inflation (робот уже может стоять у стены)
         auto isPassable = [this](int x, int y) -> bool {
             if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) return false;
-            int val = map_data_[y * MAP_SIZE + x];
-            return val == 0 || val == -1;
+            return !isOccupied(x, y);
         };
 
         if (!isPassable(sx, sy) || !isPassable(gx, gy)) return {};

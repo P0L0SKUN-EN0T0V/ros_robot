@@ -13,7 +13,7 @@ from geometry_msgs.msg import PoseStamped
 import threading
 import json
 import math
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 STATE = {
     'map': {'width': 200, 'height': 200, 'resolution': 0.05,
@@ -171,7 +171,7 @@ def main(args=None):
     global viz_node
     rclpy.init(args=args)
     viz_node = WebVizNode()
-    server = HTTPServer(('0.0.0.0', 8080), Handler)
+    server = ThreadingHTTPServer(('0.0.0.0', 8080), Handler)
     http_thread = threading.Thread(target=server.serve_forever, daemon=True)
     http_thread.start()
     rclpy.spin(viz_node)

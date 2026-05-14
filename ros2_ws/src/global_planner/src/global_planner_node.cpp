@@ -3,6 +3,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -25,10 +26,14 @@ public:
         goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
             "/goal_pose", 10, [this](const geometry_msgs::msg::PoseStamped::SharedPtr msg){ goalCallback(msg); });
 
+        cmd_pub_  = create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
         map_pub_  = create_publisher<nav_msgs::msg::OccupancyGrid>("/map", 10);
         path_pub_ = create_publisher<nav_msgs::msg::Path>("/global_plan", 10);
 
-        RCLCPP_INFO(get_logger(), "Global Planner started! (A* mode)");
+        // Таймер управления (10 Hz)
+        timer_ = create_wall_timer(100ms, [this](){ controlLoop(); });
+
+        RCLCPP_INFO(get_logger(), "Global Planner started! (full mode)");
     }
 
 private:
@@ -37,6 +42,12 @@ private:
     static constexpr double RESOLUTION = 0.05;
     static constexpr double ORIGIN_X = -5.0;
     static constexpr double ORIGIN_Y = -5.0;
+
+    // === Параметры Pure Pursuit ===
+    static constexpr double LOOKAHEAD_DIST = 0.3;
+    static constexpr double MAX_LINEAR_VEL = 0.15;
+    static constexpr double MAX_ANGULAR_VEL = 1.0;
+    static constexpr double GOAL_TOLERANCE = 0.15;
 
     // === Состояние ===
     std::vector<int8_t> map_data_ = std::vector<int8_t>(MAP_SIZE * MAP_SIZE, -1);
@@ -49,8 +60,10 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+    rclcpp::TimerBase::SharedPtr timer_;
 
     // ============================================================
     // Callbacks
@@ -151,11 +164,7 @@ private:
     const int DY[8] = {-1,  0,  1, -1, 1, -1, 0, 1};
 
     std::vector<std::pair<int,int>> planAStar(int sx, int sy, int gx, int gy) {
-        if (!isFree(sx, sy) || !isFree(gx, gy)) {
-            RCLCPP_WARN(get_logger(), "A* abort: startFree=%d goalFree=%d",
-                        isFree(sx, sy) ? 1 : 0, isFree(gx, gy) ? 1 : 0);
-            return {};
-        }
+        if (!isFree(sx, sy) || !isFree(gx, gy)) return {};
 
         std::vector<std::vector<double>> g_val(MAP_SIZE,
             std::vector<double>(MAP_SIZE, std::numeric_limits<double>::infinity()));
@@ -215,14 +224,11 @@ private:
         int gx = worldToGrid(goal_x_, ORIGIN_X);
         int gy = worldToGrid(goal_y_, ORIGIN_Y);
 
-        RCLCPP_INFO(get_logger(), "A* replan: start=(%d,%d) goal=(%d,%d)", sx, sy, gx, gy);
-
         current_path_ = planAStar(sx, sy, gx, gy);
 
         if (current_path_.empty()) {
             RCLCPP_WARN(get_logger(), "A* path NOT found!");
         } else {
-            RCLCPP_INFO(get_logger(), "A* path found: %zu cells", current_path_.size());
             publishPath();
         }
     }
@@ -240,6 +246,70 @@ private:
             path_msg.poses.push_back(pose);
         }
         path_pub_->publish(path_msg);
+    }
+
+    // ============================================================
+    // Pure Pursuit
+    // ============================================================
+
+    double normalizeAngle(double a) {
+        while (a >  M_PI) a -= 2.0 * M_PI;
+        while (a < -M_PI) a += 2.0 * M_PI;
+        return a;
+    }
+
+    void purePursuitControl() {
+        if (current_path_.empty() || !has_goal_) return;
+
+        double dist_to_goal = std::hypot(goal_x_ - robot_x_, goal_y_ - robot_y_);
+        if (dist_to_goal < GOAL_TOLERANCE) {
+            auto cmd = geometry_msgs::msg::Twist();
+            cmd_pub_->publish(cmd);
+            has_goal_ = false;
+            RCLCPP_INFO(get_logger(), "Goal reached! pos=(%.2f, %.2f)", robot_x_, robot_y_);
+            return;
+        }
+
+        double lx = 0, ly = 0;
+        bool found = false;
+
+        for (auto& [gx, gy] : current_path_) {
+            double wx = ORIGIN_X + gx * RESOLUTION + RESOLUTION / 2;
+            double wy = ORIGIN_Y + gy * RESOLUTION + RESOLUTION / 2;
+            double d = std::hypot(wx - robot_x_, wy - robot_y_);
+            if (d >= LOOKAHEAD_DIST) {
+                lx = wx; ly = wy;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            auto& [gx, gy] = current_path_.back();
+            lx = ORIGIN_X + gx * RESOLUTION + RESOLUTION / 2;
+            ly = ORIGIN_Y + gy * RESOLUTION + RESOLUTION / 2;
+        }
+
+        double target_angle = atan2(ly - robot_y_, lx - robot_x_);
+        double alpha = normalizeAngle(target_angle - robot_yaw_);
+
+        auto cmd = geometry_msgs::msg::Twist();
+        cmd.linear.x  = MAX_LINEAR_VEL * std::cos(alpha);
+        cmd.angular.z = std::clamp(2.0 * alpha, -MAX_ANGULAR_VEL, MAX_ANGULAR_VEL);
+
+        if (cmd.linear.x < 0) cmd.linear.x = 0;
+        cmd_pub_->publish(cmd);
+    }
+
+    // ============================================================
+    // Главный цикл
+    // ============================================================
+
+    void controlLoop() {
+        if (has_goal_) {
+            replan();
+            purePursuitControl();
+        }
     }
 };
 

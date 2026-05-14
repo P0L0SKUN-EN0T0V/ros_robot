@@ -66,6 +66,7 @@ private:
     std::vector<std::pair<int,int>> current_path_;
     int scan_count_ = 0;
     int control_tick_ = 0;
+    bool emergency_active_ = false;
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
@@ -86,6 +87,11 @@ private:
     }
 
     void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+        // ШАГ 1: всё что вне сенсора → unknown, всё что внутри → мягкий decay.
+        // Реальные стены подтверждаются хитами и держатся; призраки забываются.
+        applyFOVDecay(msg->range_max);
+
+        // ШАГ 2: лучи перезаписывают free/wall на пути
         for (size_t i = 0; i < msg->ranges.size(); i++) {
             float r = msg->ranges[i];
             if (std::isinf(r) || std::isnan(r)) continue;
@@ -129,6 +135,28 @@ private:
     inline void bumpCell(int x, int y, float delta) {
         int i = y * MAP_SIZE + x;
         log_odds_[i] = std::clamp(log_odds_[i] + delta, L_MIN, L_MAX);
+    }
+
+    // FOV-based forgetting:
+    //   - вне sensor_range → log_odds = 0 (полное unknown)
+    //   - внутри FOV → log_odds *= 0.95 (мягкий decay; реальные стены подтверждаются хитами)
+    void applyFOVDecay(float sensor_range) {
+        int rgx = worldToGrid(robot_x_, ORIGIN_X);
+        int rgy = worldToGrid(robot_y_, ORIGIN_Y);
+        int range_cells = static_cast<int>(sensor_range / RESOLUTION) + 2;
+        int range_sq = range_cells * range_cells;
+        constexpr float DECAY = 0.95f;
+        for (int y = 0; y < MAP_SIZE; y++) {
+            for (int x = 0; x < MAP_SIZE; x++) {
+                int dx = x - rgx, dy = y - rgy;
+                int i = y * MAP_SIZE + x;
+                if (dx * dx + dy * dy > range_sq) {
+                    log_odds_[i] = 0.0f;
+                } else {
+                    log_odds_[i] *= DECAY;
+                }
+            }
+        }
     }
 
     inline bool isOccupied(int x, int y) const {
@@ -382,10 +410,12 @@ private:
     // ============================================================
 
     void checkEmergencyStop(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+        // Emergency имеет смысл только когда мы пытаемся ехать
+        if (!has_goal_) { emergency_active_ = false; return; }
+
         double min_range = std::numeric_limits<double>::infinity();
         int n = msg->ranges.size();
         int spread = 30;
-
         for (int k = -spread; k <= spread; k++) {
             int i = (k + n) % n;
             float r = msg->ranges[i];
@@ -394,12 +424,19 @@ private:
             }
         }
 
-        if (min_range < 0.18) {
+        // Гистерезис: триггер 0.16, отпуск 0.22 — иначе залипает на границе
+        constexpr float TRIGGER = 0.16f;
+        constexpr float RELEASE = 0.22f;
+        if (!emergency_active_ && min_range < TRIGGER) emergency_active_ = true;
+        else if (emergency_active_ && min_range > RELEASE) emergency_active_ = false;
+
+        if (emergency_active_) {
+            // Backup публикуем, но path НЕ очищаем — replan на следующем тике
+            // увидит свежую карту (включая стену, в которую упёрлись) и обойдёт
             auto cmd = geometry_msgs::msg::Twist();
             cmd.linear.x = -0.08;
             cmd.angular.z = 0.3;
             cmd_pub_->publish(cmd);
-            current_path_.clear();
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
                 "Obstacle! %.2f m — backing up", min_range);
         }

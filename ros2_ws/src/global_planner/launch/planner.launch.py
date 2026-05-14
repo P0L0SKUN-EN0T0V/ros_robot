@@ -6,9 +6,9 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    rosbridge_launch = (
-        get_package_share_directory('rosbridge_server')
-        + '/launch/rosbridge_websocket_launch.xml'
+    bridge_launch = (
+        get_package_share_directory('foxglove_bridge')
+        + '/launch/foxglove_bridge_launch.xml'
     )
     return LaunchDescription([
         Node(
@@ -23,10 +23,10 @@ def generate_launch_description():
             name='global_planner_node',
             output='screen',
         ),
-        # ROS ↔ WebSocket мост на ws://0.0.0.0:9090. Foxglove Studio
-        # подключается к нему напрямую и сам отрисовывает occupancy
-        # grid, lidar, path. Самописного web_viz больше нет.
+        # foxglove_bridge — родной мост Foxglove Studio. ws://0.0.0.0:8765,
+        # бинарный протокол, авто-схемы сообщений, корректный publishing
+        # PoseStamped (rosbridge ROS2 ломает headers, foxglove_bridge — нет).
         IncludeLaunchDescription(
-            AnyLaunchDescriptionSource(rosbridge_launch),
+            AnyLaunchDescriptionSource(bridge_launch),
         ),
     ])

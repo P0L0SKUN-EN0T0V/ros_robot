@@ -72,8 +72,9 @@ class FakeSim(Node):
         new_x = self.x + self.vx * math.cos(self.yaw) * self.dt
         new_y = self.y + self.vx * math.sin(self.yaw) * self.dt
 
-        # Простая коллизия — не двигаемся если упёрлись в стену
-        if not self._collides(new_x, new_y):
+        # Sub-stepping вдоль траектории — иначе на скорости робот может
+        # за один тик «прошить» тонкую стену (tunneling)
+        if not self._path_collides(self.x, self.y, new_x, new_y):
             self.x = new_x
             self.y = new_y
 
@@ -88,6 +89,20 @@ class FakeSim(Node):
         for (x1, y1, x2, y2) in self.walls:
             dist = self._point_to_segment_dist(x, y, x1, y1, x2, y2)
             if dist < radius:
+                return True
+        return False
+
+    def _path_collides(self, x0, y0, x1, y1, radius=0.15):
+        """Проверка коллизии вдоль отрезка движения с sub-stepping."""
+        dx = x1 - x0
+        dy = y1 - y0
+        step_len = math.hypot(dx, dy)
+        if step_len < 1e-9:
+            return self._collides(x1, y1, radius)
+        n = max(2, int(math.ceil(step_len / (radius * 0.5))))
+        for i in range(n + 1):
+            t = i / n
+            if self._collides(x0 + t * dx, y0 + t * dy, radius):
                 return True
         return False
 

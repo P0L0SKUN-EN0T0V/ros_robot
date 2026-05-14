@@ -88,6 +88,7 @@ private:
             updateMapWithLaser(robot_x_, robot_y_, hit_x, hit_y);
         }
         publishMap();
+        checkEmergencyStop(msg);
     }
 
     void goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
@@ -302,6 +303,30 @@ private:
     }
 
     // ============================================================
+    // ============================================================
+    // Экстренная остановка
+    // ============================================================
+
+    void checkEmergencyStop(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+        double min_range = std::numeric_limits<double>::infinity();
+        int n = msg->ranges.size();
+        int spread = 30;
+
+        for (int k = -spread; k <= spread; k++) {
+            int i = (k + n) % n;
+            float r = msg->ranges[i];
+            if (!std::isinf(r) && !std::isnan(r) && r < min_range) {
+                min_range = r;
+            }
+        }
+
+        if (min_range < 0.20) {
+            auto cmd = geometry_msgs::msg::Twist();
+            cmd_pub_->publish(cmd);
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "Obstacle! %.2f m", min_range);
+        }
+    }
+
     // Главный цикл
     // ============================================================
 

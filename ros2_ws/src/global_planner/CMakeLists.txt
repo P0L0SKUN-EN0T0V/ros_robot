@@ -20,4 +20,5 @@ install(TARGETS global_planner_node DESTINATION lib/${PROJECT_NAME})
 ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS src/fake_sim_node.py DESTINATION lib/${PROJECT_NAME})
 
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 ament_package()

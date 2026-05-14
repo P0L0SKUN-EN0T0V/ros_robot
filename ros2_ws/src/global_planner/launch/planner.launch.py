@@ -16,4 +16,10 @@ def generate_launch_description():
             name='global_planner_node',
             output='screen',
         ),
+        Node(
+            package='global_planner',
+            executable='web_viz_node.py',
+            name='web_viz_node',
+            output='screen',
+        ),
     ])

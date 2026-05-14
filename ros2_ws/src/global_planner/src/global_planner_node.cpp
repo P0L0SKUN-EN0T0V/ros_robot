@@ -30,33 +30,31 @@ public:
         map_pub_  = create_publisher<nav_msgs::msg::OccupancyGrid>("/map", 10);
         path_pub_ = create_publisher<nav_msgs::msg::Path>("/global_plan", 10);
 
-        // Таймер управления (10 Hz)
         timer_ = create_wall_timer(100ms, [this](){ controlLoop(); });
 
         RCLCPP_INFO(get_logger(), "Global Planner started! (full mode)");
     }
 
 private:
-    // === Параметры карты ===
     static const int MAP_SIZE = 200;
     static constexpr double RESOLUTION = 0.05;
     static constexpr double ORIGIN_X = -5.0;
     static constexpr double ORIGIN_Y = -5.0;
+    static const int INFLATION_RADIUS = 5;  // 5 cells = 0.25m (robot radius 0.15m + margin)
 
-    // === Параметры Pure Pursuit ===
     static constexpr double LOOKAHEAD_DIST = 0.3;
     static constexpr double MAX_LINEAR_VEL = 0.15;
     static constexpr double MAX_ANGULAR_VEL = 1.0;
     static constexpr double GOAL_TOLERANCE = 0.15;
 
-    // === Состояние ===
     std::vector<int8_t> map_data_ = std::vector<int8_t>(MAP_SIZE * MAP_SIZE, -1);
+    std::vector<bool> inflated_ = std::vector<bool>(MAP_SIZE * MAP_SIZE, false);
     double robot_x_ = 0, robot_y_ = 0, robot_yaw_ = 0;
     double goal_x_ = 0, goal_y_ = 0;
     bool has_goal_ = false;
     std::vector<std::pair<int,int>> current_path_;
+    int scan_count_ = 0;
 
-    // === ROS2 объекты ===
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_;
@@ -85,8 +83,16 @@ private:
             double hit_x = robot_x_ + r * cos(angle);
             double hit_y = robot_y_ + r * sin(angle);
 
-            updateMapWithLaser(robot_x_, robot_y_, hit_x, hit_y);
+            bool hit_wall = (r < msg->range_max - 0.05);
+            updateMapWithLaser(robot_x_, robot_y_, hit_x, hit_y, hit_wall);
         }
+
+        // Пересчитываем inflated map каждые 10 сканов (2x в секунду при 20 Hz)
+        scan_count_++;
+        if (scan_count_ % 10 == 0) {
+            rebuildInflatedMap();
+        }
+
         publishMap();
         checkEmergencyStop(msg);
     }
@@ -96,6 +102,7 @@ private:
         goal_y_ = msg->pose.position.y;
         has_goal_ = true;
         RCLCPP_INFO(get_logger(), "New goal: (%.2f, %.2f)", goal_x_, goal_y_);
+        rebuildInflatedMap();
         replan();
     }
 
@@ -107,7 +114,7 @@ private:
         return static_cast<int>((coord - origin) / RESOLUTION);
     }
 
-    void updateMapWithLaser(double rx, double ry, double hx, double hy) {
+    void updateMapWithLaser(double rx, double ry, double hx, double hy, bool hit_wall) {
         int x0 = worldToGrid(rx, ORIGIN_X);
         int y0 = worldToGrid(ry, ORIGIN_Y);
         int x1 = worldToGrid(hx, ORIGIN_X);
@@ -129,7 +136,31 @@ private:
             if (e2 > -dy) { err -= dy; cx += sx; }
             if (e2 <  dx) { err += dx; cy += sy; }
         }
-        map_data_[y1 * MAP_SIZE + x1] = 100;
+        if (hit_wall) {
+            map_data_[y1 * MAP_SIZE + x1] = 100;
+        } else {
+            map_data_[y1 * MAP_SIZE + x1] = 0;
+        }
+    }
+
+    // Precomputed inflation map — O(MAP_SIZE^2 * INFLATION_RADIUS^2) but only 2x/sec
+    void rebuildInflatedMap() {
+        std::fill(inflated_.begin(), inflated_.end(), false);
+        for (int y = 0; y < MAP_SIZE; y++) {
+            for (int x = 0; x < MAP_SIZE; x++) {
+                if (map_data_[y * MAP_SIZE + x] == 100) {
+                    // Mark neighborhood as inflated
+                    for (int dy = -INFLATION_RADIUS; dy <= INFLATION_RADIUS; dy++) {
+                        for (int dx = -INFLATION_RADIUS; dx <= INFLATION_RADIUS; dx++) {
+                            int nx = x + dx, ny = y + dy;
+                            if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE) {
+                                inflated_[ny * MAP_SIZE + nx] = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void publishMap() {
@@ -145,8 +176,10 @@ private:
         map_pub_->publish(grid);
     }
 
+    // A* использует inflated map — O(1) на проверку
     bool isFree(int x, int y) {
         if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) return false;
+        if (inflated_[y * MAP_SIZE + x]) return false;
         int val = map_data_[y * MAP_SIZE + x];
         return val == 0 || val == -1;
     }
@@ -165,7 +198,14 @@ private:
     const int DY[8] = {-1,  0,  1, -1, 1, -1, 0, 1};
 
     std::vector<std::pair<int,int>> planAStar(int sx, int sy, int gx, int gy) {
-        if (!isFree(sx, sy) || !isFree(gx, gy)) return {};
+        // Для старта и цели — проверяем без inflation (робот уже может стоять у стены)
+        auto isPassable = [this](int x, int y) -> bool {
+            if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) return false;
+            int val = map_data_[y * MAP_SIZE + x];
+            return val == 0 || val == -1;
+        };
+
+        if (!isPassable(sx, sy) || !isPassable(gx, gy)) return {};
 
         std::vector<std::vector<double>> g_val(MAP_SIZE,
             std::vector<double>(MAP_SIZE, std::numeric_limits<double>::infinity()));
@@ -203,7 +243,16 @@ private:
                 int nx = cx + DX[d];
                 int ny = cy + DY[d];
 
-                if (!isFree(nx, ny) || closed[ny][nx]) continue;
+                if (closed[ny][nx]) continue;
+                // Промежуточные клетки — через inflated map
+                // Но если мы рядом со стартом/целью — разрешаем
+                bool near_start = (abs(nx - sx) <= INFLATION_RADIUS && abs(ny - sy) <= INFLATION_RADIUS);
+                bool near_goal = false;  // цель тоже с отступом — не срезаем
+                if (near_start || near_goal) {
+                    if (!isPassable(nx, ny)) continue;
+                } else {
+                    if (!isFree(nx, ny)) continue;
+                }
 
                 double step_cost = (DX[d] != 0 && DY[d] != 0) ? 1.414 : 1.0;
                 double new_g = g_val[cy][cx] + step_cost;
@@ -228,7 +277,7 @@ private:
         current_path_ = planAStar(sx, sy, gx, gy);
 
         if (current_path_.empty()) {
-            RCLCPP_WARN(get_logger(), "A* path NOT found!");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 3000, "A* path NOT found!");
         } else {
             publishPath();
         }
@@ -303,7 +352,6 @@ private:
     }
 
     // ============================================================
-    // ============================================================
     // Экстренная остановка
     // ============================================================
 
@@ -320,13 +368,18 @@ private:
             }
         }
 
-        if (min_range < 0.20) {
+        if (min_range < 0.18) {
             auto cmd = geometry_msgs::msg::Twist();
+            cmd.linear.x = -0.08;
+            cmd.angular.z = 0.3;
             cmd_pub_->publish(cmd);
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "Obstacle! %.2f m", min_range);
+            current_path_.clear();
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
+                "Obstacle! %.2f m — backing up", min_range);
         }
     }
 
+    // ============================================================
     // Главный цикл
     // ============================================================
 

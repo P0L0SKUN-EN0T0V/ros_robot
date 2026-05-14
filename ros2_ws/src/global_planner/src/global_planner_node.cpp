@@ -65,7 +65,7 @@ private:
     bool has_goal_ = false;
     std::vector<std::pair<int,int>> current_path_;
     int scan_count_ = 0;
-    rclcpp::Time last_replan_time_;
+    int control_tick_ = 0;
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
@@ -411,12 +411,8 @@ private:
 
     void controlLoop() {
         if (!has_goal_) return;
-        // Replan не чаще раза в 500 мс — управление едет на 10 Гц
-        auto now = this->get_clock()->now();
-        if ((now - last_replan_time_).seconds() > 0.5) {
-            last_replan_time_ = now;
-            replan();
-        }
+        // Replan раз в 5 тиков (500 мс при 10 Гц), Pure Pursuit — каждый тик
+        if (control_tick_++ % 5 == 0) replan();
         purePursuitControl();
     }
 };

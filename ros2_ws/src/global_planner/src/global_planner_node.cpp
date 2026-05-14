@@ -43,9 +43,10 @@ private:
     static const int INFLATION_RADIUS = 5;  // 5 cells = 0.25m (robot radius 0.15m + margin)
 
     static constexpr double LOOKAHEAD_DIST = 0.3;
-    static constexpr double MAX_LINEAR_VEL = 0.15;
-    static constexpr double MAX_ANGULAR_VEL = 1.0;
+    static constexpr double MAX_LINEAR_VEL = 0.5;
+    static constexpr double MAX_ANGULAR_VEL = 1.5;
     static constexpr double GOAL_TOLERANCE = 0.15;
+    static constexpr double ALIGN_THRESHOLD = 0.4;  // rad — при |alpha|>порога только крутимся
 
     std::vector<int8_t> map_data_ = std::vector<int8_t>(MAP_SIZE * MAP_SIZE, -1);
     std::vector<bool> inflated_ = std::vector<bool>(MAP_SIZE * MAP_SIZE, false);
@@ -54,6 +55,7 @@ private:
     bool has_goal_ = false;
     std::vector<std::pair<int,int>> current_path_;
     int scan_count_ = 0;
+    rclcpp::Time last_replan_time_;
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
@@ -344,10 +346,14 @@ private:
         double alpha = normalizeAngle(target_angle - robot_yaw_);
 
         auto cmd = geometry_msgs::msg::Twist();
-        cmd.linear.x  = MAX_LINEAR_VEL * std::cos(alpha);
+        // Если плохо смотрим на цель — крутимся на месте, иначе едем с лёгким замедлением на повороте
+        if (std::abs(alpha) > ALIGN_THRESHOLD) {
+            cmd.linear.x = 0.0;
+        } else {
+            double slowdown = 1.0 - std::abs(alpha) / ALIGN_THRESHOLD * 0.5;  // от 1.0 до 0.5
+            cmd.linear.x = MAX_LINEAR_VEL * slowdown;
+        }
         cmd.angular.z = std::clamp(2.0 * alpha, -MAX_ANGULAR_VEL, MAX_ANGULAR_VEL);
-
-        if (cmd.linear.x < 0) cmd.linear.x = 0;
         cmd_pub_->publish(cmd);
     }
 
@@ -384,10 +390,14 @@ private:
     // ============================================================
 
     void controlLoop() {
-        if (has_goal_) {
+        if (!has_goal_) return;
+        // Replan не чаще раза в 500 мс — управление едет на 10 Гц
+        auto now = this->get_clock()->now();
+        if ((now - last_replan_time_).seconds() > 0.5) {
+            last_replan_time_ = now;
             replan();
-            purePursuitControl();
         }
+        purePursuitControl();
     }
 };
 

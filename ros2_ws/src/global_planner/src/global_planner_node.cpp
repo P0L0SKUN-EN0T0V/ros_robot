@@ -70,7 +70,14 @@ private:
     std::vector<std::pair<int,int>> current_path_;
     int scan_count_ = 0;
     int control_tick_ = 0;
-    bool emergency_active_ = false;
+
+    // Recovery state-machine: налетел → BACKING_UP 30 см назад → replan → NORMAL
+    enum class Recovery { NORMAL, BACKING_UP };
+    Recovery recovery_state_ = Recovery::NORMAL;
+    double backup_start_x_ = 0.0;
+    double backup_start_y_ = 0.0;
+    static constexpr double BACKUP_DISTANCE = 0.3;
+    static constexpr double EMERGENCY_TRIGGER = 0.18;  // м до препятствия впереди
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
@@ -416,12 +423,13 @@ private:
     // ============================================================
 
     void checkEmergencyStop(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
-        // Emergency имеет смысл только когда мы пытаемся ехать
-        if (!has_goal_) { emergency_active_ = false; return; }
+        if (!has_goal_) { recovery_state_ = Recovery::NORMAL; return; }
+        if (recovery_state_ == Recovery::BACKING_UP) return;  // уже в recovery
 
+        // Минимальная дистанция в передней дуге (60° спереди)
         double min_range = std::numeric_limits<double>::infinity();
         int n = msg->ranges.size();
-        int spread = 30;
+        int spread = n / 12;  // ~30° в каждую сторону
         for (int k = -spread; k <= spread; k++) {
             int i = (k + n) % n;
             float r = msg->ranges[i];
@@ -430,21 +438,16 @@ private:
             }
         }
 
-        // Гистерезис: триггер 0.16, отпуск 0.22 — иначе залипает на границе
-        constexpr float TRIGGER = 0.16f;
-        constexpr float RELEASE = 0.22f;
-        if (!emergency_active_ && min_range < TRIGGER) emergency_active_ = true;
-        else if (emergency_active_ && min_range > RELEASE) emergency_active_ = false;
-
-        if (emergency_active_) {
-            // Backup публикуем, но path НЕ очищаем — replan на следующем тике
-            // увидит свежую карту (включая стену, в которую упёрлись) и обойдёт
-            auto cmd = geometry_msgs::msg::Twist();
-            cmd.linear.x = -0.08;
-            cmd.angular.z = 0.3;
-            cmd_pub_->publish(cmd);
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
-                "Obstacle! %.2f m — backing up", min_range);
+        if (min_range < EMERGENCY_TRIGGER) {
+            // Старт recovery — запоминаем позицию начала backup,
+            // сразу пересчитываем inflated map (новые лучи уже зафиксировали стену)
+            recovery_state_ = Recovery::BACKING_UP;
+            backup_start_x_ = robot_x_;
+            backup_start_y_ = robot_y_;
+            rebuildInflatedMap();
+            RCLCPP_WARN(get_logger(),
+                "Obstacle %.2f m → recovery: backing up %.0f cm and replanning",
+                min_range, BACKUP_DISTANCE * 100);
         }
     }
 
@@ -454,7 +457,30 @@ private:
 
     void controlLoop() {
         if (!has_goal_) return;
-        // Replan раз в 5 тиков (500 мс при 10 Гц), Pure Pursuit — каждый тик
+
+        // Recovery: едем СТРОГО назад до накопления BACKUP_DISTANCE,
+        // потом replan на свежей карте и возвращаемся в NORMAL
+        if (recovery_state_ == Recovery::BACKING_UP) {
+            double traveled = std::hypot(robot_x_ - backup_start_x_,
+                                         robot_y_ - backup_start_y_);
+            if (traveled >= BACKUP_DISTANCE) {
+                recovery_state_ = Recovery::NORMAL;
+                rebuildInflatedMap();   // карта обновилась за время backup
+                replan();
+                RCLCPP_INFO(get_logger(),
+                    "Recovery done (%.2f m back), replanned: %zu poses",
+                    traveled, current_path_.size());
+                return;
+            }
+            // Чистый backward, без поворота — иначе робот закрутится у стены
+            auto cmd = geometry_msgs::msg::Twist();
+            cmd.linear.x = -0.1;
+            cmd.angular.z = 0.0;
+            cmd_pub_->publish(cmd);
+            return;
+        }
+
+        // Нормальный режим: replan раз в 5 тиков, Pure Pursuit каждый тик
         if (control_tick_++ % 5 == 0) replan();
         purePursuitControl();
     }

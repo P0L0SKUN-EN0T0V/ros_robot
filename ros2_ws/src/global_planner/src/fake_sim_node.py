@@ -10,7 +10,8 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist, Quaternion
+from geometry_msgs.msg import Twist, Quaternion, TransformStamped
+from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 import math
 import time
 
@@ -53,9 +54,24 @@ class FakeSim(Node):
         self.scan_pub = self.create_publisher(LaserScan, '/scan', 10)
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
 
+        # TF broadcaster: odom → base_link (динамический) и base_link → base_scan (статический).
+        # Без них Foxglove/RViz не могут отрендерить /scan в кадре odom.
+        self.tf_broadcaster = TransformBroadcaster(self)
+        self.static_tf = StaticTransformBroadcaster(self)
+        self._publish_static_tf()
+
         # Таймер: 20 Hz обновление
         self.dt = 0.05
         self.timer = self.create_timer(self.dt, self.update)
+
+    def _publish_static_tf(self):
+        # Лидар прямо в центре робота
+        s = TransformStamped()
+        s.header.stamp = self.get_clock().now().to_msg()
+        s.header.frame_id = 'base_link'
+        s.child_frame_id = 'base_scan'
+        s.transform.rotation.w = 1.0
+        self.static_tf.sendTransform(s)
 
         self.get_logger().info(
             f'Fake Sim started: robot at ({self.x:.1f}, {self.y:.1f}), '
@@ -81,8 +97,22 @@ class FakeSim(Node):
         # 2. Публикуем одометрию
         self.publish_odom()
 
-        # 3. Публикуем лидар
+        # 3. TF odom → base_link (актуальная поза робота)
+        self.publish_tf()
+
+        # 4. Публикуем лидар
         self.publish_scan()
+
+    def publish_tf(self):
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = 'odom'
+        t.child_frame_id = 'base_link'
+        t.transform.translation.x = self.x
+        t.transform.translation.y = self.y
+        t.transform.rotation.z = math.sin(self.yaw / 2)
+        t.transform.rotation.w = math.cos(self.yaw / 2)
+        self.tf_broadcaster.sendTransform(t)
 
     def _collides(self, x, y, radius=0.15):
         """Проверка столкновения точки (x,y) со стенами."""

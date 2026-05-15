@@ -1,0 +1,19 @@
+# Принудительно LF для всех текстовых файлов проекта.
+# Без этого git на Windows клонирует с CRLF (autocrlf=true), и
+# /usr/bin/env в shebang падает с "python3\r: No such file".
+* text=auto eol=lf
+
+*.py     text eol=lf
+*.sh     text eol=lf
+*.cpp    text eol=lf
+*.hpp    text eol=lf
+*.h      text eol=lf
+*.xml    text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+CMakeLists.txt text eol=lf
+Dockerfile     text eol=lf
+.dockerignore  text eol=lf
+.gitignore     text eol=lf

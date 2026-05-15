@@ -17,9 +17,13 @@ COPY ros2_ws/src/global_planner/package.xml ./ros2_ws/src/global_planner/
 # Теперь весь src
 COPY ros2_ws/src ./ros2_ws/src
 
-# При клонировании с Windows executable-bit на .py теряется —
-# ROS2 не сможет запустить ноды. Принудительно ставим +x.
-RUN chmod +x ros2_ws/src/global_planner/src/*.py
+# При клонировании с Windows:
+#   1) executable-bit на .py теряется → ROS2 не запустит ноды
+#   2) git autocrlf=true может превратить LF→CRLF в .py — shebang
+#      падает с "/usr/bin/env: python3\r: No such file"
+# Принудительно ставим +x и убираем \r на всякий случай.
+RUN chmod +x ros2_ws/src/global_planner/src/*.py && \
+    find ros2_ws/src -type f \( -name "*.py" -o -name "*.sh" \) -exec sed -i 's/\r$//' {} +
 
 # Сборка через colcon (как и на хосте)
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \

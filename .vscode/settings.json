@@ -12,5 +12,10 @@
   "python.autoComplete.extraPaths": [
     "/opt/ros/jazzy/lib/python3.12/site-packages",
     "${workspaceFolder}/ros2_ws/install/global_planner/lib/python3.12/site-packages"
-  ]
+  ],
+  "cmake.sourceDirectory": "/home/client/projects/ros_robot/ros2_ws/src/global_planner",
+  "cmake.configureOnOpen": false,
+  "cmake.configureOnEdit": false,
+  "cmake.automaticReconfigure": false,
+  "cmake.showOptionsMovedNotification": false
 }

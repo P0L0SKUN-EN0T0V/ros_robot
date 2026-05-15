@@ -1,0 +1,12 @@
+# IDE-генерируемые артефакты
+/build/                 # на случай если CMake Tools опять попытается
+.cache/
+*.code-workspace
+
+# Python кэш
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db

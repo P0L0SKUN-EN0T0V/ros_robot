@@ -99,11 +99,12 @@ private:
     }
 
     void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
-        // ШАГ 1: всё что вне сенсора → unknown, всё что внутри → мягкий decay.
-        // Реальные стены подтверждаются хитами и держатся; призраки забываются.
-        applyFOVDecay(msg->range_max);
-
-        // ШАГ 2: лучи перезаписывают free/wall на пути
+        // Лучи накапливают log-odds (free на пути / occ в концевой клетке).
+        // FOV-decay убран: для статичной сцены он давал зацикливание
+        // (робот забывал стену вне sensor_range → A* строил путь через
+        // неё → contact → backup → снова забыл). Теперь карта только растёт;
+        // если реальная стена исчезла — Bresenham постепенно её снимет
+        // через LOG_ODDS_FREE.
         for (size_t i = 0; i < msg->ranges.size(); i++) {
             float r = msg->ranges[i];
             if (std::isinf(r) || std::isnan(r)) continue;
@@ -150,27 +151,6 @@ private:
         log_odds_[i] = std::clamp(log_odds_[i] + delta, L_MIN, L_MAX);
     }
 
-    // FOV-based forgetting:
-    //   - вне sensor_range → log_odds = 0 (полное unknown)
-    //   - внутри FOV → log_odds *= 0.95 (мягкий decay; реальные стены подтверждаются хитами)
-    void applyFOVDecay(float sensor_range) {
-        int rgx = worldToGrid(robot_x_, ORIGIN_X);
-        int rgy = worldToGrid(robot_y_, ORIGIN_Y);
-        int range_cells = static_cast<int>(sensor_range / RESOLUTION) + 2;
-        int range_sq = range_cells * range_cells;
-        constexpr float DECAY = 0.95f;
-        for (int y = 0; y < MAP_SIZE; y++) {
-            for (int x = 0; x < MAP_SIZE; x++) {
-                int dx = x - rgx, dy = y - rgy;
-                int i = y * MAP_SIZE + x;
-                if (dx * dx + dy * dy > range_sq) {
-                    log_odds_[i] = 0.0f;
-                } else {
-                    log_odds_[i] *= DECAY;
-                }
-            }
-        }
-    }
 
     inline bool isOccupied(int x, int y) const {
         return log_odds_[y * MAP_SIZE + x] > L_OCC_THRESH;

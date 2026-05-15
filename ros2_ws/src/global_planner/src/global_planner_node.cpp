@@ -40,11 +40,11 @@ public:
     }
 
 private:
-    static const int MAP_SIZE = 200;
-    static constexpr double RESOLUTION = 0.05;
+    static const int MAP_SIZE = 400;
+    static constexpr double RESOLUTION = 0.025;
     static constexpr double ORIGIN_X = -5.0;
     static constexpr double ORIGIN_Y = -5.0;
-    static const int INFLATION_RADIUS = 5;  // 5 cells = 0.25m (robot radius 0.15m + margin)
+    static const int INFLATION_RADIUS = 10;  // 10 cells = 0.25m (robot radius 0.15m + margin)
 
     // Log-odds mapping: каждая клетка накапливает свидетельства.
     // Один промах не очищает стену моментально, и наоборот — стена,
@@ -110,9 +110,10 @@ private:
             updateMapWithLaser(robot_x_, robot_y_, hit_x, hit_y, hit_wall);
         }
 
-        // Пересчитываем inflated map каждые 10 сканов (2x в секунду при 20 Hz)
+        // Пересчитываем inflated map раз в секунду (20 сканов).
+        // На карте 400×400 с RADIUS=10 это ~70M ops — реже == дешевле.
         scan_count_++;
-        if (scan_count_ % 10 == 0) {
+        if (scan_count_ % 20 == 0) {
             rebuildInflatedMap();
         }
 

@@ -30,11 +30,17 @@ class FakeSim(Node):
             ( 4, -4,  4,  4),  # правая
             ( 4,  4, -4,  4),  # верхняя
             (-4,  4, -4, -4),  # левая
-            # Внутренние препятствия
+            # Тонкие стены
             (-1.5, -1.5, -1.5,  0.5),  # вертикальная стена слева
             ( 1.0, -2.5,  1.0, -0.5),  # вертикальная стена справа
             ( 0.5,  2.0,  2.5,  2.0),  # горизонтальная полка сверху
         ]
+        # === Камни (объёмные препятствия) — каждый разворачивается в отрезки ===
+        self.walls += self._box(cx=2.0,  cy=1.2,  w=0.6, h=0.6)   # квадратный камень справа
+        self.walls += self._box(cx=-2.5, cy=-1.0, w=1.0, h=0.5)   # широкая плита слева
+        self.walls += self._box(cx=2.5,  cy=-1.5, w=0.4, h=0.4)   # маленький в углу
+        self.walls += self._polygon(self._hexagon(cx=-2.0, cy=2.5, r=0.4))  # шестигранный
+        self.walls += self._polygon(self._hexagon(cx=0.0, cy=-2.5, r=0.5))  # шестигранный внизу
 
         # === Состояние робота ===
         self.x = 0.0
@@ -89,6 +95,34 @@ class FakeSim(Node):
         self.get_logger().info(
             f'Fake Sim started: robot at ({self.x:.1f}, {self.y:.1f}), '
             f'{len(self.walls)} walls')
+
+    @staticmethod
+    def _box(cx, cy, w, h):
+        """Прямоугольный камень → 4 отрезка-стороны."""
+        x0, x1 = cx - w / 2, cx + w / 2
+        y0, y1 = cy - h / 2, cy + h / 2
+        return [
+            (x0, y0, x1, y0),
+            (x1, y0, x1, y1),
+            (x1, y1, x0, y1),
+            (x0, y1, x0, y0),
+        ]
+
+    @staticmethod
+    def _hexagon(cx, cy, r):
+        """6 вершин шестиугольника."""
+        return [(cx + r * math.cos(a), cy + r * math.sin(a))
+                for a in (i * math.pi / 3 for i in range(6))]
+
+    @staticmethod
+    def _polygon(vertices):
+        """Замкнутый полигон (список вершин) → отрезки."""
+        n = len(vertices)
+        return [
+            (vertices[i][0], vertices[i][1],
+             vertices[(i + 1) % n][0], vertices[(i + 1) % n][1])
+            for i in range(n)
+        ]
 
     def cmd_callback(self, msg: Twist):
         self.vx = msg.linear.x

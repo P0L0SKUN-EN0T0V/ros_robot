@@ -9,8 +9,10 @@ Fake 2D Simulator — замена Gazebo для VPS без GPU.
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist, Quaternion, TransformStamped
+from nav_msgs.msg import Odometry, Path
+from geometry_msgs.msg import Twist, Quaternion, TransformStamped, PoseStamped, Point
+from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import ColorRGBA
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 import math
 import time
@@ -53,6 +55,12 @@ class FakeSim(Node):
             Twist, '/cmd_vel', self.cmd_callback, 10)
         self.scan_pub = self.create_publisher(LaserScan, '/scan', 10)
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
+        # Реальные стены сцены — для "ground truth" панели в Foxglove
+        self.walls_pub = self.create_publisher(MarkerArray, '/walls_real', 10)
+        # Trail позиций робота — для визуализации траектории
+        self.trail_pub = self.create_publisher(Path, '/odom_trail', 10)
+        self.trail = []
+        self.trail_counter = 0
 
         # TF broadcaster: odom → base_link (динамический) и base_link → base_scan (статический).
         # Без них Foxglove/RViz не могут отрендерить /scan в кадре odom.
@@ -63,6 +71,8 @@ class FakeSim(Node):
         # Таймер: 20 Hz обновление
         self.dt = 0.05
         self.timer = self.create_timer(self.dt, self.update)
+        # Стены реальной сцены публикуем редко (1 Hz), они статичны
+        self.walls_timer = self.create_timer(1.0, self.publish_walls)
 
     def _publish_static_tf(self):
         # Лидар прямо в центре робота
@@ -102,6 +112,14 @@ class FakeSim(Node):
 
         # 4. Публикуем лидар
         self.publish_scan()
+
+        # 5. Накапливаем trail и публикуем 4 Hz
+        self.trail.append((self.x, self.y, self.yaw))
+        if len(self.trail) > 1000:
+            self.trail = self.trail[-500:]
+        self.trail_counter += 1
+        if self.trail_counter % 5 == 0:
+            self.publish_trail()
 
     def publish_tf(self):
         t = TransformStamped()
@@ -209,6 +227,42 @@ class FakeSim(Node):
         msg.twist.twist.angular.z = self.wz
 
         self.odom_pub.publish(msg)
+
+    def publish_walls(self):
+        """Реальная геометрия сцены (то, что робот не знает) — для второй панели."""
+        arr = MarkerArray()
+        m = Marker()
+        m.header.frame_id = 'odom'
+        m.header.stamp = self.get_clock().now().to_msg()
+        m.ns = 'walls_real'
+        m.id = 0
+        m.type = Marker.LINE_LIST  # пары точек = отрезки
+        m.action = Marker.ADD
+        m.scale.x = 0.05  # толщина линий
+        m.color = ColorRGBA(r=0.4, g=0.5, b=0.85, a=1.0)
+        for (x1, y1, x2, y2) in self.walls:
+            m.points.append(Point(x=float(x1), y=float(y1), z=0.0))
+            m.points.append(Point(x=float(x2), y=float(y2), z=0.0))
+            # Дублируем линию повыше — получится "забор"
+            m.points.append(Point(x=float(x1), y=float(y1), z=0.5))
+            m.points.append(Point(x=float(x2), y=float(y2), z=0.5))
+        arr.markers.append(m)
+        self.walls_pub.publish(arr)
+
+    def publish_trail(self):
+        """История позиций робота как Path (рисуется линией в Foxglove)."""
+        p = Path()
+        p.header.frame_id = 'odom'
+        p.header.stamp = self.get_clock().now().to_msg()
+        for (x, y, yaw) in self.trail:
+            ps = PoseStamped()
+            ps.header.frame_id = 'odom'
+            ps.pose.position.x = x
+            ps.pose.position.y = y
+            ps.pose.orientation.z = math.sin(yaw / 2)
+            ps.pose.orientation.w = math.cos(yaw / 2)
+            p.poses.append(ps)
+        self.trail_pub.publish(p)
 
 
 def main(args=None):

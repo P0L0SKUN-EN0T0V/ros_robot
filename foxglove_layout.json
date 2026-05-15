@@ -1,71 +1,22 @@
 {
   "configById": {
-    "3D!ros2nav": {
-      "cameraState": {
-        "perspective": true,
-        "distance": 15,
-        "phi": 60,
-        "thetaOffset": 45,
-        "targetOffset": [0, 0, 0],
-        "target": [0, 0, 0],
-        "targetOrientation": [0, 0, 0, 1],
-        "fovy": 45,
-        "near": 0.5,
-        "far": 5000
-      },
+    "3D!robotview": {
       "followMode": "follow-pose",
       "followTf": "odom",
       "scene": {
-        "transforms": {
-          "showLabel": true,
-          "labelSize": 0.2,
-          "axisScale": 0.5
-        },
-        "syncCamera": false,
         "backgroundColor": "#0a0a1a"
+      },
+      "topics": {
+        "/map": {"visible": true},
+        "/scan": {"visible": true},
+        "/odom_trail": {"visible": true},
+        "/global_plan": {"visible": true},
+        "/goal_pose": {"visible": true}
       },
       "transforms": {
         "frame:odom": {"visible": true},
         "frame:base_link": {"visible": true},
         "frame:base_scan": {"visible": false}
-      },
-      "topics": {
-        "/map": {
-          "visible": true,
-          "frameLocked": false,
-          "minColor": "#1a1a2e",
-          "maxColor": "#ff3355",
-          "unknownColor": "#101020",
-          "invalidColor": "#0000ff",
-          "colorMode": "map",
-          "alpha": 0.85
-        },
-        "/scan": {
-          "visible": true,
-          "pointSize": 4,
-          "pointShape": "circle",
-          "decayTime": 0,
-          "colorMode": "flat",
-          "flatColor": "#ff6600",
-          "alpha": 0.7
-        },
-        "/odom": {
-          "visible": true,
-          "type": "axis",
-          "axisScale": 0.6,
-          "covariance": false
-        },
-        "/global_plan": {
-          "visible": true,
-          "lineWidth": 0.05,
-          "type": "line",
-          "gradient": ["#00aaff", "#00aaff"]
-        },
-        "/goal_pose": {
-          "visible": true,
-          "type": "axis",
-          "axisScale": 0.5
-        }
       },
       "layers": {
         "grid_layer": {
@@ -75,7 +26,6 @@
           "color": "#222244",
           "size": 10,
           "divisions": 40,
-          "lineWidth": 1,
           "frameId": "odom",
           "instanceId": "grid_layer"
         }
@@ -84,10 +34,43 @@
         "type": "pose",
         "poseTopic": "/goal_pose",
         "pointTopic": "/clicked_point",
-        "poseEstimateTopic": "/initialpose",
-        "poseEstimateXDeviation": 0.5,
-        "poseEstimateYDeviation": 0.5,
-        "poseEstimateThetaDeviation": 0.26
+        "poseEstimateTopic": "/initialpose"
+      }
+    },
+    "3D!reality": {
+      "followMode": "follow-pose",
+      "followTf": "odom",
+      "scene": {
+        "backgroundColor": "#0a1a14"
+      },
+      "topics": {
+        "/walls_real": {"visible": true},
+        "/odom_trail": {"visible": true},
+        "/global_plan": {"visible": true},
+        "/goal_pose": {"visible": true}
+      },
+      "transforms": {
+        "frame:odom": {"visible": true},
+        "frame:base_link": {"visible": true},
+        "frame:base_scan": {"visible": false}
+      },
+      "layers": {
+        "grid_layer_2": {
+          "layerId": "foxglove.Grid",
+          "label": "Grid",
+          "visible": true,
+          "color": "#225522",
+          "size": 10,
+          "divisions": 40,
+          "frameId": "odom",
+          "instanceId": "grid_layer_2"
+        }
+      },
+      "publish": {
+        "type": "pose",
+        "poseTopic": "/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose"
       }
     }
   },
@@ -96,5 +79,10 @@
   "playbackConfig": {
     "speed": 1
   },
-  "layout": "3D!ros2nav"
+  "layout": {
+    "first": "3D!robotview",
+    "second": "3D!reality",
+    "direction": "row",
+    "splitPercentage": 50
+  }
 }

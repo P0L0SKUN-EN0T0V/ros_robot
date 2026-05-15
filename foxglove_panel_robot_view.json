@@ -1,0 +1,37 @@
+{
+  "followMode": "follow-pose",
+  "followTf": "odom",
+  "scene": {
+    "backgroundColor": "#0a0a1a"
+  },
+  "topics": {
+    "/map": {"visible": true},
+    "/scan": {"visible": true},
+    "/odom_trail": {"visible": true},
+    "/global_plan": {"visible": true},
+    "/goal_pose": {"visible": true}
+  },
+  "transforms": {
+    "frame:odom": {"visible": true},
+    "frame:base_link": {"visible": true},
+    "frame:base_scan": {"visible": false}
+  },
+  "layers": {
+    "grid_layer": {
+      "layerId": "foxglove.Grid",
+      "label": "Grid",
+      "visible": true,
+      "color": "#222244",
+      "size": 10,
+      "divisions": 40,
+      "frameId": "odom",
+      "instanceId": "grid_layer"
+    }
+  },
+  "publish": {
+    "type": "pose",
+    "poseTopic": "/goal_pose",
+    "pointTopic": "/clicked_point",
+    "poseEstimateTopic": "/initialpose"
+  }
+}

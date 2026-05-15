@@ -22,32 +22,49 @@ class FakeSim(Node):
     def __init__(self):
         super().__init__('fake_sim_node')
 
-        # === Карта: лабиринт из толстых стен (10 см) ===
-        # Каждый axis-aligned отрезок разворачивается в прямоугольник
-        # через _thick_wall — отдельный отрезок становится 4 гранями коробки.
-        WALL_THICKNESS = 0.10
-        outer_edges = [
-            (-4, -4,  4, -4),  # внешняя нижняя
-            ( 4, -4,  4,  4),  # внешняя правая
-            ( 4,  4, -4,  4),  # внешняя верхняя
-            (-4,  4, -4, -4),  # внешняя левая
-        ]
-        inner_edges = [
-            # Вертикальные внутренние с проходами
-            (-1.5, -3.0, -1.5, -0.5),  # левая нижняя — проход в [-0.5, 0.5]
+        # === Карта: лабиринт из толстых стен ===
+        # maze_walls — центральные линии (axis-aligned), используем для:
+        #   1) визуализации в Foxglove как Marker.CUBE (один куб на стену)
+        #   2) генерации segment-ов для лидара через _thick_wall
+        # Все проходы между стенами >= 1.0 м (после inflation 0.25 м
+        # остаётся ~50 см свободного "коридора" для робота 0.30 м диаметра).
+        self.wall_thickness = 0.10
+        self.wall_height = 0.5
+        self.maze_walls = [
+            # --- Внешние стены 8×8 ---
+            (-4.0, -4.0,  4.0, -4.0),  # нижняя
+            ( 4.0, -4.0,  4.0,  4.0),  # правая
+            ( 4.0,  4.0, -4.0,  4.0),  # верхняя
+            (-4.0,  4.0, -4.0, -4.0),  # левая
+
+            # --- Вертикальные внутренние с проходами ---
+            (-1.5, -3.0, -1.5, -0.5),  # левая нижняя — проход [-0.5, 0.5] = 1.0 м
             (-1.5,  0.5, -1.5,  3.0),  # левая верхняя
-            ( 1.5, -3.0,  1.5, -1.0),  # правая нижняя — проход в [-1, 1]
+            ( 1.5, -3.0,  1.5, -1.0),  # правая нижняя — проход [-1, 1] = 2.0 м
             ( 1.5,  1.0,  1.5,  3.0),  # правая верхняя
-            # Горизонтальные с разрывами — несколько T-перекрёстков
-            (-3.5, -1.5, -2.0, -1.5),  # нижняя слева
-            (-0.5, -1.5,  0.5, -1.5),  # нижний центр (островок)
-            ( 2.0, -1.5,  3.5, -1.5),  # нижняя справа
-            (-3.5,  1.5, -1.0,  1.5),  # верхняя слева
-            ( 1.0,  1.5,  3.5,  1.5),  # верхняя справа
+
+            # --- Горизонтальные с T-перекрёстками ---
+            (-3.5, -1.5, -2.0, -1.5),  # нижняя левая
+            (-0.5, -1.5,  0.5, -1.5),  # нижний "островок" в центре (1.0 м)
+            ( 2.0, -1.5,  3.5, -1.5),  # нижняя правая
+            (-3.5,  1.5, -1.0,  1.5),  # верхняя левая
+            ( 1.0,  1.5,  3.5,  1.5),  # верхняя правая
+
+            # --- Угловые тупики (короткие вертикальные в комнатах углов) ---
+            (-3.0, -3.0, -3.0, -2.0),  # левый-низ
+            ( 3.0, -3.0,  3.0, -2.0),  # правый-низ
+            (-3.0,  2.0, -3.0,  3.0),  # левый-верх
+            ( 3.0,  2.0,  3.0,  3.0),  # правый-верх
+
+            # --- Центральные вертикальные перегородки в верхнем/нижнем коридоре ---
+            ( 0.0,  2.7,  0.0,  3.5),  # сверху (зазор до горизонталей y=1.5: 1.15 м)
+            ( 0.0, -3.5,  0.0, -2.7),  # снизу симметрично
         ]
+
+        # Разворачиваем каждую толстую стену в 4 segment-а для ray-tracing лидара
         self.walls = []
-        for edge in outer_edges + inner_edges:
-            self.walls += self._thick_wall(*edge, t=WALL_THICKNESS)
+        for w in self.maze_walls:
+            self.walls += self._thick_wall(*w, t=self.wall_thickness)
 
         # === Состояние робота ===
         self.x = 0.0
@@ -283,24 +300,32 @@ class FakeSim(Node):
         self.odom_pub.publish(msg)
 
     def publish_walls(self):
-        """Реальная геометрия сцены (то, что робот не знает) — для второй панели."""
+        """Реальная геометрия сцены — каждая толстая стена как сплошной CUBE.
+        Один Marker на стену (CUBE_LIST не подходит: разные размеры)."""
         arr = MarkerArray()
-        m = Marker()
-        m.header.frame_id = 'odom'
-        m.header.stamp = self.get_clock().now().to_msg()
-        m.ns = 'walls_real'
-        m.id = 0
-        m.type = Marker.LINE_LIST  # пары точек = отрезки
-        m.action = Marker.ADD
-        m.scale.x = 0.05  # толщина линий
-        m.color = ColorRGBA(r=0.4, g=0.5, b=0.85, a=1.0)
-        for (x1, y1, x2, y2) in self.walls:
-            m.points.append(Point(x=float(x1), y=float(y1), z=0.0))
-            m.points.append(Point(x=float(x2), y=float(y2), z=0.0))
-            # Дублируем линию повыше — получится "забор"
-            m.points.append(Point(x=float(x1), y=float(y1), z=0.5))
-            m.points.append(Point(x=float(x2), y=float(y2), z=0.5))
-        arr.markers.append(m)
+        stamp = self.get_clock().now().to_msg()
+        for i, (x1, y1, x2, y2) in enumerate(self.maze_walls):
+            m = Marker()
+            m.header.frame_id = 'odom'
+            m.header.stamp = stamp
+            m.ns = 'walls_real'
+            m.id = i
+            m.type = Marker.CUBE
+            m.action = Marker.ADD
+            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+            if x1 == x2:  # вертикальная
+                m.scale.x = self.wall_thickness
+                m.scale.y = abs(y2 - y1) + self.wall_thickness
+            else:  # горизонтальная
+                m.scale.x = abs(x2 - x1) + self.wall_thickness
+                m.scale.y = self.wall_thickness
+            m.scale.z = self.wall_height
+            m.pose.position.x = float(cx)
+            m.pose.position.y = float(cy)
+            m.pose.position.z = self.wall_height / 2  # стоит на полу z=0
+            m.pose.orientation.w = 1.0
+            m.color = ColorRGBA(r=0.4, g=0.5, b=0.85, a=1.0)
+            arr.markers.append(m)
         self.walls_pub.publish(arr)
 
     def publish_trail(self):

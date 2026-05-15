@@ -43,8 +43,11 @@ class FakeSim(Node):
         self.vx = 0.0
         self.wz = 0.0
 
-        # === LiDAR параметры (как у TurtleBot3 burger) ===
-        self.num_rays = 360
+        # === LiDAR параметры ===
+        # 720 лучей на 2π = 0.5° между лучами; ~1.7 см зазор на 2 м.
+        # С 360 узкие препятствия (≤3.5 см на 2 м) могли проскальзывать
+        # между соседними лучами и не попадать в карту.
+        self.num_rays = 720
         self.angle_min = 0.0
         self.angle_max = 2 * math.pi
         self.range_min = 0.12

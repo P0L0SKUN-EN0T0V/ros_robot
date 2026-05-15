@@ -17,6 +17,10 @@ COPY ros2_ws/src/global_planner/package.xml ./ros2_ws/src/global_planner/
 # Теперь весь src
 COPY ros2_ws/src ./ros2_ws/src
 
+# При клонировании с Windows executable-bit на .py теряется —
+# ROS2 не сможет запустить ноды. Принудительно ставим +x.
+RUN chmod +x ros2_ws/src/global_planner/src/*.py
+
 # Сборка через colcon (как и на хосте)
 RUN bash -c "source /opt/ros/jazzy/setup.bash && \
     cd ros2_ws && \

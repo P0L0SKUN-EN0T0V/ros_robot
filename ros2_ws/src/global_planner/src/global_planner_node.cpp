@@ -228,8 +228,29 @@ private:
         return !isOccupied(x, y);  // unknown тоже считаем проходимым
     }
 
+    // Theta*: проверка что между (x0,y0) и (x1,y1) нет препятствий.
+    // Bresenham по клеткам — все промежуточные должны быть isFree.
+    bool lineOfSight(int x0, int y0, int x1, int y1) {
+        int dx = std::abs(x1 - x0), dy = std::abs(y1 - y0);
+        int sx = (x0 < x1) ? 1 : -1;
+        int sy = (y0 < y1) ? 1 : -1;
+        int err = dx - dy;
+        int cx = x0, cy = y0;
+        while (cx != x1 || cy != y1) {
+            if (!isFree(cx, cy)) return false;
+            int e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; cx += sx; }
+            if (e2 <  dx) { err += dx; cy += sy; }
+        }
+        return isFree(x1, y1);
+    }
+
     // ============================================================
-    // A*
+    // Theta* (any-angle path planning) — расширение A*:
+    //   при relax-е соседа N сначала пробуем привязать N к РОДИТЕЛЮ
+    //   текущего узла (бабушке), если между ними есть line-of-sight.
+    //   Иначе — обычный A* relax. Это даёт прямые пути через
+    //   свободное пространство, не ступенчатые.
     // ============================================================
 
     double heuristic(int x1, int y1, int x2, int y2) {
@@ -241,7 +262,7 @@ private:
     const int DX[8] = {-1, -1, -1,  0, 0,  1, 1, 1};
     const int DY[8] = {-1,  0,  1, -1, 1, -1, 0, 1};
 
-    std::vector<std::pair<int,int>> planAStar(int sx, int sy, int gx, int gy) {
+    std::vector<std::pair<int,int>> planThetaStar(int sx, int sy, int gx, int gy) {
         // Для старта и цели — проверяем без inflation (робот уже может стоять у стены)
         auto isPassable = [this](int x, int y) -> bool {
             if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) return false;
@@ -287,9 +308,7 @@ private:
                 int ny = cy + DY[d];
 
                 if (closed[ny][nx]) continue;
-                // Промежуточные клетки — через inflated map.
-                // Рядом со стартом — разрешаем без inflation (робот может уже
-                // стоять у самой стены и иначе план не построится).
+                // Рядом со стартом — без inflation (робот может уже стоять у стены)
                 bool near_start = (abs(nx - sx) <= INFLATION_RADIUS && abs(ny - sy) <= INFLATION_RADIUS);
                 if (near_start) {
                     if (!isPassable(nx, ny)) continue;
@@ -297,13 +316,27 @@ private:
                     if (!isFree(nx, ny)) continue;
                 }
 
-                double step_cost = (DX[d] != 0 && DY[d] != 0) ? 1.414 : 1.0;
-                double new_g = g_val[cy][cx] + step_cost;
-
-                if (new_g < g_val[ny][nx]) {
-                    g_val[ny][nx] = new_g;
-                    parent[ny][nx] = {cx, cy};
-                    open.push({new_g + heuristic(nx, ny, gx, gy), nx, ny});
+                // Theta*: попробуем привязать соседа к РОДИТЕЛЮ текущего узла,
+                // если между ними прямая видимость. Это даёт any-angle путь.
+                auto [px, py] = parent[cy][cx];
+                bool used_grandparent = false;
+                if (px != -1 && lineOfSight(px, py, nx, ny)) {
+                    double new_g = g_val[py][px] + heuristic(px, py, nx, ny);
+                    if (new_g < g_val[ny][nx]) {
+                        g_val[ny][nx] = new_g;
+                        parent[ny][nx] = {px, py};  // ← бабушка, не текущий
+                        open.push({new_g + heuristic(nx, ny, gx, gy), nx, ny});
+                        used_grandparent = true;
+                    }
+                }
+                if (!used_grandparent) {
+                    // Path 1 — классический A* relax через текущий узел
+                    double new_g = g_val[cy][cx] + heuristic(cx, cy, nx, ny);
+                    if (new_g < g_val[ny][nx]) {
+                        g_val[ny][nx] = new_g;
+                        parent[ny][nx] = {cx, cy};
+                        open.push({new_g + heuristic(nx, ny, gx, gy), nx, ny});
+                    }
                 }
             }
         }
@@ -317,10 +350,10 @@ private:
         int gx = worldToGrid(goal_x_, ORIGIN_X);
         int gy = worldToGrid(goal_y_, ORIGIN_Y);
 
-        current_path_ = planAStar(sx, sy, gx, gy);
+        current_path_ = planThetaStar(sx, sy, gx, gy);
 
         if (current_path_.empty()) {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 3000, "A* path NOT found!");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 3000, "Theta* path NOT found!");
         } else {
             publishPath();
         }

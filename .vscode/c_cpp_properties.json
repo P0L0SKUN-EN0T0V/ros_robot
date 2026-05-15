@@ -1,0 +1,16 @@
+{
+  "configurations": [
+    {
+      "name": "ROS2 Jazzy",
+      "compileCommands": "${workspaceFolder}/ros2_ws/build/global_planner/compile_commands.json",
+      "intelliSenseMode": "linux-gcc-x64",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/opt/ros/jazzy/include/**"
+      ]
+    }
+  ],
+  "version": 4
+}

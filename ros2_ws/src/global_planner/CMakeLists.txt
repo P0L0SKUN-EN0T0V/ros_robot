@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 project(global_planner)
 
+# Чтобы IDE (VSCode/clangd) видели где лежат ROS-headers
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)

@@ -1,0 +1,33 @@
+# Сборочные артефакты — будут пересобраны внутри контейнера
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# Корневой CMake мусор от CMake Tools (если случайно)
+build/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.cache/
+*.code-workspace
+
+# Foxglove layout — он на стороне клиента, не в контейнере
+foxglove_layout.json
+
+# Документация — не нужна для рантайма
+docs/
+README.md
+
+# Этот скрипт нужен только на хосте, не в контейнере
+run.sh
+
+# OS / Python мусор
+*.log
+*.pyc
+__pycache__/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+services:
+  ros_robot:
+    build: .
+    image: ros_robot:latest
+    container_name: ros_robot
+    ports:
+      - "8765:8765"  # Foxglove WebSocket
+    restart: unless-stopped
+    # network_mode: host  # включить если будут несколько контейнеров
+    #                     # с ROS-нодами — нужен общий DDS-discovery
